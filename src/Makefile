@@ -19,7 +19,7 @@ ifeq ($(ENABLE_DEBUG), 1)
 CFLAGS += -DENABLE_DEBUG
 endif
 
-SRC =	USB2513B/USB2513B.c\
+SRC =	\
 	adiv5.c		\
 	adiv5_jtagdp.c	\
 	adiv5_swdp.c	\
@@ -83,8 +83,7 @@ blackmagic: include/version.h $(OBJ)
 clean:	host_clean
 	$(Q)echo "  CLEAN"
 	-$(Q)$(RM) -f *.o *.d *~ blackmagic $(HOSTFILES)
-	-$(Q)$(RM) -f platforms/*/*.o platforms/*/*.d mapfile
-	-$(Q)$(RM) -f USB2513B/*.o USB2513B/*.d mapfile
+	-$(Q)$(RM) -f platforms/*/*/*.o platforms/*/*/*.d mapfile
 
 all_platforms:
 	$(Q)set -e ;\

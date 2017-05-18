@@ -20,6 +20,8 @@ SRC += 	cdcacm.c	\
 	serialno.c	\
 	timing.c	\
 	timing_stm32.c	\
+	platforms/stlink/USB2513B/USB2513B.c\
+	platforms/stlink/USB2513B/SMBus.c\
 
 all:	blackmagic.bin blackmagic_dfu.bin blackmagic_dfu.hex dfu_upgrade.bin dfu_upgrade.hex
 
