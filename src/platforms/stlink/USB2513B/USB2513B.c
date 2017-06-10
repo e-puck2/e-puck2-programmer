@@ -9,7 +9,8 @@
 #include <USB2513B/USB2513B.h>
 #include <USB2513B/SMBus.h>
 
-
+//comment to be in FS mode
+#define HS_MODE_SELECTED	1
 
 
 //////  I2C ADDRESS //////////
@@ -62,8 +63,15 @@
 #define PRODUCT_ID_MSB						0x25
 #define DEVICE_ID_LSB						0xB3
 #define DEVICE_ID_MSB						0x0B
+
+#if HS_MODE_SELECTED == 1
 //(default = 0x9B) Self-powered, High_speed, MTT, EOP disable, individual sensing, individual switching
 #define CONF_DATA_BYTE_1					0x1B //modified
+#else
+//(default = 0x9B) Self-powered, Full_speed, MTT, EOP disable, individual sensing, individual switching
+#define CONF_DATA_BYTE_1					0x3B //modified
+#endif
+
 //no dynamic auto-switching, overcurrent delay = 8ms, not compound device
 #define CONF_DATA_BYTE_2					0x20 
 //standard port mapping mode, string support disabled
@@ -138,16 +146,38 @@ void USB2513B_usb_attach(void){
 	SMBus_write(USB2513B_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
 }
 
-void USB2513B_init(void){
-	
+void USB2513B_usb_detach(void){
 	uint8_t temp_reg = 0;
+	SMBus_read(USB2513B_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
+	temp_reg &= ~STATUS_COMMAND_USB_ATTACH_BIT;
+	SMBus_write(USB2513B_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
+}
+
+void USB2513B_init(void){
 
 	USB2513B_reset();
+	USB2513B_usb_detach();
 
-	temp_reg = CONF_DATA_BYTE_1;
-	SMBus_write(USB2513B_ADDR, CONF_DATA_BYTE_1_REG, 1, &temp_reg);
+	uint8_t temp_reg[17] = {	VENDOR_ID_LSB,
+								VENDOR_ID_MSB,
+								PRODUCT_ID_LSB,
+								PRODUCT_ID_MSB,
+								DEVICE_ID_LSB,
+								DEVICE_ID_MSB,
+								CONF_DATA_BYTE_1,
+								CONF_DATA_BYTE_2,
+								CONF_DATA_BYTE_3,
+								NON_REM_DEVICES,
+								PORT_DISABLE_SELF,
+								PORT_DISABLE_BUS,
+								MAX_POWER_SELF,
+								MAX_POWER_BUS,
+								HUB_CONTROLLER_MAX_CURRENT_SELF,
+								HUB_CONTROLLER_MAX_CURRENT_BUS,
+								POWER_ON_TIME};
 
-	temp_reg = MAX_POWER_BUS;
-	SMBus_write(USB2513B_ADDR, MAX_POWER_BUS_REG, 1, &temp_reg);
+	SMBus_write(USB2513B_ADDR, VENDOR_ID_LSB_REG, 17, temp_reg);
+
+	USB2513B_usb_attach();
 
 }
