@@ -53,13 +53,19 @@ int platform_hwversion(void)
 		gpio_set(GPIOC, GPIO14 | GPIO13);
 		for (i = 0; i<10; i++)
 			hwversion = ~(gpio_get(GPIOC, GPIO14 | GPIO13) >> 13) & 3;
+
+		//force STlink V2 because of an error on the design of the development card for E-Puck
+		hwversion = 1;
+
 		switch (hwversion)
 		{
 		case 0:
 			led_idle_run = GPIO8;
 			break;
 		default:
-			led_idle_run = GPIO9;
+		//force GPIO2 because of an error on the design of the development card for E-Puck
+			//led_idle_run = GPIO9;
+			led_idle_run = GPIO2;
 		}
 	}
 	return hwversion;
