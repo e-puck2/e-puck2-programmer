@@ -1,3 +1,6 @@
+#ifndef SMBUS_H
+#define SMBUS_H
+
 /**
  * @file    SMBus.h
  * @brief   Functions to configure SMBus host over I2C1
@@ -36,3 +39,5 @@ void SMBus_write(uint8_t i2c_addr, uint8_t reg, uint8_t nbDatas, uint8_t* datas)
  * @param datas [Pointer to save the datas]
  */
 void SMBus_read(uint8_t i2c_addr, uint8_t reg, uint8_t nbDatas, uint8_t* datas);
+
+#endif /* SMBUS_H*/
