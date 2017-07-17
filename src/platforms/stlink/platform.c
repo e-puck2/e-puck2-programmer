@@ -87,6 +87,10 @@ void platform_init(void)
 
 	USB2513B_init();
 
+	//set PA9 and PA10 to input in order to not interfere with MiniProg3 for the PD controller
+	gpio_set_mode(GPIOA, GPIO_MODE_INPUT,
+	              GPIO_CNF_INPUT_FLOAT, GPIO9 | GPIO10);
+
 	/* On Rev 1 unconditionally activate MCO on PORTA8 with HSE
 	 * platform_hwversion() also needed to initialize led_idle_run!
 	 */
