@@ -82,7 +82,7 @@ const struct command_s nrf51_read_cmd_list[] = {
 #define NRF52_PAGE_SIZE 4096
 
 #define SRAM_BASE          0x20000000
-#define STUB_BUFFER_BASE   (SRAM_BASE + 0x28)
+#define STUB_BUFFER_BASE   ALIGN(SRAM_BASE + sizeof(nrf51_flash_write_stub), 4)
 
 static const uint16_t nrf51_flash_write_stub[] = {
 #include "flashstub/nrf51.stub"
@@ -112,6 +112,7 @@ bool nrf51_probe(target *t)
 	case 0x0020: /* nRF51822 (rev 1) CEAA BA */
 	case 0x0024: /* nRF51422 (rev 1) QFAA C0 */
 	case 0x002A: /* nRF51822 (rev 2) QFAA FA0 */
+	case 0x004A: /* nRF51822 (rev 3) QFAA G1 */ 			
 	case 0x002D: /* nRF51422 (rev 2) QFAA DAA */
 	case 0x002E: /* nRF51422 (rev 2) QFAA E0 */
 	case 0x002F: /* nRF51822 (rev 1) CEAA B0 */
@@ -219,14 +220,6 @@ static int nrf51_flash_write(struct target_flash *f,
                              target_addr dest, const void *src, size_t len)
 {
 	target *t = f->t;
-	uint32_t data[2 + len/4];
-
-	/* FIXME rewrite stub to use register args */
-
-	/* Construct data buffer used by stub */
-	data[0] = dest;
-	data[1] = len;		/* length must always be a multiple of 4 */
-	memcpy((uint8_t *)&data[2], src, len);
 
 	/* Enable write */
 	target_mem_write32(t, NRF51_NVMC_CONFIG, NRF51_NVMC_CONFIG_WEN);
@@ -239,13 +232,13 @@ static int nrf51_flash_write(struct target_flash *f,
 	/* Write stub and data to target ram and call stub */
 	target_mem_write(t, SRAM_BASE, nrf51_flash_write_stub,
 	                 sizeof(nrf51_flash_write_stub));
-	target_mem_write(t, STUB_BUFFER_BASE, data, len + 8);
-	cortexm_run_stub(t, SRAM_BASE, 0, 0, 0, 0);
-
+	target_mem_write(t, STUB_BUFFER_BASE, src, len);
+	int ret = cortexm_run_stub(t, SRAM_BASE, dest,
+	                           STUB_BUFFER_BASE, len, 0);
 	/* Return to read-only */
 	target_mem_write32(t, NRF51_NVMC_CONFIG, NRF51_NVMC_CONFIG_REN);
 
-	return 0;
+	return ret;
 }
 
 static bool nrf51_cmd_erase_all(target *t)
@@ -332,4 +325,3 @@ static bool nrf51_cmd_read(target *t, int argc, const char *argv[])
 
 	return nrf51_cmd_read_help(t);
 }
-
