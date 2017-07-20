@@ -1,0 +1,41 @@
+Specific to the e-puk2 mobile robot:
+This platform use an STM32F413 to implement the low-level microcontroller,
+including BlackMagic Probe modified software with dedicated other features like
+the power management and USB HUB configuration.
+
+System vs BMP Bootloader
+========================
+We use the STM32F413 internal DFU bootloader and there is no code to provide and
+no control too.
+
+Connections:
+====================
+
+Boot0: Pin Boot0 to force system bootloader entry AFTER reset.
+The e-puck2 must be OFF and the Boot0 jumper short-circuited then the USB must
+be connected to a PC with DFU util tools in order to reprogram the software.
+
+Not implemented yet but could be later:
+1. An eventual Black Magic UART Port: That's need an UART (2 pins) between the 2
+   uCs and it will allow to implement a virtual UART console via USB between the
+   407 and the USB host.
+2. An eventual Black Magic Trace Capture: That's need 1 link between the 2 uCs (SWO on the 407)
+   PA2/PA3 eventual connected to the STLINK/ STM32F103C8
+
+PC2: TDI
+PC4: TMS/SWDIO
+PC5: TCK/SWCLK
+PC6: TDO/TRACESWO
+
+PC1: TRST
+PC8: SRST
+
+PA14/Blue Led: Indicator that system bootloader is entered via BMP
+
+Bootstrapping the F4Discovery on-board ST-Link
+==============================================
+http://embdev.net/articles/STM_Discovery_as_Black_Magic_Probe has some hints
+how to modify the F4Discovery on-board ST-Link.  If you try to do so and hit
+a problem that stands some test like that you load the right firmware to the
+right device via the right BMP probe, explain, report and ask on the
+blackmagic mailing list http://sourceforge.net/mail/?group_id=407419.
