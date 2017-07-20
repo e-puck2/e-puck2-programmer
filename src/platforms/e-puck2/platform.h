@@ -33,7 +33,8 @@
 
 // #define PLATFORM_HAS_TRACESWO
 #define BOARD_IDENT "Black Magic Probe (e-puck2), (Firmware " FIRMWARE_VERSION ")"
-// #define DFU_IDENT   "Black Magic Firmware Upgrade (e-puck2)"
+// ToDo:
+#define DFU_IDENT   "Black Magic Firmware Upgrade (e-puck2)"
 
 /* Important pin mappings for e-puck2 implementation:
  *
@@ -54,25 +55,25 @@
  */
 
 /* Hardware definitions... */
-#define JTAG_PORT 	GPIO
+#define JTAG_PORT 	GPIOA
 #define TDI_PORT	JTAG_PORT
 #define TMS_PORT	JTAG_PORT
 #define TCK_PORT	JTAG_PORT
-#define TDO_PORT	GPIOC
-#define TDI_PIN		GPIO2
-#define TMS_PIN		GPIO4
+#define TDO_PORT	JTAG_PORT
+#define TDI_PIN		GPIO0
+#define TMS_PIN		GPIO10
 #define TCK_PIN		GPIO5
-#define TDO_PIN		GPIO6
+#define TDO_PIN		GPIO1
 
 #define SWDIO_PORT 	JTAG_PORT
 #define SWCLK_PORT 	JTAG_PORT
 #define SWDIO_PIN	TMS_PIN
 #define SWCLK_PIN	TCK_PIN
 
-#define TRST_PORT	GPIOC
-#define TRST_PIN	GPIO1
-#define SRST_PORT	GPIOC
-#define SRST_PIN	GPIO8
+#define TRST_PORT	GPIOB
+#define TRST_PIN	GPIO13
+#define SRST_PORT	GPIOB
+#define SRST_PIN	GPIO15
 
 #define LED_PORT	GPIOA
 #define LED_PORT_UART	GPIOD

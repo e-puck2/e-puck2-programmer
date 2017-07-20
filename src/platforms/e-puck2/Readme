@@ -1,34 +1,39 @@
 Specific to the e-puk2 mobile robot:
-This platform use an STM32F413 to implement the low-level microcontroller,
-including BlackMagic Probe modified software with dedicated other features like
-the power management and USB HUB configuration.
+
+This platform use 2 STM32F4xx uCs
+1. An STM32F413 to implement the low-level microcontroller,
+   including BlackMagic Probe modified software with dedicated other features
+   like the power management and USB HUB configuration.
+2. An STM32F407 as main uC for the mobile robotic platform. This one is program-
+   med from the first one.
 
 System vs BMP Bootloader
 ========================
 We use the STM32F413 internal DFU bootloader and there is no code to provide and
-no control too.
+no control too execept the Boot0 pin (see below).
 
 Connections:
 ====================
 
 Boot0: Pin Boot0 to force system bootloader entry AFTER reset.
 The e-puck2 must be OFF and the Boot0 jumper short-circuited then the USB must
-be connected to a PC with DFU util tools in order to reprogram the software.
+be connected to a PC with DFU util tools in order to reprogram the BlackMagic
+Probe firmware.
 
-Not implemented yet but could be later:
-1. An eventual Black Magic UART Port: That's need an UART (2 pins) between the 2
-   uCs and it will allow to implement a virtual UART console via USB between the
-   407 and the USB host.
-2. An eventual Black Magic Trace Capture: That's need 1 link between the 2 uCs (SWO on the 407)
-   PA2/PA3 eventual connected to the STLINK/ STM32F103C8
+Not implemented yet but could be done later:
+1. An eventual Black Magic UART Port: That's need an UART connection (2 pins)
+between the 2 uCs and it will allow to implement a virtual UART console via USB
+between the 407 and the USB host.
+2. An eventual Black Magic Trace Capture: That's need 1 link between the 2 uCs
+(SWO on the 407)
 
-PC2: TDI
-PC4: TMS/SWDIO
-PC5: TCK/SWCLK
-PC6: TDO/TRACESWO
+PA0: TDI
+PA10: TMS/SWDIO
+PA5: TCK/SWCLK
+PA1: TDO/TRACESWO
 
-PC1: TRST
-PC8: SRST
+PB13: TRST
+PB15: SRST
 
 PA14/Blue Led: Indicator that system bootloader is entered via BMP
 
