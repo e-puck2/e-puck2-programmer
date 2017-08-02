@@ -29,9 +29,11 @@
 #include "general.h"
 #include "gdb_if.h"
 #include "cdcacm.h"
+
 #if defined(PLATFORM_HAS_TRACESWO)
 #	include "traceswo.h"
 #endif
+
 #include "usbuart.h"
 #include "serialno.h"
 
@@ -42,13 +44,15 @@
 #include <libopencm3/usb/dfu.h>
 #include <stdlib.h>
 
-qenum {
+enum {
 	GDB_COMM_IFACE_NUM,
 	GDB_DATA_IFACE_NUM,
 	SERIAL_COMM_IFACE_NUM,
 	SERIAL_DATA_IFACE_NUM,
 	DFU_IFACE_NUM,
+#if defined(PLATFORM_HAS_TRACESWO)
 	TRACE_IFACE_NUM,
+#endif
 	NB_IFACES		// In order to know how many interfaces are implemented
 } t_bInterfaceNumber;
 
@@ -385,11 +389,7 @@ static const struct usb_config_descriptor config = {
 	.bLength = USB_DT_CONFIGURATION_SIZE,
 	.bDescriptorType = USB_DT_CONFIGURATION,
 	.wTotalLength = 0,
-#if defined(PLATFORM_HAS_TRACESWO)
 	.bNumInterfaces = NB_IFACES,
-#else
-	.bNumInterfaces = NB_IFACES-1,
-#endif
 	.bConfigurationValue = 1,
 	.iConfiguration = 0,
 	.bmAttributes = 0x80,
@@ -411,9 +411,7 @@ static const char *usb_strings[] = {
 	"Black Magic GDB Server",
 	"Black Magic UART Port",
 	DFU_IDENT,
-#if defined(PLATFORM_HAS_TRACESWO)
 	"Black Magic Trace Capture",
-#endif
 };
 
 static void dfu_detach_complete(usbd_device *dev, struct usb_setup_data *req)
@@ -569,4 +567,3 @@ void USB_ISR(void)
 {
 	usbd_poll(usbdev);
 }
-

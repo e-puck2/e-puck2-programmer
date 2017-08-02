@@ -31,7 +31,6 @@
 
 #include <setjmp.h>
 
-#define PLATFORM_HAS_TRACESWO
 // Define the identification's names of the device
 #define BOARD_IDENT "Black Magic Probe (F4Discovery-Options), (Firmware " FIRMWARE_VERSION ")"
 #define DFU_IDENT   "Black Magic Firmware Upgrade (F4Discovery-Options)"
@@ -131,10 +130,12 @@
 	gpio_set_af(USBUSART_RX_PORT, GPIO_AF7, USBUSART_RX_PIN); \
     } while(0)
 
+#ifdef PLATFORM_HAS_TRACESWO
 #define TRACE_TIM TIM3
 #define TRACE_TIM_CLK_EN() rcc_periph_clock_enable(RCC_TIM3)
 #define TRACE_IRQ   NVIC_TIM3_IRQ
 #define TRACE_ISR   tim3_isr
+#endif
 
 #define DEBUG(...)
 
