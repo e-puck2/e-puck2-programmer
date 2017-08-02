@@ -32,8 +32,9 @@
 #include <setjmp.h>
 
 #define PLATFORM_HAS_TRACESWO
-#define BOARD_IDENT "Black Magic Probe (F4Discovery), (Firmware " FIRMWARE_VERSION ")"
-#define DFU_IDENT   "Black Magic Firmware Upgrade (F4Discovery)"
+// Define the identification's names of the device
+#define BOARD_IDENT "Black Magic Probe (F4Discovery-Options), (Firmware " FIRMWARE_VERSION ")"
+#define DFU_IDENT   "Black Magic Firmware Upgrade (F4Discovery-Options)"
 
 /* Important pin mappings for STM32 implementation:
  *
@@ -160,4 +161,3 @@ static inline int platform_hwversion(void)
 #define snprintf sniprintf
 
 #endif
-

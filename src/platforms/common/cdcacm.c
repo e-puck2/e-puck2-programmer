@@ -42,7 +42,15 @@
 #include <libopencm3/usb/dfu.h>
 #include <stdlib.h>
 
-#define DFU_IF_NO 4
+qenum {
+	GDB_COMM_IFACE_NUM,
+	GDB_DATA_IFACE_NUM,
+	SERIAL_COMM_IFACE_NUM,
+	SERIAL_DATA_IFACE_NUM,
+	DFU_IFACE_NUM,
+	TRACE_IFACE_NUM,
+	NB_IFACES		// In order to know how many interfaces are implemented
+} t_bInterfaceNumber;
 
 usbd_device * usbdev;
 
@@ -114,7 +122,7 @@ static const struct {
 		.bDescriptorType = CS_INTERFACE,
 		.bDescriptorSubtype = USB_CDC_TYPE_CALL_MANAGEMENT,
 		.bmCapabilities = 0,
-		.bDataInterface = 1,
+		.bDataInterface = GDB_DATA_IFACE_NUM,
 	},
 	.acm = {
 		.bFunctionLength = sizeof(struct usb_cdc_acm_descriptor),
@@ -126,15 +134,15 @@ static const struct {
 		.bFunctionLength = sizeof(struct usb_cdc_union_descriptor),
 		.bDescriptorType = CS_INTERFACE,
 		.bDescriptorSubtype = USB_CDC_TYPE_UNION,
-		.bControlInterface = 0,
-		.bSubordinateInterface0 = 1,
+		.bControlInterface = GDB_COMM_IFACE_NUM,
+		.bSubordinateInterface0 = GDB_DATA_IFACE_NUM,
 	 }
 };
 
 static const struct usb_interface_descriptor gdb_comm_iface[] = {{
 	.bLength = USB_DT_INTERFACE_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE,
-	.bInterfaceNumber = 0,
+	.bInterfaceNumber = GDB_COMM_IFACE_NUM,
 	.bAlternateSetting = 0,
 	.bNumEndpoints = 1,
 	.bInterfaceClass = USB_CLASS_CDC,
@@ -151,7 +159,7 @@ static const struct usb_interface_descriptor gdb_comm_iface[] = {{
 static const struct usb_interface_descriptor gdb_data_iface[] = {{
 	.bLength = USB_DT_INTERFACE_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE,
-	.bInterfaceNumber = 1,
+	.bInterfaceNumber = GDB_DATA_IFACE_NUM,
 	.bAlternateSetting = 0,
 	.bNumEndpoints = 2,
 	.bInterfaceClass = USB_CLASS_DATA,
@@ -165,7 +173,7 @@ static const struct usb_interface_descriptor gdb_data_iface[] = {{
 static const struct usb_iface_assoc_descriptor gdb_assoc = {
 	.bLength = USB_DT_INTERFACE_ASSOCIATION_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE_ASSOCIATION,
-	.bFirstInterface = 0,
+	.bFirstInterface = GDB_COMM_IFACE_NUM,
 	.bInterfaceCount = 2,
 	.bFunctionClass = USB_CLASS_CDC,
 	.bFunctionSubClass = USB_CDC_SUBCLASS_ACM,
@@ -217,7 +225,7 @@ static const struct {
 		.bDescriptorType = CS_INTERFACE,
 		.bDescriptorSubtype = USB_CDC_TYPE_CALL_MANAGEMENT,
 		.bmCapabilities = 0,
-		.bDataInterface = 3,
+		.bDataInterface = SERIAL_DATA_IFACE_NUM,
 	},
 	.acm = {
 		.bFunctionLength = sizeof(struct usb_cdc_acm_descriptor),
@@ -229,15 +237,15 @@ static const struct {
 		.bFunctionLength = sizeof(struct usb_cdc_union_descriptor),
 		.bDescriptorType = CS_INTERFACE,
 		.bDescriptorSubtype = USB_CDC_TYPE_UNION,
-		.bControlInterface = 2,
-		.bSubordinateInterface0 = 3,
+		.bControlInterface = SERIAL_COMM_IFACE_NUM,
+		.bSubordinateInterface0 = SERIAL_DATA_IFACE_NUM,
 	 }
 };
 
 static const struct usb_interface_descriptor uart_comm_iface[] = {{
 	.bLength = USB_DT_INTERFACE_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE,
-	.bInterfaceNumber = 2,
+	.bInterfaceNumber = SERIAL_COMM_IFACE_NUM,
 	.bAlternateSetting = 0,
 	.bNumEndpoints = 1,
 	.bInterfaceClass = USB_CLASS_CDC,
@@ -254,7 +262,7 @@ static const struct usb_interface_descriptor uart_comm_iface[] = {{
 static const struct usb_interface_descriptor uart_data_iface[] = {{
 	.bLength = USB_DT_INTERFACE_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE,
-	.bInterfaceNumber = 3,
+	.bInterfaceNumber = SERIAL_DATA_IFACE_NUM,
 	.bAlternateSetting = 0,
 	.bNumEndpoints = 2,
 	.bInterfaceClass = USB_CLASS_DATA,
@@ -268,7 +276,7 @@ static const struct usb_interface_descriptor uart_data_iface[] = {{
 static const struct usb_iface_assoc_descriptor uart_assoc = {
 	.bLength = USB_DT_INTERFACE_ASSOCIATION_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE_ASSOCIATION,
-	.bFirstInterface = 2,
+	.bFirstInterface = SERIAL_COMM_IFACE_NUM,
 	.bInterfaceCount = 2,
 	.bFunctionClass = USB_CLASS_CDC,
 	.bFunctionSubClass = USB_CDC_SUBCLASS_ACM,
@@ -288,7 +296,7 @@ const struct usb_dfu_descriptor dfu_function = {
 const struct usb_interface_descriptor dfu_iface = {
 	.bLength = USB_DT_INTERFACE_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE,
-	.bInterfaceNumber = DFU_IF_NO,
+	.bInterfaceNumber = DFU_IFACE_NUM,
 	.bAlternateSetting = 0,
 	.bNumEndpoints = 0,
 	.bInterfaceClass = 0xFE,
@@ -303,7 +311,7 @@ const struct usb_interface_descriptor dfu_iface = {
 static const struct usb_iface_assoc_descriptor dfu_assoc = {
 	.bLength = USB_DT_INTERFACE_ASSOCIATION_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE_ASSOCIATION,
-	.bFirstInterface = 4,
+	.bFirstInterface = DFU_IFACE_NUM,
 	.bInterfaceCount = 1,
 	.bFunctionClass = 0xFE,
 	.bFunctionSubClass = 1,
@@ -324,7 +332,7 @@ static const struct usb_endpoint_descriptor trace_endp[] = {{
 const struct usb_interface_descriptor trace_iface = {
 	.bLength = USB_DT_INTERFACE_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE,
-	.bInterfaceNumber = 5,
+	.bInterfaceNumber = TRACE_IFACE_NUM,
 	.bAlternateSetting = 0,
 	.bNumEndpoints = 1,
 	.bInterfaceClass = 0xFF,
@@ -338,7 +346,7 @@ const struct usb_interface_descriptor trace_iface = {
 static const struct usb_iface_assoc_descriptor trace_assoc = {
 	.bLength = USB_DT_INTERFACE_ASSOCIATION_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE_ASSOCIATION,
-	.bFirstInterface = 5,
+	.bFirstInterface = TRACE_IFACE_NUM,
 	.bInterfaceCount = 1,
 	.bFunctionClass = 0xFF,
 	.bFunctionSubClass = 0xFF,
@@ -378,9 +386,9 @@ static const struct usb_config_descriptor config = {
 	.bDescriptorType = USB_DT_CONFIGURATION,
 	.wTotalLength = 0,
 #if defined(PLATFORM_HAS_TRACESWO)
-	.bNumInterfaces = 6,
+	.bNumInterfaces = NB_IFACES,
 #else
-	.bNumInterfaces = 5,
+	.bNumInterfaces = NB_IFACES-1,
 #endif
 	.bConfigurationValue = 1,
 	.iConfiguration = 0,
@@ -451,7 +459,7 @@ static int cdcacm_control_request(usbd_device *dev,
 			return 0;
 		}
 	case DFU_GETSTATUS:
-		if(req->wIndex == DFU_IF_NO) {
+		if(req->wIndex == DFU_IFACE_NUM) {
 			(*buf)[0] = DFU_STATUS_OK;
 			(*buf)[1] = 0;
 			(*buf)[2] = 0;
@@ -463,7 +471,7 @@ static int cdcacm_control_request(usbd_device *dev,
 			return 1;
 		}
 	case DFU_DETACH:
-		if(req->wIndex == DFU_IF_NO) {
+		if(req->wIndex == DFU_IFACE_NUM) {
 			*complete = dfu_detach_complete;
 			return 1;
 		}
