@@ -98,18 +98,21 @@
 #define USB_DRIVER      stm32f107_usb_driver
 #define USB_IRQ         NVIC_OTG_FS_IRQ
 #define USB_ISR         otg_fs_isr
+
 /* Interrupt priorities.  Low numbers are high priority.
  * For now USART1 preempts USB which may spin while buffer is drained.
  * TIM3 is used for traceswo capture and must be highest priority.
  */
 #define IRQ_PRI_USB		(2 << 4)
+
+#ifndef PLATFORM_HAS_NO_SERIAL
 #define IRQ_PRI_USBUSART	(1 << 4)
 #define IRQ_PRI_USBUSART_TIM	(3 << 4)
-
-#ifdef PLATFORM_HAS_TRACESWO
-#define IRQ_PRI_TRACE		(0 << 4)
 #endif
 
+#define IRQ_PRI_TRACE		(0 << 4)
+
+#ifndef PLATFORM_HAS_NO_SERIAL
 #define USBUSART USART3
 #define USBUSART_CR1 USART3_CR1
 #define USBUSART_IRQ NVIC_USART3_IRQ
@@ -132,6 +135,7 @@
 	gpio_set_af(USBUSART_TX_PORT, GPIO_AF7, USBUSART_TX_PIN); \
 	gpio_set_af(USBUSART_RX_PORT, GPIO_AF7, USBUSART_RX_PIN); \
     } while(0)
+#endif
 
 #ifdef PLATFORM_HAS_TRACESWO
 #define TRACE_TIM TIM3

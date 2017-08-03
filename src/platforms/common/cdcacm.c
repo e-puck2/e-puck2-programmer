@@ -34,7 +34,10 @@
 #	include "traceswo.h"
 #endif
 
+#ifndef PLATFORM_HAS_NO_SERIAL
 #include "usbuart.h"
+#endif
+
 #include "serialno.h"
 
 #include <libopencm3/cm3/nvic.h>
@@ -47,8 +50,10 @@
 enum {
 	GDB_COMM_IFACE_NUM,
 	GDB_DATA_IFACE_NUM,
+#if !defined(PLATFORM_HAS_NO_SERIAL)
 	SERIAL_COMM_IFACE_NUM,
 	SERIAL_DATA_IFACE_NUM,
+#endif
 	DFU_IFACE_NUM,
 #if defined(PLATFORM_HAS_TRACESWO)
 	TRACE_IFACE_NUM,
@@ -185,6 +190,7 @@ static const struct usb_iface_assoc_descriptor gdb_assoc = {
 	.iFunction = 0,
 };
 
+#ifndef PLATFORM_HAS_NO_SERIAL
 /* Serial ACM interface */
 static const struct usb_endpoint_descriptor uart_comm_endp[] = {{
 	.bLength = USB_DT_ENDPOINT_SIZE,
@@ -287,6 +293,7 @@ static const struct usb_iface_assoc_descriptor uart_assoc = {
 	.bFunctionProtocol = USB_CDC_PROTOCOL_AT,
 	.iFunction = 0,
 };
+#endif
 
 const struct usb_dfu_descriptor dfu_function = {
 	.bLength = sizeof(struct usb_dfu_descriptor),
@@ -366,6 +373,7 @@ static const struct usb_interface ifaces[] = {{
 }, {
 	.num_altsetting = 1,
 	.altsetting = gdb_data_iface,
+#ifndef PLATFORM_HAS_NO_SERIAL
 }, {
 	.num_altsetting = 1,
 	.iface_assoc = &uart_assoc,
@@ -373,6 +381,7 @@ static const struct usb_interface ifaces[] = {{
 }, {
 	.num_altsetting = 1,
 	.altsetting = uart_data_iface,
+#endif
 }, {
 	.num_altsetting = 1,
 	.iface_assoc = &dfu_assoc,
@@ -450,7 +459,11 @@ static int cdcacm_control_request(usbd_device *dev,
 
 		switch(req->wIndex) {
 		case 2:
+#ifndef PLATFORM_HAS_NO_SERIAL
 			usbuart_set_line_coding((struct usb_cdc_line_coding*)*buf);
+#else
+			return 1; /* Ignore on Serial Port */
+#endif
 		case 0:
 			return 1; /* Ignore on GDB Port */
 		default:
@@ -519,12 +532,14 @@ static void cdcacm_set_config(usbd_device *dev, uint16_t wValue)
 	              CDCACM_PACKET_SIZE, NULL);
 	usbd_ep_setup(dev, 0x82, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
 
+#ifndef PLATFORM_HAS_NO_SERIAL
 	/* Serial interface */
 	usbd_ep_setup(dev, 0x03, USB_ENDPOINT_ATTR_BULK,
 	              CDCACM_PACKET_SIZE, usbuart_usb_out_cb);
 	usbd_ep_setup(dev, 0x83, USB_ENDPOINT_ATTR_BULK,
 	              CDCACM_PACKET_SIZE, usbuart_usb_in_cb);
 	usbd_ep_setup(dev, 0x84, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
+#endif
 
 #if defined(PLATFORM_HAS_TRACESWO)
 	/* Trace interface */
@@ -541,7 +556,9 @@ static void cdcacm_set_config(usbd_device *dev, uint16_t wValue)
 	 * Allows the use of /dev/tty* devices on *BSD/MacOS
 	 */
 	cdcacm_set_modem_state(dev, 0, true, true);
+#ifndef PLATFORM_HAS_NO_SERIAL
 	cdcacm_set_modem_state(dev, 2, true, true);
+#endif
 }
 
 /* We need a special large control buffer for this device: */

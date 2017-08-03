@@ -89,7 +89,9 @@ void platform_init(void)
 			LED_UART | LED_IDLE_RUN | LED_ERROR | LED_BOOTLOADER);
 
 	platform_timing_init();
+#ifndef PLATFORM_HAS_NO_SERIAL
 	usbuart_init();
+#endif
 	cdcacm_init();
 }
 

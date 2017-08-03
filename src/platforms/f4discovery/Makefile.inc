@@ -1,5 +1,6 @@
 # Select the options that this Blackmagic Probe platform must have implemented
 TRACESWO ?= 0
+NO_SERIAL ?= 0
 
 CROSS_COMPILE ?= arm-none-eabi-
 CC = $(CROSS_COMPILE)gcc
@@ -14,6 +15,10 @@ ifeq ($(TRACESWO), 1)
 CFLAGS += -DPLATFORM_HAS_TRACESWO
 endif
 
+ifeq ($(NO_SERIAL), 1)
+CFLAGS += -DPLATFORM_HAS_NO_SERIAL
+endif
+
 LDFLAGS = -lopencm3_stm32f4 -Wl,--defsym,_stack=0x20010000 \
 	-Wl,-T,platforms/stm32/f4discovery.ld -nostartfiles -lc -lnosys \
 	-Wl,-Map=mapfile -mthumb -mcpu=cortex-m4 -Wl,-gc-sections \
@@ -23,13 +28,16 @@ LDFLAGS = -lopencm3_stm32f4 -Wl,--defsym,_stack=0x20010000 \
 VPATH += platforms/stm32
 
 SRC += 	cdcacm.c	\
-	usbuart.c	\
 	serialno.c	\
 	timing.c	\
 	timing_stm32.c
 
 ifeq ($(TRACESWO), 1)
 SRC += 	traceswo.c
+endif
+
+ifeq ($(NO_SERIAL), 0)
+SRC += 	usbuart.c
 endif
 
 all:	blackmagic.bin
