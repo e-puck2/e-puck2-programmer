@@ -105,7 +105,10 @@
 #define IRQ_PRI_USB		(2 << 4)
 #define IRQ_PRI_USBUSART	(1 << 4)
 #define IRQ_PRI_USBUSART_TIM	(3 << 4)
+
+#ifdef PLATFORM_HAS_TRACESWO
 #define IRQ_PRI_TRACE		(0 << 4)
+#endif
 
 #define USBUSART USART3
 #define USBUSART_CR1 USART3_CR1
