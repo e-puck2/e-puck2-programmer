@@ -1,6 +1,7 @@
 # Select the options that this Blackmagic Probe platform must have implemented
 TRACESWO ?= 0
 NO_SERIAL ?= 0
+NO_DFU ?= 0
 
 CROSS_COMPILE ?= arm-none-eabi-
 CC = $(CROSS_COMPILE)gcc
@@ -17,6 +18,10 @@ endif
 
 ifeq ($(NO_SERIAL), 1)
 CFLAGS += -DPLATFORM_HAS_NO_SERIAL
+endif
+
+ifeq ($(NO_DFU), 1)
+CFLAGS += -DPLATFORM_HAS_NO_DFU_BOOTLOADER
 endif
 
 LDFLAGS = -lopencm3_stm32f4 -Wl,--defsym,_stack=0x20010000 \

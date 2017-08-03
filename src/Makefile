@@ -2,6 +2,7 @@ PROBE_HOST ?= native
 PLATFORM_DIR = platforms/$(PROBE_HOST)
 VPATH += $(PLATFORM_DIR) platforms/common target
 ENABLE_DEBUG ?=
+NO_DFU ?= 0
 
 ifneq ($(V), 1)
 MAKEFLAGS += --no-print-dir
@@ -17,6 +18,10 @@ LDFLAGS += $(OPT_FLAGS)
 
 ifeq ($(ENABLE_DEBUG), 1)
 CFLAGS += -DENABLE_DEBUG
+endif
+
+ifeq ($(NO_DFU), 1)
+CFLAGS += -DPLATFORM_HAS_NO_DFU_BOOTLOADER
 endif
 
 SRC =			\

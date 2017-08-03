@@ -54,7 +54,9 @@ enum {
 	SERIAL_COMM_IFACE_NUM,
 	SERIAL_DATA_IFACE_NUM,
 #endif
+#if !defined(PLATFORM_HAS_NO_DFU_BOOTLOADER)
 	DFU_IFACE_NUM,
+#endif
 #if defined(PLATFORM_HAS_TRACESWO)
 	TRACE_IFACE_NUM,
 #endif
@@ -295,6 +297,7 @@ static const struct usb_iface_assoc_descriptor uart_assoc = {
 };
 #endif
 
+#ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
 const struct usb_dfu_descriptor dfu_function = {
 	.bLength = sizeof(struct usb_dfu_descriptor),
 	.bDescriptorType = DFU_FUNCTIONAL,
@@ -329,6 +332,7 @@ static const struct usb_iface_assoc_descriptor dfu_assoc = {
 	.bFunctionProtocol = 1,
 	.iFunction = 6,
 };
+#endif
 
 #if defined(PLATFORM_HAS_TRACESWO)
 static const struct usb_endpoint_descriptor trace_endp[] = {{
@@ -382,10 +386,12 @@ static const struct usb_interface ifaces[] = {{
 	.num_altsetting = 1,
 	.altsetting = uart_data_iface,
 #endif
+#ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
 }, {
 	.num_altsetting = 1,
 	.iface_assoc = &dfu_assoc,
 	.altsetting = &dfu_iface,
+#endif
 #if defined(PLATFORM_HAS_TRACESWO)
 }, {
 	.num_altsetting = 1,
@@ -419,10 +425,15 @@ static const char *usb_strings[] = {
 	serial_no,
 	"Black Magic GDB Server",
 	"Black Magic UART Port",
+#ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
 	DFU_IDENT,
+#else
+	"No DFU",
+#endif
 	"Black Magic Trace Capture",
 };
 
+#ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
 static void dfu_detach_complete(usbd_device *dev, struct usb_setup_data *req)
 {
 	(void)dev;
@@ -433,6 +444,7 @@ static void dfu_detach_complete(usbd_device *dev, struct usb_setup_data *req)
 	/* Reset core to enter bootloader */
 	scb_reset_core();
 }
+#endif
 
 static int cdcacm_control_request(usbd_device *dev,
 		struct usb_setup_data *req, uint8_t **buf, uint16_t *len,
@@ -469,6 +481,7 @@ static int cdcacm_control_request(usbd_device *dev,
 		default:
 			return 0;
 		}
+#ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
 	case DFU_GETSTATUS:
 		if(req->wIndex == DFU_IFACE_NUM) {
 			(*buf)[0] = DFU_STATUS_OK;
@@ -487,6 +500,9 @@ static int cdcacm_control_request(usbd_device *dev,
 			return 1;
 		}
 		return 0;
+#else
+		return 1;
+#endif
 	}
 	return 0;
 }

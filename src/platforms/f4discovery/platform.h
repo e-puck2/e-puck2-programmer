@@ -33,7 +33,9 @@
 
 // Define the identification's names of the device
 #define BOARD_IDENT "Black Magic Probe (F4Discovery-Options), (Firmware " FIRMWARE_VERSION ")"
+#ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
 #define DFU_IDENT   "Black Magic Firmware Upgrade (F4Discovery-Options)"
+#endif
 
 /* Important pin mappings for STM32 implementation:
  *
