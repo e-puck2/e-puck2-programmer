@@ -169,4 +169,3 @@ void platform_request_boot(void)
 	crl |= 0x80;
 	GPIOA_CRL = crl;
 }
-

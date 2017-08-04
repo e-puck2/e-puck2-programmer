@@ -33,10 +33,10 @@
 #include <libopencm3/stm32/f1/memorymap.h>
 #include <libopencm3/usb/usbd.h>
 
-#define BOARD_IDENT       "Black Magic Probe (STLINK), (Firmware " FIRMWARE_VERSION ")"
-#define BOARD_IDENT_DFU   "Black Magic (Upgrade) for STLink/Discovery, (Firmware " FIRMWARE_VERSION ")"
-#define BOARD_IDENT_UPD   "Black Magic (DFU Upgrade) for STLink/Discovery, (Firmware " FIRMWARE_VERSION ")"
-#define DFU_IDENT         "Black Magic Firmware Upgrade (STLINK)"
+#define BOARD_IDENT       "Black Magic Probe (STLINK-dev-eliot), (Firmware " FIRMWARE_VERSION ")"
+#define BOARD_IDENT_DFU   "Black Magic (Upgrade) for STLINK-dev-eliot, (Firmware " FIRMWARE_VERSION ")"
+#define BOARD_IDENT_UPD   "Black Magic (DFU Upgrade) for STLINK-dev-eliot, (Firmware " FIRMWARE_VERSION ")"
+#define DFU_IDENT         "Black Magic Firmware Upgrade (STLINK-dev-eliot)"
 #define UPD_IFACE_STRING  "@Internal Flash   /0x08000000/8*001Kg"
 
 /* Hardware definitions... */
@@ -117,4 +117,3 @@ extern uint16_t led_idle_run;
 #define snprintf sniprintf
 
 #endif
-

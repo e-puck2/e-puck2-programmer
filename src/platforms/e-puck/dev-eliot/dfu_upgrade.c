@@ -77,7 +77,7 @@ void stlink_set_rev(void)
 		//led_idle_run = GPIO9;
 		led_idle_run = GPIO2;
 	}
-	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_2_MHZ,
+	gpio_set_mode(LED_PORT, GPIO_MODE_OUTPUT_2_MHZ,
 			GPIO_CNF_OUTPUT_PUSHPULL, led_idle_run);
 }
 
@@ -119,14 +119,14 @@ void dfu_event(void)
 void sys_tick_handler(void)
 {
 	if (rev == 0) {
-		gpio_toggle(GPIOA, led_idle_run);
+		gpio_toggle(LED_PORT, led_idle_run);
 	} else {
 		if (led2_state & 1) {
-			gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_2_MHZ,
+			gpio_set_mode(LED_PORT, GPIO_MODE_OUTPUT_2_MHZ,
 				GPIO_CNF_OUTPUT_PUSHPULL, led_idle_run);
-			gpio_set(GPIOA, led_idle_run);
+			gpio_set(LED_PORT, led_idle_run);
 		} else {
-			gpio_set_mode(GPIOA, GPIO_MODE_INPUT,
+			gpio_set_mode(LED_PORT, GPIO_MODE_INPUT,
 				GPIO_CNF_INPUT_ANALOG, led_idle_run);
 		}
 		led2_state++;
