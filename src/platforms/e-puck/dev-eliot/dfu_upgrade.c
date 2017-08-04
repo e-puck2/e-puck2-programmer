@@ -65,12 +65,17 @@ void stlink_set_rev(void)
 	for (i = 0; i < 100; i++)
 		rev = (~(gpio_get(GPIOC, GPIO14 | GPIO13)) >> 13) & 3;
 
+	//force STlink V2 because of an error on the design of the development card for E-Puck
+	rev = 1;
+
 	switch (rev) {
 	case 0:
 		led_idle_run = GPIO8;
 		break;
 	default:
-		led_idle_run = GPIO9;
+	//force GPIO2 because of an error on the design of the development card for E-Puck
+		//led_idle_run = GPIO9;
+		led_idle_run = GPIO2;
 	}
 	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_2_MHZ,
 			GPIO_CNF_OUTPUT_PUSHPULL, led_idle_run);

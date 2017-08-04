@@ -54,14 +54,19 @@ static int stlink_test_nrst(void)
 	systick_value = systick_get_value();
 	while (systick_get_value() > (systick_value - 1000)); /* Wait 1 msec*/
 	rev = (~(gpio_get(GPIOC, GPIO14 | GPIO13)) >> 13) & 3;
+
+	//force STlink V2 because of an error on the design of the development card for E-Puck
+	rev = 1;
+
 	switch (rev) {
 	case 0:
 		pin = GPIO1;
 		led_idle_run = GPIO8;
 		break;
 	default:
-		pin = GPIO0;
-		led_idle_run = GPIO9;
+	//force GPIO2 because of an error on the design of the development card for E-Puck
+		//led_idle_run = GPIO9;
+		led_idle_run = GPIO2;
 	}
 	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_2_MHZ,
 			GPIO_CNF_OUTPUT_PUSHPULL, led_idle_run);
@@ -150,4 +155,3 @@ void sys_tick_handler(void)
 		led2_state++;
 	}
 }
-
