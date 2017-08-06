@@ -8,7 +8,7 @@ CFLAGS += -Istm32/include -mcpu=cortex-m4 -mthumb \
 	-Iplatforms/stm32
 
 LDFLAGS = -lopencm3_stm32f4 -Wl,--defsym,_stack=0x20010000 \
-	-Wl,-T,platforms/epuck2/epuck2.ld -nostartfiles -lc -lnosys \
+	-Wl,-T,platforms/epuck/2.0/e-puck2.ld -nostartfiles -lc -lnosys \
 	-Wl,-Map=mapfile -mthumb -mcpu=cortex-m4 -Wl,-gc-sections \
 	-mfloat-abi=hard -mfpu=fpv4-sp-d16 \
 	-L../libopencm3/lib
