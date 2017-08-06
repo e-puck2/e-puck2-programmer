@@ -20,10 +20,6 @@ ifeq ($(ENABLE_DEBUG), 1)
 CFLAGS += -DENABLE_DEBUG
 endif
 
-ifeq ($(NO_JTAG), 1)
-CFLAGS += -DPLATFORM_HAS_NO_JTAG
-endif
-
 SRC =			\
 	adiv5.c		\
 	adiv5_jtagdp.c	\
@@ -62,6 +58,8 @@ SRC =			\
 
 include $(PLATFORM_DIR)/Makefile.inc
 
+# WARNING : MUST STAY AFTER include of Makefile.inc !!
+#   because NO_JTAG must/can be defined in this dedicated platform's file
 ifeq ($(NO_JTAG), 0)
 SRC +=			\
 	jtag_scan.c	\
