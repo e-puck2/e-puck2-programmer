@@ -10,7 +10,12 @@ This platform use 2 STM32F4xx uCs
 System vs BMP Bootloader
 ========================
 We use the STM32F413 internal DFU bootloader and there is no code to provide and
-no control too execept the Boot0 pin (see below).
+no control too except the Boot0 pin (see below).
+=======
+System vs BMP Bootloader
+========================
+For the BMP bootloader, flashing was not reliable. So we use the system
+bootloder unconditional.
 
 Connections:
 ====================
@@ -27,15 +32,15 @@ between the 407 and the USB host.
 2. An eventual Black Magic Trace Capture: That's need 1 link between the 2 uCs
 (SWO on the 407)
 
-PA0: TDI
+PA0: TDI - if needed but try to avoid to use it
 PA10: TMS/SWDIO
 PA5: TCK/SWCLK
-PA1: TDO/TRACESWO
+PA1: TDO/TRACESWO - if needed but try to avoid to use it
 
-PB13: TRST
-PB15: SRST
+PB4: TRST - if needed but try to avoid to use it
+PB0: SRST
 
-PA14/Blue Led: Indicator that system bootloader is entered via BMP
+PA14/Blue Led: Indicator of serial activity
 
 Bootstrapping the F4Discovery on-board ST-Link
 ==============================================

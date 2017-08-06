@@ -29,10 +29,15 @@
 #include "general.h"
 #include "gdb_if.h"
 #include "cdcacm.h"
+
 #if defined(PLATFORM_HAS_TRACESWO)
 #	include "traceswo.h"
 #endif
+
+#ifndef PLATFORM_HAS_NO_SERIAL
 #include "usbuart.h"
+#endif
+
 #include "serialno.h"
 
 #include <libopencm3/cm3/nvic.h>
@@ -42,7 +47,21 @@
 #include <libopencm3/usb/dfu.h>
 #include <stdlib.h>
 
-#define DFU_IF_NO 4
+enum {
+	GDB_COMM_IFACE_NUM,
+	GDB_DATA_IFACE_NUM,
+#if !defined(PLATFORM_HAS_NO_SERIAL)
+	SERIAL_COMM_IFACE_NUM,
+	SERIAL_DATA_IFACE_NUM,
+#endif
+#if !defined(PLATFORM_HAS_NO_DFU_BOOTLOADER)
+	DFU_IFACE_NUM,
+#endif
+#if defined(PLATFORM_HAS_TRACESWO)
+	TRACE_IFACE_NUM,
+#endif
+	NB_IFACES		// In order to know how many interfaces are implemented
+} t_bInterfaceNumber;
 
 usbd_device * usbdev;
 
@@ -114,7 +133,7 @@ static const struct {
 		.bDescriptorType = CS_INTERFACE,
 		.bDescriptorSubtype = USB_CDC_TYPE_CALL_MANAGEMENT,
 		.bmCapabilities = 0,
-		.bDataInterface = 1,
+		.bDataInterface = GDB_DATA_IFACE_NUM,
 	},
 	.acm = {
 		.bFunctionLength = sizeof(struct usb_cdc_acm_descriptor),
@@ -126,15 +145,15 @@ static const struct {
 		.bFunctionLength = sizeof(struct usb_cdc_union_descriptor),
 		.bDescriptorType = CS_INTERFACE,
 		.bDescriptorSubtype = USB_CDC_TYPE_UNION,
-		.bControlInterface = 0,
-		.bSubordinateInterface0 = 1,
+		.bControlInterface = GDB_COMM_IFACE_NUM,
+		.bSubordinateInterface0 = GDB_DATA_IFACE_NUM,
 	 }
 };
 
 static const struct usb_interface_descriptor gdb_comm_iface[] = {{
 	.bLength = USB_DT_INTERFACE_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE,
-	.bInterfaceNumber = 0,
+	.bInterfaceNumber = GDB_COMM_IFACE_NUM,
 	.bAlternateSetting = 0,
 	.bNumEndpoints = 1,
 	.bInterfaceClass = USB_CLASS_CDC,
@@ -151,7 +170,7 @@ static const struct usb_interface_descriptor gdb_comm_iface[] = {{
 static const struct usb_interface_descriptor gdb_data_iface[] = {{
 	.bLength = USB_DT_INTERFACE_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE,
-	.bInterfaceNumber = 1,
+	.bInterfaceNumber = GDB_DATA_IFACE_NUM,
 	.bAlternateSetting = 0,
 	.bNumEndpoints = 2,
 	.bInterfaceClass = USB_CLASS_DATA,
@@ -165,7 +184,7 @@ static const struct usb_interface_descriptor gdb_data_iface[] = {{
 static const struct usb_iface_assoc_descriptor gdb_assoc = {
 	.bLength = USB_DT_INTERFACE_ASSOCIATION_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE_ASSOCIATION,
-	.bFirstInterface = 0,
+	.bFirstInterface = GDB_COMM_IFACE_NUM,
 	.bInterfaceCount = 2,
 	.bFunctionClass = USB_CLASS_CDC,
 	.bFunctionSubClass = USB_CDC_SUBCLASS_ACM,
@@ -173,6 +192,7 @@ static const struct usb_iface_assoc_descriptor gdb_assoc = {
 	.iFunction = 0,
 };
 
+#ifndef PLATFORM_HAS_NO_SERIAL
 /* Serial ACM interface */
 static const struct usb_endpoint_descriptor uart_comm_endp[] = {{
 	.bLength = USB_DT_ENDPOINT_SIZE,
@@ -217,7 +237,7 @@ static const struct {
 		.bDescriptorType = CS_INTERFACE,
 		.bDescriptorSubtype = USB_CDC_TYPE_CALL_MANAGEMENT,
 		.bmCapabilities = 0,
-		.bDataInterface = 3,
+		.bDataInterface = SERIAL_DATA_IFACE_NUM,
 	},
 	.acm = {
 		.bFunctionLength = sizeof(struct usb_cdc_acm_descriptor),
@@ -229,15 +249,15 @@ static const struct {
 		.bFunctionLength = sizeof(struct usb_cdc_union_descriptor),
 		.bDescriptorType = CS_INTERFACE,
 		.bDescriptorSubtype = USB_CDC_TYPE_UNION,
-		.bControlInterface = 2,
-		.bSubordinateInterface0 = 3,
+		.bControlInterface = SERIAL_COMM_IFACE_NUM,
+		.bSubordinateInterface0 = SERIAL_DATA_IFACE_NUM,
 	 }
 };
 
 static const struct usb_interface_descriptor uart_comm_iface[] = {{
 	.bLength = USB_DT_INTERFACE_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE,
-	.bInterfaceNumber = 2,
+	.bInterfaceNumber = SERIAL_COMM_IFACE_NUM,
 	.bAlternateSetting = 0,
 	.bNumEndpoints = 1,
 	.bInterfaceClass = USB_CLASS_CDC,
@@ -254,7 +274,7 @@ static const struct usb_interface_descriptor uart_comm_iface[] = {{
 static const struct usb_interface_descriptor uart_data_iface[] = {{
 	.bLength = USB_DT_INTERFACE_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE,
-	.bInterfaceNumber = 3,
+	.bInterfaceNumber = SERIAL_DATA_IFACE_NUM,
 	.bAlternateSetting = 0,
 	.bNumEndpoints = 2,
 	.bInterfaceClass = USB_CLASS_DATA,
@@ -268,14 +288,16 @@ static const struct usb_interface_descriptor uart_data_iface[] = {{
 static const struct usb_iface_assoc_descriptor uart_assoc = {
 	.bLength = USB_DT_INTERFACE_ASSOCIATION_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE_ASSOCIATION,
-	.bFirstInterface = 2,
+	.bFirstInterface = SERIAL_COMM_IFACE_NUM,
 	.bInterfaceCount = 2,
 	.bFunctionClass = USB_CLASS_CDC,
 	.bFunctionSubClass = USB_CDC_SUBCLASS_ACM,
 	.bFunctionProtocol = USB_CDC_PROTOCOL_AT,
 	.iFunction = 0,
 };
+#endif
 
+#ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
 const struct usb_dfu_descriptor dfu_function = {
 	.bLength = sizeof(struct usb_dfu_descriptor),
 	.bDescriptorType = DFU_FUNCTIONAL,
@@ -288,7 +310,7 @@ const struct usb_dfu_descriptor dfu_function = {
 const struct usb_interface_descriptor dfu_iface = {
 	.bLength = USB_DT_INTERFACE_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE,
-	.bInterfaceNumber = DFU_IF_NO,
+	.bInterfaceNumber = DFU_IFACE_NUM,
 	.bAlternateSetting = 0,
 	.bNumEndpoints = 0,
 	.bInterfaceClass = 0xFE,
@@ -303,13 +325,14 @@ const struct usb_interface_descriptor dfu_iface = {
 static const struct usb_iface_assoc_descriptor dfu_assoc = {
 	.bLength = USB_DT_INTERFACE_ASSOCIATION_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE_ASSOCIATION,
-	.bFirstInterface = 4,
+	.bFirstInterface = DFU_IFACE_NUM,
 	.bInterfaceCount = 1,
 	.bFunctionClass = 0xFE,
 	.bFunctionSubClass = 1,
 	.bFunctionProtocol = 1,
 	.iFunction = 6,
 };
+#endif
 
 #if defined(PLATFORM_HAS_TRACESWO)
 static const struct usb_endpoint_descriptor trace_endp[] = {{
@@ -324,7 +347,7 @@ static const struct usb_endpoint_descriptor trace_endp[] = {{
 const struct usb_interface_descriptor trace_iface = {
 	.bLength = USB_DT_INTERFACE_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE,
-	.bInterfaceNumber = 5,
+	.bInterfaceNumber = TRACE_IFACE_NUM,
 	.bAlternateSetting = 0,
 	.bNumEndpoints = 1,
 	.bInterfaceClass = 0xFF,
@@ -338,7 +361,7 @@ const struct usb_interface_descriptor trace_iface = {
 static const struct usb_iface_assoc_descriptor trace_assoc = {
 	.bLength = USB_DT_INTERFACE_ASSOCIATION_SIZE,
 	.bDescriptorType = USB_DT_INTERFACE_ASSOCIATION,
-	.bFirstInterface = 5,
+	.bFirstInterface = TRACE_IFACE_NUM,
 	.bInterfaceCount = 1,
 	.bFunctionClass = 0xFF,
 	.bFunctionSubClass = 0xFF,
@@ -354,6 +377,7 @@ static const struct usb_interface ifaces[] = {{
 }, {
 	.num_altsetting = 1,
 	.altsetting = gdb_data_iface,
+#ifndef PLATFORM_HAS_NO_SERIAL
 }, {
 	.num_altsetting = 1,
 	.iface_assoc = &uart_assoc,
@@ -361,10 +385,13 @@ static const struct usb_interface ifaces[] = {{
 }, {
 	.num_altsetting = 1,
 	.altsetting = uart_data_iface,
+#endif
+#ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
 }, {
 	.num_altsetting = 1,
 	.iface_assoc = &dfu_assoc,
 	.altsetting = &dfu_iface,
+#endif
 #if defined(PLATFORM_HAS_TRACESWO)
 }, {
 	.num_altsetting = 1,
@@ -377,11 +404,7 @@ static const struct usb_config_descriptor config = {
 	.bLength = USB_DT_CONFIGURATION_SIZE,
 	.bDescriptorType = USB_DT_CONFIGURATION,
 	.wTotalLength = 0,
-#if defined(PLATFORM_HAS_TRACESWO)
-	.bNumInterfaces = 6,
-#else
-	.bNumInterfaces = 5,
-#endif
+	.bNumInterfaces = NB_IFACES,
 	.bConfigurationValue = 1,
 	.iConfiguration = 0,
 	.bmAttributes = 0x80,
@@ -402,12 +425,15 @@ static const char *usb_strings[] = {
 	serial_no,
 	"Black Magic GDB Server",
 	"Black Magic UART Port",
+#ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
 	DFU_IDENT,
-#if defined(PLATFORM_HAS_TRACESWO)
-	"Black Magic Trace Capture",
+#else
+	"No DFU",
 #endif
+	"Black Magic Trace Capture",
 };
 
+#ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
 static void dfu_detach_complete(usbd_device *dev, struct usb_setup_data *req)
 {
 	(void)dev;
@@ -418,6 +444,7 @@ static void dfu_detach_complete(usbd_device *dev, struct usb_setup_data *req)
 	/* Reset core to enter bootloader */
 	scb_reset_core();
 }
+#endif
 
 static int cdcacm_control_request(usbd_device *dev,
 		struct usb_setup_data *req, uint8_t **buf, uint16_t *len,
@@ -444,14 +471,19 @@ static int cdcacm_control_request(usbd_device *dev,
 
 		switch(req->wIndex) {
 		case 2:
+#ifndef PLATFORM_HAS_NO_SERIAL
 			usbuart_set_line_coding((struct usb_cdc_line_coding*)*buf);
+#else
+			return 1; /* Ignore on Serial Port */
+#endif
 		case 0:
 			return 1; /* Ignore on GDB Port */
 		default:
 			return 0;
 		}
+#ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
 	case DFU_GETSTATUS:
-		if(req->wIndex == DFU_IF_NO) {
+		if(req->wIndex == DFU_IFACE_NUM) {
 			(*buf)[0] = DFU_STATUS_OK;
 			(*buf)[1] = 0;
 			(*buf)[2] = 0;
@@ -463,11 +495,14 @@ static int cdcacm_control_request(usbd_device *dev,
 			return 1;
 		}
 	case DFU_DETACH:
-		if(req->wIndex == DFU_IF_NO) {
+		if(req->wIndex == DFU_IFACE_NUM) {
 			*complete = dfu_detach_complete;
 			return 1;
 		}
 		return 0;
+#else
+		return 1;
+#endif
 	}
 	return 0;
 }
@@ -513,12 +548,14 @@ static void cdcacm_set_config(usbd_device *dev, uint16_t wValue)
 	              CDCACM_PACKET_SIZE, NULL);
 	usbd_ep_setup(dev, 0x82, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
 
+#ifndef PLATFORM_HAS_NO_SERIAL
 	/* Serial interface */
 	usbd_ep_setup(dev, 0x03, USB_ENDPOINT_ATTR_BULK,
 	              CDCACM_PACKET_SIZE, usbuart_usb_out_cb);
 	usbd_ep_setup(dev, 0x83, USB_ENDPOINT_ATTR_BULK,
 	              CDCACM_PACKET_SIZE, usbuart_usb_in_cb);
 	usbd_ep_setup(dev, 0x84, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
+#endif
 
 #if defined(PLATFORM_HAS_TRACESWO)
 	/* Trace interface */
@@ -535,7 +572,9 @@ static void cdcacm_set_config(usbd_device *dev, uint16_t wValue)
 	 * Allows the use of /dev/tty* devices on *BSD/MacOS
 	 */
 	cdcacm_set_modem_state(dev, 0, true, true);
+#ifndef PLATFORM_HAS_NO_SERIAL
 	cdcacm_set_modem_state(dev, 2, true, true);
+#endif
 }
 
 /* We need a special large control buffer for this device: */
@@ -561,4 +600,3 @@ void USB_ISR(void)
 {
 	usbd_poll(usbdev);
 }
-

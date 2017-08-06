@@ -42,9 +42,12 @@ extern uint32_t _ebss;
 
 void platform_init(void)
 {
+#ifndef PLATFORM_HAS_NO_DFU
 	volatile uint32_t *magic = (uint32_t *) &_ebss;
 	/* Check the USER button*/
-	rcc_periph_clock_enable(RCC_GPIOA);
+#endif
+	rcc_periph_clock_enable(RCC_GPIOA);		// Necessary for other GPIOA
+#ifndef PLATFORM_HAS_NO_DFU
 	if (gpio_get(GPIOA, GPIO0) ||
 	   ((magic[0] == BOOTMAGIC0) && (magic[1] == BOOTMAGIC1))) {
 		magic[0] = 0;
@@ -61,6 +64,7 @@ void platform_init(void)
 		SYSCFG_MEMRM |=  1;
 		scb_reset_core();
 	}
+#endif
 
 	rcc_clock_setup_hse_3v3(&hse_8mhz_3v3[CLOCK_3V3_48MHZ]);
 
@@ -89,7 +93,9 @@ void platform_init(void)
 			LED_UART | LED_IDLE_RUN | LED_ERROR | LED_BOOTLOADER);
 
 	platform_timing_init();
+#ifndef PLATFORM_HAS_NO_SERIAL
 	usbuart_init();
+#endif
 	cdcacm_init();
 }
 
@@ -101,6 +107,7 @@ const char *platform_target_voltage(void)
 	return "ABSENT!";
 }
 
+#ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
 void platform_request_boot(void)
 {
 	uint32_t *magic = (uint32_t *) &_ebss;
@@ -108,3 +115,4 @@ void platform_request_boot(void)
 	magic[1] = BOOTMAGIC1;
 	scb_reset_system();
 }
+#endif

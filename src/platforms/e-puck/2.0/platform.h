@@ -31,58 +31,59 @@
 
 #include <setjmp.h>
 
-// #define PLATFORM_HAS_TRACESWO
+// Define the identification's names of the device
 #define BOARD_IDENT "Black Magic Probe (e-puck2), (Firmware " FIRMWARE_VERSION ")"
-// ToDo:
+#ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
 #define DFU_IDENT   "Black Magic Firmware Upgrade (e-puck2)"
+#endif
 
 /* Important pin mappings for e-puck2 implementation:
  *
- * PA15	(Green LED 	: Running)
+ * PA15	(Green LED 	: Running/Idle)
  * PA13	(Red LED    : Error)
- * PA14	(Blue LED   : Idle)
+ * PA14	(Blue LED   : Serial)
  * There is no BootlLoader active LED because this mode is intrinsic to the uC
  *
-// * nTRST = 	PC1
-// * SRST_OUT =   PC8
-// * TDI = 	PC2
- * TMS = 	PC4 (input for SWDP)
- * TCK = 	PC5/SWCLK
-// * TDO = 	PC6 (input for TRACESWO
-// * nSRST =
+ * JTAG is not usable on this platform then pins can be reduced
+ * TRACESWO is not usable on this platform then pins can be reduced
  *
- * Force DFU mode button: PA0
+ * nTRST	:	To be checked but not needed
+ * SRST_OUT	:	To be checked but seems not needed
+ * TDI		:	To be checked but not needed
+ * TMS		:	PA10/SWDIO
+ * TCK		:	PA5/SWCLK
+ * TDO		:	To be checked but not needed (input for TRACESWO)
+ * nSRST	:	PB0
+ *
+ * DFU mode selection : Boot0 with a jumper
  */
 
 /* Hardware definitions... */
 #define JTAG_PORT 	GPIOA
-#define TDI_PORT	JTAG_PORT
+#define TDI_PORT	NOT_USED
 #define TMS_PORT	JTAG_PORT
 #define TCK_PORT	JTAG_PORT
-#define TDO_PORT	JTAG_PORT
-#define TDI_PIN		GPIO0
+#define TDO_PORT	NOT_USED
+#define TDI_PIN		NOT_USED
 #define TMS_PIN		GPIO10
 #define TCK_PIN		GPIO5
-#define TDO_PIN		GPIO1
+#define TDO_PIN		NOT_USED
 
 #define SWDIO_PORT 	JTAG_PORT
 #define SWCLK_PORT 	JTAG_PORT
 #define SWDIO_PIN	TMS_PIN
 #define SWCLK_PIN	TCK_PIN
 
-#define TRST_PORT	GPIOB
-#define TRST_PIN	GPIO13
+#define TRST_PORT	NOT_USED
+#define TRST_PIN	NOT_USED
 #define SRST_PORT	GPIOB
-#define SRST_PIN	GPIO15
+#define SRST_PIN	GPIO0
 
-#define LED_PORT	GPIOA
-#define LED_PORT_UART	GPIOD
-#define LED_UART	GPIO12
-#define LED_IDLE_RUN	GPIO13
-#define LED_ERROR	GPIO13
-#define LED_BOOTLOADER	GPIO14
-#define BOOTMAGIC0 0xb007da7a
-#define BOOTMAGIC1 0xbaadfeed
+#define LED_PORT		GPIOA
+#define LED_PORT_UART	GPIOA
+#define LED_UART		GPIO14
+#define LED_IDLE_RUN	GPIO15
+#define LED_ERROR		GPIO13
 
 #define TMS_SET_MODE() \
 	gpio_mode_setup(TMS_PORT, GPIO_MODE_OUTPUT, \
@@ -99,15 +100,21 @@
 #define USB_DRIVER      stm32f107_usb_driver
 #define USB_IRQ         NVIC_OTG_FS_IRQ
 #define USB_ISR         otg_fs_isr
+
 /* Interrupt priorities.  Low numbers are high priority.
  * For now USART1 preempts USB which may spin while buffer is drained.
  * TIM3 is used for traceswo capture and must be highest priority.
  */
 #define IRQ_PRI_USB		(2 << 4)
+
+#ifndef PLATFORM_HAS_NO_SERIAL
 #define IRQ_PRI_USBUSART	(1 << 4)
 #define IRQ_PRI_USBUSART_TIM	(3 << 4)
+#endif
+
 #define IRQ_PRI_TRACE		(0 << 4)
 
+#ifndef PLATFORM_HAS_NO_SERIAL
 #define USBUSART USART3
 #define USBUSART_CR1 USART3_CR1
 #define USBUSART_IRQ NVIC_USART3_IRQ
@@ -130,11 +137,14 @@
 	gpio_set_af(USBUSART_TX_PORT, GPIO_AF7, USBUSART_TX_PIN); \
 	gpio_set_af(USBUSART_RX_PORT, GPIO_AF7, USBUSART_RX_PIN); \
     } while(0)
+#endif
 
+#ifdef PLATFORM_HAS_TRACESWO
 #define TRACE_TIM TIM3
 #define TRACE_TIM_CLK_EN() rcc_periph_clock_enable(RCC_TIM3)
 #define TRACE_IRQ   NVIC_TIM3_IRQ
 #define TRACE_ISR   tim3_isr
+#endif
 
 #define DEBUG(...)
 
