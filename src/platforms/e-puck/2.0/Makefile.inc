@@ -1,8 +1,10 @@
 # Select the options that this Blackmagic Probe platform must have implemented
-TRACESWO ?= 0
+# Force because TRACESWO, DFU and JTAG are not available or intrinsic on this platform
+# Force to 1 if support for ESP32 serial is needed
+TRACESWO = 0
 NO_SERIAL ?= 0
-NO_DFU ?= 0
-NO_JTAG ?= 0
+NO_DFU = 1
+NO_JTAG= 1
 
 CROSS_COMPILE ?= arm-none-eabi-
 CC = $(CROSS_COMPILE)gcc
