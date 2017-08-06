@@ -2,6 +2,7 @@ PROBE_HOST ?= native
 PLATFORM_DIR = platforms/$(PROBE_HOST)
 VPATH += $(PLATFORM_DIR) platforms/common target
 ENABLE_DEBUG ?=
+NO_JTAG ?= 0
 
 ifneq ($(V), 1)
 MAKEFLAGS += --no-print-dir
@@ -19,7 +20,11 @@ ifeq ($(ENABLE_DEBUG), 1)
 CFLAGS += -DENABLE_DEBUG
 endif
 
-SRC =	\
+ifeq ($(NO_JTAG), 1)
+CFLAGS += -DPLATFORM_HAS_NO_JTAG
+endif
+
+SRC =			\
 	adiv5.c		\
 	adiv5_jtagdp.c	\
 	adiv5_swdp.c	\
@@ -34,9 +39,6 @@ SRC =	\
 	gdb_hostio.c	\
 	gdb_packet.c	\
 	hex_utils.c	\
-	jtag_scan.c	\
-	jtagtap.c	\
-	jtagtap_generic.c	\
 	lmi.c		\
 	lpc_common.c	\
 	lpc11xx.c	\
@@ -59,6 +61,13 @@ SRC =	\
 	target.c	\
 
 include $(PLATFORM_DIR)/Makefile.inc
+
+ifeq ($(NO_JTAG), 0)
+SRC +=			\
+	jtag_scan.c	\
+	jtagtap.c	\
+	jtagtap_generic.c
+endif
 
 OBJ = $(SRC:.c=.o)
 
