@@ -42,12 +42,12 @@ extern uint32_t _ebss;
 
 void platform_init(void)
 {
-#ifndef PLATFORM_HAS_NO_DFU
+#ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
 	volatile uint32_t *magic = (uint32_t *) &_ebss;
 	/* Check the USER button*/
 #endif
 	rcc_periph_clock_enable(RCC_GPIOA);		// Necessary for other GPIOA
-#ifndef PLATFORM_HAS_NO_DFU
+#ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
 	if (gpio_get(GPIOA, GPIO0) ||
 	   ((magic[0] == BOOTMAGIC0) && (magic[1] == BOOTMAGIC1))) {
 		magic[0] = 0;
