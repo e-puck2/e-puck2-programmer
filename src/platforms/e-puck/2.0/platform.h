@@ -59,7 +59,8 @@
  */
 
 /* Hardware definitions... */
-#define JTAG_PORT 	GPIOA
+#define NOT_USED	0
+#define JTAG_PORT GPIOA
 #define TDI_PORT	NOT_USED
 #define TMS_PORT	JTAG_PORT
 #define TCK_PORT	JTAG_PORT
@@ -84,6 +85,7 @@
 #define LED_UART		GPIO14
 #define LED_IDLE_RUN	GPIO15
 #define LED_ERROR		GPIO13
+#define LED_BOOTLOADER	NOT_USED
 
 #define TMS_SET_MODE() \
 	gpio_mode_setup(TMS_PORT, GPIO_MODE_OUTPUT, \
