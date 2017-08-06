@@ -7,7 +7,7 @@
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/i2c.h>
-#include <../USB2513B/SMBus.h>
+#include <../USB251XB/SMBus.h>
 
 ////////////// PARAMETERS ////////////////
 #define I2C_SMBUS_HOST_MODE     0x000A

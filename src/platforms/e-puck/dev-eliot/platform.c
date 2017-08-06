@@ -32,8 +32,8 @@
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/stm32/adc.h>
-#include <../USB2513B/USB2513B.h>
-#include <../USB2513B/SMBus.h>
+#include <../USB251XB/USB251XB.h>
+#include <../USB251XB/SMBus.h>
 
 uint8_t running_status;
 volatile uint32_t timeout_counter;
@@ -85,7 +85,7 @@ void platform_init(void)
 
 	SMBus_init();
 
-	USB2513B_init();
+	USB251XB_init(USB2513B);
 
 	//set PA9 and PA10 to input in order to not interfere with MiniProg3 for the PD controller
 	gpio_set_mode(GPIOA, GPIO_MODE_INPUT,

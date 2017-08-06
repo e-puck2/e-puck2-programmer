@@ -1,37 +1,41 @@
-#ifndef USB2513B_H
-#define USB2513B_H
+#ifndef USB251XB_H
+#define USB251XB_H
 
 /**
- * @file    USB2513B.h
- * @brief   Functions to configure the USB2513B USB2 Hub over SMBus.
- * 
+ * @file    USB251XB.h
+ * @brief   Functions to configure the USB251XB USB2 Hub over SMBus.
+ *
  * @author  Eliot Ferragni
  */
 
-
+typedef enum {
+  USB2512B,
+  USB2513B,
+  USB2514B
+} t_USB251XB;
 
 //////////////////// PROTOTYPES PUBLIC FUNCTIONS /////////////////////
 
 /**
  * @brief [reset the registers to the default config]
  */
-void USB2513B_reset(void);
+void USB251XB_reset(void);
 /**
  * @brief [Set the configuration of the chip]
  */
-void USB2513B_init(void);
+void USB251XB_init(t_USB251XB choice_of_USB251XB);
 //Tell the chip to attach to USB. Also write protect the registers
 /**
  * @brief [Tell the chip to attach to USB. Also write protect the registers]
  */
-void USB2513B_usb_attach(void);
+void USB251XB_usb_attach(void);
 
 //Tell the chip to attach to USB. Also write protect the registers
 /**
  * @brief [Tell the chip to detach from USB. Also write protect the registers]
  */
-void USB2513B_usb_detach(void);
+void USB251XB_usb_detach(void);
 
 
 
-#endif /* USB2513B_H*/
+#endif /* USB251XB_H*/

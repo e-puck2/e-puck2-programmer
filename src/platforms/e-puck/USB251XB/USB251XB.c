@@ -1,20 +1,20 @@
 /**
- * @file    USB2513B.c
- * @brief   Functions to configure the USB2513B USB2 Hub over SMBus.
+ * @file    USB251XB.c
+ * @brief   Functions to configure the USB251XB USB2 Hub over SMBus.
  *
  * @author  Eliot Ferragni
  */
 
 
-#include <../USB2513B/USB2513B.h>
-#include <../USB2513B/SMBus.h>
+#include <../USB251XB/USB251XB.h>
+#include <../USB251XB/SMBus.h>
 
 //comment to be in FS mode
 #define HS_MODE_SELECTED	1
 
 
 //////  I2C ADDRESS //////////
-#define USB2513B_ADDR							0x58 //(8bit)
+#define USB251XB_ADDR							0x58 //(8bit)
 
 ////// REGISTERS MAP /////////						 //(8bits)
 #define VENDOR_ID_LSB_REG						0x00
@@ -50,17 +50,17 @@
 #define BOOST_40_REG							0xF8
 #define RSVD_4_REG								0xF9
 #define PORT_SWAP_REG							0xFA
-#define PORT_MAP_12_REG							0xFB
-#define PORT_MAP_34_REG							0xFC
+#define PORT_MAP_12_REG						0xFB
+#define PORT_MAP_34_REG						0xFC
 #define RSVD_5_REG								0xFD
 #define RSVD_6_REG								0xFE
-#define STATUS_COMMAND_REG						0xFF
+#define STATUS_COMMAND_REG				0xFF
 
 ///////	CONFIGURATION ///////////
 #define VENDOR_ID_LSB						0x24
 #define VENDOR_ID_MSB						0x04
-#define PRODUCT_ID_LSB						0x13
-#define PRODUCT_ID_MSB						0x25
+#define PRODUCT_ID_LSB_BASE			0x12	// Base value for the USB2512
+#define PRODUCT_ID_MSB					0x25
 #define DEVICE_ID_LSB						0xB3
 #define DEVICE_ID_MSB						0x0B
 
@@ -131,36 +131,36 @@
 
 //////////////////// PUBLIC FUNCTIONS /////////////////////////
 
-void USB2513B_reset(void){
+void USB251XB_reset(void){
 
 	uint8_t temp_reg = 0;
-	SMBus_read(USB2513B_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
+	SMBus_read(USB251XB_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
 	temp_reg |= STATUS_COMMAND_RESET_BIT;
-	SMBus_write(USB2513B_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
+	SMBus_write(USB251XB_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
 }
 
-void USB2513B_usb_attach(void){
+void USB251XB_usb_attach(void){
 	uint8_t temp_reg = 0;
-	SMBus_read(USB2513B_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
+	SMBus_read(USB251XB_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
 	temp_reg |= STATUS_COMMAND_USB_ATTACH_BIT;
-	SMBus_write(USB2513B_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
+	SMBus_write(USB251XB_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
 }
 
-void USB2513B_usb_detach(void){
+void USB251XB_usb_detach(void){
 	uint8_t temp_reg = 0;
-	SMBus_read(USB2513B_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
+	SMBus_read(USB251XB_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
 	temp_reg &= ~STATUS_COMMAND_USB_ATTACH_BIT;
-	SMBus_write(USB2513B_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
+	SMBus_write(USB251XB_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
 }
 
-void USB2513B_init(void){
+void USB251XB_init(t_USB251XB choice_of_USB251XB){
 
-	USB2513B_reset();
-	USB2513B_usb_detach();
+	USB251XB_reset();
+	USB251XB_usb_detach();
 
 	uint8_t temp_reg[17] = {	VENDOR_ID_LSB,
 								VENDOR_ID_MSB,
-								PRODUCT_ID_LSB,
+								PRODUCT_ID_LSB_BASE + choice_of_USB251XB,
 								PRODUCT_ID_MSB,
 								DEVICE_ID_LSB,
 								DEVICE_ID_MSB,
@@ -176,8 +176,8 @@ void USB2513B_init(void){
 								HUB_CONTROLLER_MAX_CURRENT_BUS,
 								POWER_ON_TIME};
 
-	SMBus_write(USB2513B_ADDR, VENDOR_ID_LSB_REG, 17, temp_reg);
+	SMBus_write(USB251XB_ADDR, VENDOR_ID_LSB_REG, 17, temp_reg);
 
-	USB2513B_usb_attach();
+	USB251XB_usb_attach();
 
 }
