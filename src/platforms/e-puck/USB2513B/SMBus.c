@@ -1,13 +1,13 @@
 /**
  * @file    SMBus.h
  * @brief   Functions to configure SMBus host over I2C1
- * 
+ *
  * @author  Eliot Ferragni
  */
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/i2c.h>
-#include <USB2513B/SMBus.h>
+#include <../USB2513B/SMBus.h>
 
 ////////////// PARAMETERS ////////////////
 #define I2C_SMBUS_HOST_MODE     0x000A
@@ -20,7 +20,7 @@ void i2c_smbus_host_mode(uint32_t i2c);
 
 /**
  * @brief [Set the SMBus host mode]
- * 
+ *
  * @param i2c [I2C interface to configure]
  */
 void i2c_smbus_host_mode(uint32_t i2c)
@@ -100,11 +100,11 @@ void SMBus_write(uint8_t i2c_addr, uint8_t reg, uint8_t nbDatas, uint8_t* datas)
 
         /* Sending the data. */
         do{
-            i2c_send_data(I2C1, *datas++); 
+            i2c_send_data(I2C1, *datas++);
             while (!(I2C_SR1(I2C1) & (I2C_SR1_BTF | I2C_SR1_TxE))); /* Await ByteTransferedFlag. */
             nbDatas--;
         }while(nbDatas > 0);
-        
+
         /* Send STOP condition. */
         i2c_send_stop(I2C1);
     }
@@ -145,7 +145,7 @@ void SMBus_read(uint8_t i2c_addr, uint8_t reg, uint8_t nbDatas, uint8_t* datas)
             & (I2C_SR2(I2C1) & (I2C_SR2_MSL | I2C_SR2_BUSY))));
 
         /* Say to what address we want to talk to. */
-        i2c_send_7bit_address(I2C1, i2c_addr>>1, I2C_READ); 
+        i2c_send_7bit_address(I2C1, i2c_addr>>1, I2C_READ);
 
         //never used in SMBus mode but it works for I2C :-)
         if(nbDatas == 1){
@@ -172,7 +172,7 @@ void SMBus_read(uint8_t i2c_addr, uint8_t reg, uint8_t nbDatas, uint8_t* datas)
             while (!(I2C_SR1(I2C1) & I2C_SR1_ADDR));
             /* Cleaning ADDR condition sequence. */
             reg32 = I2C_SR2(I2C1);
-            
+
             //Deactivate ack
             i2c_disable_ack(I2C1);
 

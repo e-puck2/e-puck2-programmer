@@ -32,8 +32,8 @@
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/stm32/adc.h>
-#include <USB2513B/USB2513B.h>
-#include <USB2513B/SMBus.h>
+#include <../USB2513B/USB2513B.h>
+#include <../USB2513B/SMBus.h>
 
 uint8_t running_status;
 volatile uint32_t timeout_counter;

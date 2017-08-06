@@ -1,13 +1,13 @@
 /**
  * @file    USB2513B.c
  * @brief   Functions to configure the USB2513B USB2 Hub over SMBus.
- * 
+ *
  * @author  Eliot Ferragni
  */
 
 
-#include <USB2513B/USB2513B.h>
-#include <USB2513B/SMBus.h>
+#include <../USB2513B/USB2513B.h>
+#include <../USB2513B/SMBus.h>
 
 //comment to be in FS mode
 #define HS_MODE_SELECTED	1
@@ -73,59 +73,59 @@
 #endif
 
 //no dynamic auto-switching, overcurrent delay = 8ms, not compound device
-#define CONF_DATA_BYTE_2					0x20 
+#define CONF_DATA_BYTE_2					0x20
 //standard port mapping mode, string support disabled
-#define CONF_DATA_BYTE_3					0x02 
+#define CONF_DATA_BYTE_3					0x02
 //No devices are Non-Removable
-#define NON_REM_DEVICES						0x00 
+#define NON_REM_DEVICES						0x00
 //all port are enabled in self powered operation
-#define PORT_DISABLE_SELF					0x00 
+#define PORT_DISABLE_SELF					0x00
 //all port are enabled in bus powered operation
-#define PORT_DISABLE_BUS					0x00 
+#define PORT_DISABLE_BUS					0x00
 //2mA max in self mode (2mA increment)
-#define MAX_POWER_SELF						0x01 
+#define MAX_POWER_SELF						0x01
 //(default = 0x32) 500mA max in bus mode (2mA increment)
 #define MAX_POWER_BUS						0xFA //modified
 //2mA max for only the hub in self mode(2mA increment)
-#define HUB_CONTROLLER_MAX_CURRENT_SELF		0x01 
+#define HUB_CONTROLLER_MAX_CURRENT_SELF		0x01
 //100mA max for only the hub in bus mode(2mA increment)
-#define HUB_CONTROLLER_MAX_CURRENT_BUS		0x32 
+#define HUB_CONTROLLER_MAX_CURRENT_BUS		0x32
 //100ms until a port has power
-#define POWER_ON_TIME						0x32 
-#define LANGUAGE_ID_HIGH					0x00 
+#define POWER_ON_TIME						0x32
+#define LANGUAGE_ID_HIGH					0x00
 #define LANGUAGE_ID_LOW						0x00
 #define MANUFACTURER_STRING_LENGTH			0x00
 #define PRODUCT_STRING_LENGTH				0x00
 #define SERIAL_STRING_LENGTH				0x00
-#define MANUFACTURER_STRING 				0x00 
-#define PRODUCT_STRING 						0x00 
-#define SERIAL_STRING 						0x00 
+#define MANUFACTURER_STRING 				0x00
+#define PRODUCT_STRING 						0x00
+#define SERIAL_STRING 						0x00
 //no battery charging support
-#define BATTERY_CHARGING_ENABLE				0x00 
-#define RSVD_1								0x00 
-#define RSVD_2								0x00 
+#define BATTERY_CHARGING_ENABLE				0x00
+#define RSVD_1								0x00
+#define RSVD_2								0x00
 //no boost
-#define BOOST_UP							0x00 
+#define BOOST_UP							0x00
 #define RSVD_3								0x00
 //no boost
-#define BOOST_40							0x00 
+#define BOOST_40							0x00
 #define RSVD_4								0x00
 //no swap of D+/D-
-#define PORT_SWAP							0x00 
+#define PORT_SWAP							0x00
 //no port map
-#define PORT_MAP_12							0x00 
+#define PORT_MAP_12							0x00
 //no port map
-#define PORT_MAP_34							0x00 
+#define PORT_MAP_34							0x00
 #define RSVD_5								0x00
 #define RSVD_6								0x00
 #define STATUS_COMMAND 						0x00
 
-//////////// STATUS COMMAND ORDER //////////// 
+//////////// STATUS COMMAND ORDER ////////////
 
 //Reset the registers to defaults settings
 #define STATUS_COMMAND_RESET_BIT			(1<<1)
 //Activate the USB interface and write protect the registers 0x00 to 0xFE
-#define STATUS_COMMAND_USB_ATTACH_BIT		(1<<0)  
+#define STATUS_COMMAND_USB_ATTACH_BIT		(1<<0)
 
 
 
