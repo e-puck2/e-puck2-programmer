@@ -90,7 +90,7 @@ blackmagic: include/version.h $(OBJ)
 clean:	host_clean
 	$(Q)echo "  CLEAN"
 	-$(Q)$(RM) -f *.o *.d *~ blackmagic $(HOSTFILES)
-	-$(Q)$(RM) -f platforms/*/*/*.o platforms/*/*/*.d
+	-$(Q)$(RM) -f platforms/*/*/*.o platforms/*/*/*.d	# e-puck platform's addition
 	-$(Q)$(RM) -f platforms/*/*.o platforms/*/*.d mapfile include/version.h
 
 all_platforms:
