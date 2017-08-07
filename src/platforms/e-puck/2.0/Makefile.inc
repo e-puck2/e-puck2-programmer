@@ -42,7 +42,9 @@ VPATH += platforms/stm32
 SRC += 	cdcacm.c	\
 	serialno.c	\
 	timing.c	\
-	timing_stm32.c
+	timing_stm32.c	\
+	platforms/e-puck/USB251XB/USB251XB.c \
+	platforms/e-puck/USB251XB/SMBus.c \
 
 ifeq ($(TRACESWO), 1)
 SRC += 	traceswo.c
