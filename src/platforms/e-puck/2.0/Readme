@@ -38,7 +38,7 @@ PA5: TCK/SWCLK
 PA1: TDO/TRACESWO - if needed but try to avoid to use it
 
 PB4: TRST - if needed but try to avoid to use it
-PB0: SRST
+PB0: SRST - RESET of STM32F407
 
 PA14/Blue Led: Indicator of serial activity
 

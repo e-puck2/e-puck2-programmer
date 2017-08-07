@@ -95,6 +95,10 @@ void platform_init(void)
 			GPIO_PUPD_NONE,
 			TDO_PIN);
 
+	gpio_set(SRST_PORT, SRST_PIN);
+	gpio_set_output_options(SRST_PORT,GPIO_OTYPE_OD,GPIO_OSPEED_50MHZ,SRST_PIN);
+	gpio_mode_setup(SRST_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, SRST_PIN);
+
 	gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT,
 			GPIO_PUPD_NONE,
 			LED_UART | LED_IDLE_RUN | LED_ERROR | LED_BOOTLOADER);
@@ -106,8 +110,21 @@ void platform_init(void)
 	cdcacm_init();
 }
 
-void platform_srst_set_val(bool assert) { (void)assert; }
-bool platform_srst_get_val(void) { return false; }
+void platform_srst_set_val(bool assert)
+{
+	volatile int i;
+	if (assert) {
+		gpio_clear(SRST_PORT, SRST_PIN);
+		for(i = 0; i < 10000; i++) asm("nop");
+	} else {
+		gpio_set(SRST_PORT, SRST_PIN);
+	}
+}
+
+bool platform_srst_get_val(void)
+{
+	return gpio_get(SRST_PORT, SRST_PIN) == 0;
+}
 
 const char *platform_target_voltage(void)
 {
