@@ -36,6 +36,8 @@
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/cm3/cortex.h>
+#include <../USB251XB/USB251XB.h>
+#include <../USB251XB/SMBus.h>
 
 jmp_buf fatal_error_jmpbuf;
 extern uint32_t _ebss;
@@ -70,9 +72,14 @@ void platform_init(void)
 
 	/* Enable peripherals */
 	rcc_periph_clock_enable(RCC_OTGFS);
+	rcc_periph_clock_enable(RCC_GPIOB);
 	rcc_periph_clock_enable(RCC_GPIOC);
-	rcc_periph_clock_enable(RCC_GPIOD);
+//	rcc_periph_clock_enable(RCC_GPIOD);
 	rcc_periph_clock_enable(RCC_CRC);
+
+	SMBus_init();
+
+	USB251XB_init(USB2512B);
 
 	/* Set up USB Pins and alternate function*/
 	gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO11 | GPIO12);

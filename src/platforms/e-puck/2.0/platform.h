@@ -104,7 +104,7 @@
 #define USB_ISR         otg_fs_isr
 
 /* Interrupt priorities.  Low numbers are high priority.
- * For now USART1 preempts USB which may spin while buffer is drained.
+ * For now USART2 preempts USB which may spin while buffer is drained.
  * TIM3 is used for traceswo capture and must be highest priority.
  */
 #define IRQ_PRI_USB		(2 << 4)
@@ -117,15 +117,15 @@
 #define IRQ_PRI_TRACE		(0 << 4)
 
 #ifndef PLATFORM_HAS_NO_SERIAL
-#define USBUSART USART3
-#define USBUSART_CR1 USART3_CR1
-#define USBUSART_IRQ NVIC_USART3_IRQ
-#define USBUSART_CLK RCC_USART3
-#define USBUSART_TX_PORT GPIOD
-#define USBUSART_TX_PIN  GPIO8
-#define USBUSART_RX_PORT GPIOD
-#define USBUSART_RX_PIN  GPIO9
-#define USBUSART_ISR usart3_isr
+#define USBUSART USART2
+#define USBUSART_CR1 USART2_CR1
+#define USBUSART_IRQ NVIC_USART2_IRQ
+#define USBUSART_CLK RCC_USART2
+#define USBUSART_TX_PORT GPIOA
+#define USBUSART_TX_PIN  GPIO2
+#define USBUSART_RX_PORT GPIOA
+#define USBUSART_RX_PIN  GPIO3
+#define USBUSART_ISR usart2_isr
 #define USBUSART_TIM TIM4
 #define USBUSART_TIM_CLK_EN() rcc_periph_clock_enable(RCC_TIM4)
 #define USBUSART_TIM_IRQ NVIC_TIM4_IRQ
