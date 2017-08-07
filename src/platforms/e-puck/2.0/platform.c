@@ -68,6 +68,15 @@ void platform_init(void)
 	}
 #endif
 
+	/* If ON/OFF button pressed then maintain the power supply. */
+	if (!gpio_get(POWERFUNC_PORT, PWR_ON_PIN)) {
+		gpio_mode_setup(POWERFUNC_PORT, GPIO_MODE_OUTPUT,
+				GPIO_PUPD_NONE, PWR_ON_BTN_PIN);
+		gpio_set(POWERFUNC_PORT, PWR_ON_BTN_PIN);
+	}
+	/* Else the power supply will stay ON only as long as the ON/OFF button
+	   will stay pressed, then will die !! */
+
 	rcc_clock_setup_hse_3v3(&hse_8mhz_3v3[CLOCK_3V3_48MHZ]);
 
 	/* Enable peripherals */

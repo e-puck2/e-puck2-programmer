@@ -87,6 +87,10 @@
 #define LED_ERROR		GPIO13
 #define LED_BOOTLOADER	NOT_USED
 
+#define POWERFUNC_PORT	GPIOA
+#define PWR_ON_PIN			GPIO6
+#define PWR_ON_BTN_PIN	GPIO7
+
 #define TMS_SET_MODE() \
 	gpio_mode_setup(TMS_PORT, GPIO_MODE_OUTPUT, \
 	                GPIO_PUPD_NONE, TMS_PIN);
