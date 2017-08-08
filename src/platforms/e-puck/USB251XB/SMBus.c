@@ -55,15 +55,22 @@ void SMBus_init()
     gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ,
               GPIO_CNF_OUTPUT_ALTFN_OPENDRAIN,
               GPIO_I2C1_SCL | GPIO_I2C1_SDA);
-#else
 #error Call from not implemented platform !!
+#else
 #endif
 
     /* Disable the I2C before changing any configuration. */
     i2c_peripheral_disable(I2C_USB_HUB);
 
+#if defined(EPUCK2)
+    /* APB1 is running at 12MHz. */
+    i2c_set_clock_frequency(I2C_USB_HUB, I2C_CR2_FREQ_12MHZ);
+#elif defined(DEV_ELIOT)
     /* APB1 is running at 36MHz. */
     i2c_set_clock_frequency(I2C_USB_HUB, I2C_CR2_FREQ_36MHZ);
+#error Call from not implemented platform !!
+#else
+#endif
 
     /* 100KHz - I2C Standard Mode */
     i2c_set_standard_mode(I2C_USB_HUB);
