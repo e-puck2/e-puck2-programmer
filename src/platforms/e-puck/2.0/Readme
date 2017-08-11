@@ -20,7 +20,7 @@ bootloder unconditional.
 Connections:
 ====================
 
-Boot0: Pin Boot0 to force system bootloader entry AFTER reset.
+> Boot0: Pin Boot0 to force system bootloader entry AFTER reset.
 The e-puck2 must be OFF and the Boot0 jumper short-circuited then the USB must
 be connected to a PC with DFU util tools in order to reprogram the BlackMagic
 Probe firmware.
@@ -32,34 +32,45 @@ between the 407 and the USB host.
 2. An eventual Black Magic Trace Capture: That's need 1 link between the 2 uCs
 (SWO on the 407)
 
-PA0: TDI - if needed but try to avoid to use it, that's the case yet
-PA10: TMS/SWDIO
-PA5: TCK/SWCLK
-PA1: TDO/TRACESWO - if needed but try to avoid to use it, that's the case yet
+> PA0: TDI - if needed but try to avoid to use it, that's the case yet
+> PA10: TMS/SWDIO
+> PA5: TCK/SWCLK
+> PA1: TDO/TRACESWO - if needed but try to avoid to use it, that's the case yet
 
-PB4: TRST - if needed but try to avoid to use it, that's the case yet
-PB0: SRST - RESET of STM32F407
+> PB4: TRST - if needed but try to avoid to use it, that's the case yet
+> PB0: SRST - RESET of STM32F407
 
-PA14/Blue Led: Indicator of serial activity
-PA13/Red Led:  Error indicator
-PA15/Green Led: Idle/Run indicator
+> PA14/Blue Led: Indicator of serial activity
+> PA13/Red Led:  Error indicator
+> PA15/Green Led: Idle/Run indicator
+
+Power management. For the moment just force ON after a reset if the Power ON
+button is pressed. The switch OFF is implemented by GDB dedicated function.
+> PA6: PWR_ON output at "1" in order to maintain the system's power supply.
+> PA7: PWR_ON_BTN input. Can be use to be sure that the power supply ON is
+       well requested from the ON/OFF button. And by software can be used to
+       switch OFF too the system.
+
+ESP32 functions.
+> PC13: EN_ESP32 active "1". Output managed from gdb "en_esp32" function
+
+USART interface with the ESP32 enabled if NO_SERIAL = 0 in Makefile.inc
+> PA2: USART-TX connected to RXD_ESP32
+> PA3: USART-RX connected to TXD_ESP32
 
 GDB dedicated functions :
 =================================
 Use "mon help" to list the dedicated function for the platform
 New and specific functions are added via platform_commands.h file.
 
-PC13: EN_ESP32 active "1". Output managed from gdb "en_esp32" function
+1) <pwr_on_btn SHUTDOWN> to switch off the platform
+2) <pwr_on_btn> to read the state of the Power On button (Pressed|Released)
+3) <en_esp32 (ON|OFF)> to (enable|disable) the ESP32
+4) <en_esp32> to read the state of the EN_ESP32 pins
 
 ToDo :
 ====================
 
-1) Power management. For the moment just force ON after a reset. The switch
-   OFF will be implemented from GDB dedicated function.
-    PA6: PWR_ON output at "1" in order to maintain the system's power supply
-    PA7: PWR_ON_BTN input. Can be use to be sure that the power supply ON is
-         well requested from the ON/OFF button. And by software can be used
-         switch OFF too the system.
 2) Charger management. For the moment only GDB dedicated functions will allow
    to check the input/output states and manage the output states.
    Later an autonomous state machine will can do the job.
@@ -73,9 +84,6 @@ ToDo :
     PA9: USB_PRESENT or PRT_PROG.
 5) ESP32 functions. The USART interface is implemented by default (cf. NO_SERIAL
    option in the Makefile.inc).
-    PA2: USART-TX connected to RXD_ESP32
-    PA3: USART-RX connected to TXD_ESP32
-    PC13: EN_ESP32 active "1". First time managed from gdb dedicated function.
     PB1:  GPIO_ESP32. Nothing for the moment
 2) CAN translator : Not implemented yet.
     PB8: CAN_RX

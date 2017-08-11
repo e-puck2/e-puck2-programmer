@@ -69,10 +69,10 @@ void platform_init(void)
 #endif
 
 	/* If ON/OFF button pressed then maintain the power supply. */
-	if (!gpio_get(POWERFUNC_PORT, PWR_ON_PIN)) {
+	if (platform_pwr_on_btn()) {
 		gpio_mode_setup(POWERFUNC_PORT, GPIO_MODE_OUTPUT,
 				GPIO_PUPD_NONE, PWR_ON_BTN_PIN);
-		gpio_set(POWERFUNC_PORT, PWR_ON_BTN_PIN);
+		platform_pwr_on(true);
 	}
 	/* Else the power supply will stay ON only as long as the ON/OFF button
 	   will stay pressed, then will die !! */
@@ -150,6 +150,20 @@ void platform_set_en_esp32(bool assert)
 bool platform_get_en_esp32(void)
 {
 	return gpio_get(EN_ESP32_PORT, EN_ESP32_PIN) == 1;
+}
+
+void platform_pwr_on(bool on_state)
+{
+	if (on_state)
+		gpio_set(POWERFUNC_PORT, PWR_ON_BTN_PIN);
+	else
+		gpio_clear(POWERFUNC_PORT, PWR_ON_BTN_PIN);
+}
+
+bool platform_pwr_on_btn(void)
+{
+	/* Return true if button pressed else false. */
+	return !gpio_get(POWERFUNC_PORT, PWR_ON_PIN);
 }
 
 const char *platform_target_voltage(void)
