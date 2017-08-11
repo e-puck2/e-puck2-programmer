@@ -94,6 +94,12 @@
 #define VBUS_PORT	GPIOA
 #define VBUS_PIN	GPIO9
 
+#define USB_CHARGE_PORT	GPIOB
+#define USB_CHARGE_PIN	GPIO5
+
+#define USB_500_PORT	GPIOB
+#define USB_500_PIN 	GPIO6
+
 #define EN_ESP32_PORT	GPIOC
 #define EN_ESP32_PIN	GPIO13
 
@@ -183,6 +189,12 @@ void platform_pwr_on(bool on_state);
 bool platform_pwr_on_btn(void);
 
 bool platform_vbus(void);
+
+void platform_set_usb_charge(bool assert);
+bool platform_get_usb_charge(void);
+
+void platform_set_usb_500(bool assert);
+bool platform_get_usb_500(void);
 
 /* Use newlib provided integer only stdio functions */
 #define sscanf siscanf

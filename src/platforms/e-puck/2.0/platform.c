@@ -172,6 +172,32 @@ bool platform_vbus(void)
 	return !gpio_get(VBUS_PORT, VBUS_PIN);
 }
 
+void platform_set_usb_charge(bool assert)
+{
+	if (assert)
+		gpio_set(USB_CHARGE_PORT, USB_CHARGE_PIN);
+	else
+		gpio_clear(USB_CHARGE_PORT, USB_CHARGE_PIN);
+}
+
+bool platform_get_usb_charge(void)
+{
+	return gpio_get(USB_CHARGE_PORT, USB_CHARGE_PIN) == 1;
+}
+
+void platform_set_usb_500(bool assert)
+{
+	if (assert)
+		gpio_set(USB_500_PORT, USB_500_PIN);
+	else
+		gpio_clear(USB_500_PORT, USB_500_PIN);
+}
+
+bool platform_get_usb_500(void)
+{
+	return gpio_get(USB_500_PORT, USB_500_PIN) == 1;
+}
+
 const char *platform_target_voltage(void)
 {
 	return "ABSENT!";

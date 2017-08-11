@@ -5,11 +5,8 @@
 static bool cmd_en_esp32(target *t, int argc, const char **argv);
 static bool cmd_pwr_on_btn(target *t, int argc, const char **argv);
 static bool cmd_vbus(target *t, int argc, const char **argv);
-/*
-static bool cmd_get_blue_led_val(void);
-static bool cmd_set_green_led_val(target *t, int argc, const char **argv);
-static bool cmd_get_green_led_val(void);
-*/
+static bool cmd_usb_charge(target *t, int argc, const char **argv);
+static bool cmd_usb_500(target *t, int argc, const char **argv);
 /***************************************/
 /* End of platform dedicated commands. */
 /***************************************/
@@ -24,6 +21,8 @@ static bool cmd_get_green_led_val(void);
 	{"en_esp32", (cmd_handler)cmd_en_esp32, "(ON|OFF|) Set the EN_ESP32 pin or return the state of this one" }, \
 	{"pwr_on_btn", (cmd_handler)cmd_pwr_on_btn, "(|SHUTDOWN) Return the state of Power On button OR Shutdown the system" }, \
 	{"vbus", (cmd_handler)cmd_vbus, "Return the state of VBus" }, \
+	{"usb_charge", (cmd_handler)cmd_usb_charge, "(ON|OFF|) Set the USB_CHARGE pin or return the state of this one" }, \
+	{"usb_500", (cmd_handler)cmd_usb_500, "(ON|OFF|) Set the USB_500 pin or return the state of this one" }, \
 /***********************************************/
 /* End of List of platform dedicated commands. */
 /***********************************************/
@@ -62,6 +61,28 @@ static bool cmd_vbus(target *t, int argc, const char **argv)
 	(void)argv;
 	if (argc == 1)
 		gdb_outf("VBus: %s\n", platform_vbus() ? "ON" : "OFF");
+	return true;
+}
+
+static bool cmd_usb_charge(target *t, int argc, const char **argv)
+{
+	(void)t;
+	if (argc == 1)
+		gdb_outf("USB_CHARGE state: %s\n",
+			 platform_get_usb_charge() ? "ON" : "OFF");
+	else
+		platform_set_usb_charge(strcmp(argv[1], "ON"));
+	return true;
+}
+
+static bool cmd_usb_500(target *t, int argc, const char **argv)
+{
+	(void)t;
+	if (argc == 1)
+		gdb_outf("USB_500 state: %s\n",
+			 platform_get_usb_500() ? "ON" : "OFF");
+	else
+		platform_set_usb_500(strcmp(argv[1], "ON"));
 	return true;
 }
 

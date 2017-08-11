@@ -51,8 +51,14 @@ button is pressed. The switch OFF is implemented by GDB dedicated function.
        well requested from the ON/OFF button. And by software can be used to
        switch OFF too the system.
 
-USB connection detection
+USB connection detection.
 > PA9: VBUS (USB_PRESENT or PRT_PROG)
+
+Charger management. For the moment only GDB dedicated functions will allow
+to check the input/output states and manage the output states.
+Later an autonomous state machine will do the job autonomously.
+> PB5: USB_CHARGE output
+> PB6: USB_500 output
 
 ESP32 functions.
 > PC13: EN_ESP32 active "1". Output managed from gdb "en_esp32" function
@@ -71,17 +77,14 @@ New and specific functions are added via platform_commands.h file.
 3) <vbus> to read the state of VBus input
 4) <en_esp32 (ON|OFF)> to (enable|disable) the ESP32
 5) <en_esp32> to read the state of the EN_ESP32 pins
-
+6) <usb_charge> to manage the charger
+7) <usb_500> to manage the charge current
 
 ToDo :
 ====================
 
-2) Charger management. For the moment only GDB dedicated functions will allow
-   to check the input/output states and manage the output states.
-   Later an autonomous state machine will can do the job.
-    PB7: USB_PRESENT input
-    PB6: USB_500 output
-    PB5: USB_CHARGE output
+2) Charger management. Implement state machine doing autonomously the management.
+    PB7: USB_PRESENT input but redundant with VBUS ??
 3) Extenstion connector management. Not implemented yet.
     PB12: Extention system enable (EXT_SYSEN) output to control the Supplies
           of futur extention boards.
