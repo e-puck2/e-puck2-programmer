@@ -91,6 +91,9 @@
 #define PWR_ON_PIN			GPIO6
 #define PWR_ON_BTN_PIN	GPIO7
 
+#define EN_ESP32_PORT	GPIOC
+#define EN_ESP32_PIN	GPIO13
+
 #define TMS_SET_MODE() \
 	gpio_mode_setup(TMS_PORT, GPIO_MODE_OUTPUT, \
 	                GPIO_PUPD_NONE, TMS_PIN);
@@ -169,6 +172,9 @@ static inline int platform_hwversion(void)
 {
 	return 0;
 }
+
+void platform_set_en_esp32(bool assert);
+bool platform_get_en_esp32(void);
 
 /* Use newlib provided integer only stdio functions */
 #define sscanf siscanf

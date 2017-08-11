@@ -112,6 +112,10 @@ void platform_init(void)
 			GPIO_PUPD_NONE,
 			LED_UART | LED_IDLE_RUN | LED_ERROR | LED_BOOTLOADER);
 
+	gpio_clear(EN_ESP32_PORT, EN_ESP32_PIN);
+	gpio_set_output_options(EN_ESP32_PORT,GPIO_OTYPE_PP,GPIO_OSPEED_2MHZ,EN_ESP32_PIN);
+	gpio_mode_setup(EN_ESP32_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, EN_ESP32_PIN);
+
 	platform_timing_init();
 #ifndef PLATFORM_HAS_NO_SERIAL
 	usbuart_init();
@@ -133,6 +137,19 @@ void platform_srst_set_val(bool assert)
 bool platform_srst_get_val(void)
 {
 	return gpio_get(SRST_PORT, SRST_PIN) == 0;
+}
+
+void platform_set_en_esp32(bool assert)
+{
+	if (assert)
+		gpio_set(EN_ESP32_PORT, EN_ESP32_PIN);
+	else
+		gpio_clear(EN_ESP32_PORT, EN_ESP32_PIN);
+}
+
+bool platform_get_en_esp32(void)
+{
+	return gpio_get(EN_ESP32_PORT, EN_ESP32_PIN) == 1;
 }
 
 const char *platform_target_voltage(void)

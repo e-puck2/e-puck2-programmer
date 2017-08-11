@@ -32,15 +32,24 @@ between the 407 and the USB host.
 2. An eventual Black Magic Trace Capture: That's need 1 link between the 2 uCs
 (SWO on the 407)
 
-PA0: TDI - if needed but try to avoid to use it
+PA0: TDI - if needed but try to avoid to use it, that's the case yet
 PA10: TMS/SWDIO
 PA5: TCK/SWCLK
-PA1: TDO/TRACESWO - if needed but try to avoid to use it
+PA1: TDO/TRACESWO - if needed but try to avoid to use it, that's the case yet
 
-PB4: TRST - if needed but try to avoid to use it
+PB4: TRST - if needed but try to avoid to use it, that's the case yet
 PB0: SRST - RESET of STM32F407
 
 PA14/Blue Led: Indicator of serial activity
+PA13/Red Led:  Error indicator
+PA15/Green Led: Idle/Run indicator
+
+GDB dedicated functions :
+=================================
+Use "mon help" to list the dedicated function for the platform
+New and specific functions are added via platform_commands.h file.
+
+PC13: EN_ESP32 active "1". Output managed from gdb "en_esp32" function
 
 ToDo :
 ====================

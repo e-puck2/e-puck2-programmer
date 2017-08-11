@@ -5,6 +5,11 @@ TRACESWO = 0
 NO_SERIAL ?= 0
 NO_DFU = 1
 NO_JTAG= 1
+CMD_PLAT = 1
+
+ifeq ($(CMD_PLAT), 1)
+CFLAGS += -DPLATFORM_HAS_COMMANDS
+endif
 
 CROSS_COMPILE ?= arm-none-eabi-
 CC = $(CROSS_COMPILE)gcc
