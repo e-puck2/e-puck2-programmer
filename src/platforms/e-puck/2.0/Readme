@@ -51,6 +51,9 @@ button is pressed. The switch OFF is implemented by GDB dedicated function.
        well requested from the ON/OFF button. And by software can be used to
        switch OFF too the system.
 
+USB connection detection
+> PA9: VBUS (USB_PRESENT or PRT_PROG)
+
 ESP32 functions.
 > PC13: EN_ESP32 active "1". Output managed from gdb "en_esp32" function
 
@@ -65,8 +68,10 @@ New and specific functions are added via platform_commands.h file.
 
 1) <pwr_on_btn SHUTDOWN> to switch off the platform
 2) <pwr_on_btn> to read the state of the Power On button (Pressed|Released)
-3) <en_esp32 (ON|OFF)> to (enable|disable) the ESP32
-4) <en_esp32> to read the state of the EN_ESP32 pins
+3) <vbus> to read the state of VBus input
+4) <en_esp32 (ON|OFF)> to (enable|disable) the ESP32
+5) <en_esp32> to read the state of the EN_ESP32 pins
+
 
 ToDo :
 ====================
@@ -80,8 +85,6 @@ ToDo :
 3) Extenstion connector management. Not implemented yet.
     PB12: Extention system enable (EXT_SYSEN) output to control the Supplies
           of futur extention boards.
-4) USB connection detection
-    PA9: USB_PRESENT or PRT_PROG.
 5) ESP32 functions. The USART interface is implemented by default (cf. NO_SERIAL
    option in the Makefile.inc).
     PB1:  GPIO_ESP32. Nothing for the moment

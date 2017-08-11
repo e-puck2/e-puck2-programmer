@@ -166,6 +166,12 @@ bool platform_pwr_on_btn(void)
 	return !gpio_get(POWERFUNC_PORT, PWR_ON_PIN);
 }
 
+bool platform_vbus(void)
+{
+	/* Return true if button pressed else false. */
+	return !gpio_get(VBUS_PORT, VBUS_PIN);
+}
+
 const char *platform_target_voltage(void)
 {
 	return "ABSENT!";

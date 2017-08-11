@@ -4,6 +4,7 @@
 /********************************************/
 static bool cmd_en_esp32(target *t, int argc, const char **argv);
 static bool cmd_pwr_on_btn(target *t, int argc, const char **argv);
+static bool cmd_vbus(target *t, int argc, const char **argv);
 /*
 static bool cmd_get_blue_led_val(void);
 static bool cmd_set_green_led_val(target *t, int argc, const char **argv);
@@ -22,6 +23,7 @@ static bool cmd_get_green_led_val(void);
 /****************************************************/
 	{"en_esp32", (cmd_handler)cmd_en_esp32, "(ON|OFF|) Set the EN_ESP32 pin or return the state of this one" }, \
 	{"pwr_on_btn", (cmd_handler)cmd_pwr_on_btn, "(|SHUTDOWN) Return the state of Power On button OR Shutdown the system" }, \
+	{"vbus", (cmd_handler)cmd_vbus, "Return the state of VBus" }, \
 /***********************************************/
 /* End of List of platform dedicated commands. */
 /***********************************************/
@@ -51,6 +53,15 @@ static bool cmd_pwr_on_btn(target *t, int argc, const char **argv)
 			 !platform_pwr_on_btn() ? "Pressed" : "Released");
 	else
 		platform_pwr_on(!strcmp(argv[1], "SHUTDOWN"));
+	return true;
+}
+
+static bool cmd_vbus(target *t, int argc, const char **argv)
+{
+	(void)t;
+	(void)argv;
+	if (argc == 1)
+		gdb_outf("VBus: %s\n", platform_vbus() ? "ON" : "OFF");
 	return true;
 }
 
