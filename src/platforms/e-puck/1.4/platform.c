@@ -33,6 +33,8 @@
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/stm32/adc.h>
 
+#pragma message "Platform options : " PLATFORM_OPTIONS
+
 uint8_t running_status;
 volatile uint32_t timeout_counter;
 
@@ -90,8 +92,10 @@ void platform_init(void)
 	              GPIO_CNF_OUTPUT_PUSHPULL, TMS_PIN);
 	gpio_set_mode(TCK_PORT, GPIO_MODE_OUTPUT_50_MHZ,
 	              GPIO_CNF_OUTPUT_PUSHPULL, TCK_PIN);
+#ifndef PLATFORM_HAS_NO_JTAG
 	gpio_set_mode(TDI_PORT, GPIO_MODE_OUTPUT_50_MHZ,
 	              GPIO_CNF_OUTPUT_PUSHPULL, TDI_PIN);
+#endif
 	uint16_t srst_pin = platform_hwversion() == 0 ?
 	                    SRST_PIN_V1 : SRST_PIN_V2;
 	gpio_set(SRST_PORT, srst_pin);
@@ -107,7 +111,9 @@ void platform_init(void)
 
 	platform_timing_init();
 	cdcacm_init();
+#ifndef PLATFORM_HAS_NO_SERIAL
 	usbuart_init();
+#endif
 }
 
 void platform_srst_set_val(bool assert)
@@ -153,4 +159,3 @@ void platform_request_boot(void)
 	crl |= 0x80;
 	GPIOA_CRL = crl;
 }
-

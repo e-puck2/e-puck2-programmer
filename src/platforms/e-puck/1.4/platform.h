@@ -33,21 +33,70 @@
 #include <libopencm3/stm32/f1/memorymap.h>
 #include <libopencm3/usb/usbd.h>
 
-#define BOARD_IDENT       "Black Magic Probe (STLINK), (Firmware " FIRMWARE_VERSION ")"
-#define BOARD_IDENT_DFU   "Black Magic (Upgrade) for STLink/Discovery, (Firmware " FIRMWARE_VERSION ")"
-#define BOARD_IDENT_UPD   "Black Magic (DFU Upgrade) for STLink/Discovery, (Firmware " FIRMWARE_VERSION ")"
-#define DFU_IDENT         "Black Magic Firmware Upgrade (STLINK)"
+#if defined(PLATFORM_HAS_COMMANDS)
+#define COMMANDS_OPTION "C"
+#else
+#define COMMANDS_OPTION "c"
+#endif
+
+#if defined(PLATFORM_HAS_NO_DFU_BOOTLOADER)
+#define DFU_OPTION "d"
+#else
+#define DFU_OPTION "D"
+#endif
+
+#if defined(PLATFORM_HAS_NO_JTAG)
+#define JTAG_OPTION "j"
+#else
+#define JTAG_OPTION "J"
+#endif
+
+#if defined(PLATFORM_HAS_NO_SERIAL)
+#define SERIAL_OPTION "s"
+#else
+#define SERIAL_OPTION "S"
+#endif
+
+#if defined(PLATFORM_HAS_TRACESWO)
+#define TRACESWO_OPTION "T"
+#else
+#define TRACESWO_OPTION "t"
+#endif
+
+#define PLATFORM_OPTIONS	\
+				COMMANDS_OPTION		\
+				DFU_OPTION				\
+				JTAG_OPTION				\
+				SERIAL_OPTION			\
+				TRACESWO_OPTION 	\
+
+//#pragma message "Platform options : " PLATFORM_OPTIONS
+
+#define BOARD_IDENT       "Black Magic Probe (STLINK-epuck1.4)-(Options " PLATFORM_OPTIONS " )-(Firmware " FIRMWARE_VERSION ")"
+#define BOARD_IDENT_DFU   "Black Magic (Upgrade) for STLink-epuck1.4, (Firmware " FIRMWARE_VERSION ")"
+#define BOARD_IDENT_UPD   "Black Magic (DFU Upgrade) for STLink-epuck1.4, (Firmware " FIRMWARE_VERSION ")"
+#define DFU_IDENT         "Black Magic Firmware Upgrade (STLINK-epuck1.4)"
 #define UPD_IFACE_STRING  "@Internal Flash   /0x08000000/8*001Kg"
 
 /* Hardware definitions... */
+#define NOT_USED	0
+
+#ifndef PLATFORM_HAS_NO_JTAG
 #define TDI_PORT	GPIOA
-#define TMS_PORT	GPIOB
-#define TCK_PORT	GPIOA
 #define TDO_PORT	GPIOA
 #define TDI_PIN		GPIO7
+#define TDO_PIN		GPIO6
+#else
+#define TDI_PORT	NOT_USED
+#define TDO_PORT	NOT_USED
+#define TDI_PIN		NOT_USED
+#define TDO_PIN		NOT_USED
+#endif
+
+#define TMS_PORT	GPIOB
+#define TCK_PORT	GPIOA
 #define TMS_PIN		GPIO14
 #define TCK_PIN		GPIO5
-#define TDO_PIN		GPIO6
 
 #define SWDIO_PORT 	TMS_PORT
 #define SWCLK_PORT 	TCK_PORT
@@ -73,9 +122,11 @@
 	gpio_set_mode(SWDIO_PORT, GPIO_MODE_OUTPUT_50_MHZ, \
 	              GPIO_CNF_OUTPUT_PUSHPULL, SWDIO_PIN);
 
+#ifndef PLATFORM_HAS_NO_SERIAL
 #define UART_PIN_SETUP() \
 	gpio_set_mode(USBUSART_PORT, GPIO_MODE_OUTPUT_2_MHZ, \
 	              GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, USBUSART_TX_PIN);
+#endif
 
 #define USB_DRIVER      stm32f103_usb_driver
 #define USB_IRQ	        NVIC_USB_LP_CAN_RX0_IRQ
@@ -90,6 +141,7 @@
 #define IRQ_PRI_USB_VBUS	(14 << 4)
 #define IRQ_PRI_TIM3		(0 << 4)
 
+#ifndef PLATFORM_HAS_NO_SERIAL
 #define USBUSART USART2
 #define USBUSART_CR1 USART2_CR1
 #define USBUSART_IRQ NVIC_USART2_IRQ
@@ -101,6 +153,7 @@
 #define USBUSART_TIM_CLK_EN() rcc_periph_clock_enable(RCC_TIM4)
 #define USBUSART_TIM_IRQ NVIC_TIM4_IRQ
 #define USBUSART_TIM_ISR tim4_isr
+#endif
 
 #define DEBUG(...)
 
@@ -117,4 +170,3 @@ extern uint16_t led_idle_run;
 #define snprintf sniprintf
 
 #endif
-
