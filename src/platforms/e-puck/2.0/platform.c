@@ -104,9 +104,11 @@ void platform_init(void)
 			GPIO_PUPD_NONE,
 			TMS_PIN | TCK_PIN | TDI_PIN);
 
+/* Can be needed for TRACESWO but NO_JTAG yet
 	gpio_mode_setup(TDO_PORT, GPIO_MODE_INPUT,
 			GPIO_PUPD_NONE,
 			TDO_PIN);
+*/
 
 	gpio_set(SRST_PORT, SRST_PIN);
 	gpio_set_output_options(SRST_PORT,GPIO_OTYPE_OD,GPIO_OSPEED_50MHZ,SRST_PIN);
