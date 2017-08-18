@@ -73,7 +73,7 @@ static bool cmd_usb_charge(target *t, int argc, const char **argv)
 		gdb_outf("USB_CHARGE state: %s\n",
 			 platform_get_usb_charge() ? "ON" : "OFF");
 	else
-		platform_set_usb_charge(strcmp(argv[1], "ON"));
+		platform_set_usb_charge(strcmp(argv[1], "ON") == 0);
 	return true;
 }
 
@@ -84,7 +84,7 @@ static bool cmd_usb_500(target *t, int argc, const char **argv)
 		gdb_outf("USB_500 state: %s\n",
 			 platform_get_usb_500() ? "ON" : "OFF");
 	else
-		platform_set_usb_500(strcmp(argv[1], "ON"));
+		platform_set_usb_500(strcmp(argv[1], "ON") == 0);
 	return true;
 }
 

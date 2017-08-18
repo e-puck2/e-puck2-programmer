@@ -117,6 +117,15 @@ void platform_init(void)
 			GPIO_PUPD_NONE,
 			LED_UART | LED_IDLE_RUN | LED_ERROR | LED_BOOTLOADER);
 
+
+	gpio_clear(USB_CHARGE_PORT, USB_CHARGE_PIN);
+	gpio_set_output_options(USB_CHARGE_PORT,GPIO_OTYPE_PP,GPIO_OSPEED_2MHZ,USB_CHARGE_PIN);
+	gpio_mode_setup(USB_CHARGE_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, USB_CHARGE_PIN);
+
+	gpio_clear(USB_500_PORT, USB_500_PIN);
+	gpio_set_output_options(USB_500_PORT,GPIO_OTYPE_PP,GPIO_OSPEED_2MHZ,USB_500_PIN);
+	gpio_mode_setup(USB_500_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, USB_500_PIN);
+
 	gpio_clear(EN_ESP32_PORT, EN_ESP32_PIN);
 	gpio_set_output_options(EN_ESP32_PORT,GPIO_OTYPE_PP,GPIO_OSPEED_2MHZ,EN_ESP32_PIN);
 	gpio_mode_setup(EN_ESP32_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, EN_ESP32_PIN);
@@ -173,8 +182,7 @@ bool platform_pwr_on_btn_pressed(void)
 
 bool platform_vbus(void)
 {
-	/* Return true if button pressed else false. */
-	return !gpio_get(VBUS_PORT, VBUS_PIN);
+	return gpio_get(VBUS_PORT, VBUS_PIN) != 0;
 }
 
 void platform_set_usb_charge(bool assert)
@@ -187,7 +195,7 @@ void platform_set_usb_charge(bool assert)
 
 bool platform_get_usb_charge(void)
 {
-	return gpio_get(USB_CHARGE_PORT, USB_CHARGE_PIN) == 1;
+	return gpio_get(USB_CHARGE_PORT, USB_CHARGE_PIN) != 0;
 }
 
 void platform_set_usb_500(bool assert)
@@ -200,7 +208,7 @@ void platform_set_usb_500(bool assert)
 
 bool platform_get_usb_500(void)
 {
-	return gpio_get(USB_500_PORT, USB_500_PIN) == 1;
+	return gpio_get(USB_500_PORT, USB_500_PIN) != 0;
 }
 
 const char *platform_target_voltage(void)
