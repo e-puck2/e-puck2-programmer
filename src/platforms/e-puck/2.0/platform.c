@@ -151,7 +151,7 @@ void platform_set_en_esp32(bool assert)
 
 bool platform_get_en_esp32(void)
 {
-	return gpio_get(EN_ESP32_PORT, EN_ESP32_PIN) == 1;
+	return gpio_get(EN_ESP32_PORT, EN_ESP32_PIN) != 0;
 }
 
 void platform_pwr_on(bool on_state)

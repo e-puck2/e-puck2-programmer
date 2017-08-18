@@ -37,10 +37,10 @@ static bool cmd_en_esp32(target *t, int argc, const char **argv)
 {
 	(void)t;
 	if (argc == 1)
-		gdb_outf("Blue led state: %s\n",
-			 !platform_get_en_esp32() ? "ON" : "OFF");
+		gdb_outf("EN_ESP32 state: %s\n",
+			 platform_get_en_esp32() ? "ON" : "OFF");
 	else
-		platform_set_en_esp32(strcmp(argv[1], "ON"));
+		platform_set_en_esp32(strcmp(argv[1], "ON") == 0);
 	return true;
 }
 
