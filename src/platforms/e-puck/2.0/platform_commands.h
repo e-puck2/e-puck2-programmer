@@ -19,7 +19,7 @@ static bool cmd_usb_500(target *t, int argc, const char **argv);
 /* IMPORTANT : Each line MUST finish with "\"       */
 /****************************************************/
 	{"en_esp32", (cmd_handler)cmd_en_esp32, "(ON|OFF|) Set the EN_ESP32 pin or return the state of this one" }, \
-	{"pwr_on_btn", (cmd_handler)cmd_pwr_on_btn, "(|SHUTDOWN) Return the state of Power On button OR Shutdown the system" }, \
+	{"pwr_on_btn", (cmd_handler)cmd_pwr_on_btn, "(ON|SHUTDOWN|) Power On or Shutdown the robot or return the state of Power On button" }, \
 	{"vbus", (cmd_handler)cmd_vbus, "Return the state of VBus" }, \
 	{"usb_charge", (cmd_handler)cmd_usb_charge, "(ON|OFF|) Set the USB_CHARGE pin or return the state of this one" }, \
 	{"usb_500", (cmd_handler)cmd_usb_500, "(ON|OFF|) Set the USB_500 pin or return the state of this one" }, \
@@ -49,9 +49,11 @@ static bool cmd_pwr_on_btn(target *t, int argc, const char **argv)
 	(void)t;
 	if (argc == 1)
 		gdb_outf("Power On button: %s\n",
-			 !platform_pwr_on_btn() ? "Pressed" : "Released");
-	else
-		platform_pwr_on(!strcmp(argv[1], "SHUTDOWN"));
+			 platform_pwr_on_btn_pressed() ? "Pressed" : "Released");
+	else if (strcmp(argv[1], "SHUTDOWN") == 0)
+		platform_pwr_on(false);
+	else if (strcmp(argv[1], "ON") == 0)
+		platform_pwr_on(true);
 	return true;
 }
 

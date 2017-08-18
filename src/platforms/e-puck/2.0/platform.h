@@ -217,7 +217,7 @@ void platform_set_en_esp32(bool assert);
 bool platform_get_en_esp32(void);
 
 void platform_pwr_on(bool on_state);
-bool platform_pwr_on_btn(void);
+bool platform_pwr_on_btn_pressed(void);
 
 bool platform_vbus(void);
 

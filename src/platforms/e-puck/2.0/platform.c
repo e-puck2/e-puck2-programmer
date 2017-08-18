@@ -70,15 +70,6 @@ void platform_init(void)
 	}
 #endif
 
-	/* If ON/OFF button pressed then maintain the power supply. */
-	if (platform_pwr_on_btn()) {
-		gpio_mode_setup(POWERFUNC_PORT, GPIO_MODE_OUTPUT,
-				GPIO_PUPD_NONE, PWR_ON_BTN_PIN);
-		platform_pwr_on(true);
-	}
-	/* Else the power supply will stay ON only as long as the ON/OFF button
-	   will stay pressed, then will die !! */
-
 	rcc_clock_setup_hse_3v3(&hse_8mhz_3v3[CLOCK_3V3_48MHZ]);
 
 	/* Enable peripherals */
@@ -87,6 +78,14 @@ void platform_init(void)
 	rcc_periph_clock_enable(RCC_GPIOC);
 //	rcc_periph_clock_enable(RCC_GPIOD);
 	rcc_periph_clock_enable(RCC_CRC);
+
+	/* If ON/OFF button pressed then maintain the power supply. */
+	gpio_clear(POWERFUNC_PORT, PWR_ON_PIN);
+	gpio_set_output_options(POWERFUNC_PORT,GPIO_OTYPE_PP,GPIO_OSPEED_2MHZ,PWR_ON_PIN);
+	gpio_mode_setup(POWERFUNC_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, PWR_ON_PIN);
+	platform_pwr_on(platform_pwr_on_btn_pressed());
+	/* Else the power supply will stay ON only as long as the ON/OFF button
+	   will stay pressed, then will die !! */
 
 /* Disable USB HUB I2C interface temporary.
 	SMBus_init();
@@ -161,15 +160,15 @@ bool platform_get_en_esp32(void)
 void platform_pwr_on(bool on_state)
 {
 	if (on_state)
-		gpio_set(POWERFUNC_PORT, PWR_ON_BTN_PIN);
+		gpio_set(POWERFUNC_PORT, PWR_ON_PIN);
 	else
-		gpio_clear(POWERFUNC_PORT, PWR_ON_BTN_PIN);
+		gpio_clear(POWERFUNC_PORT, PWR_ON_PIN);
 }
 
-bool platform_pwr_on_btn(void)
+bool platform_pwr_on_btn_pressed(void)
 {
 	/* Return true if button pressed else false. */
-	return !gpio_get(POWERFUNC_PORT, PWR_ON_PIN);
+	return gpio_get(POWERFUNC_PORT, PWR_ON_BTN_PIN) == 0;
 }
 
 bool platform_vbus(void)
