@@ -31,8 +31,39 @@
 
 #include <setjmp.h>
 
+#if defined(PLATFORM_HAS_COMMANDS)
+#define COMMANDS_OPTION "C"
+#else
+#define COMMANDS_OPTION "c"
+#endif
+
+#ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
+#error "NO_DFU option must be defined for this platform !!"
+#endif
+
+#ifndef PLATFORM_HAS_NO_JTAG
+#error "NO_JTAG option must be defined for this platform !!"
+#endif
+
+#if defined(PLATFORM_HAS_NO_SERIAL)
+#define SERIAL_OPTION "s"
+#else
+#define SERIAL_OPTION "S"
+#endif
+
+#if defined(PLATFORM_HAS_TRACESWO)
+#error "TRACESWO option is not usable yet on this platform !!"
+#endif
+
+#define PLATFORM_OPTIONS	\
+				COMMANDS_OPTION		\
+				SERIAL_OPTION			\
+/*			TRACESWO_OPTION 	\*/
+
+//#pragma message "Platform options : " PLATFORM_OPTIONS
+
 // Define the identification's names of the device
-#define BOARD_IDENT "Black Magic Probe (e-puck2), (Firmware " FIRMWARE_VERSION ")"
+#define BOARD_IDENT "Black Magic Probe (e-puck2)-(Options " PLATFORM_OPTIONS ")-(Firmware " FIRMWARE_VERSION ")"
 #ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
 #define DFU_IDENT   "Black Magic Firmware Upgrade (e-puck2)"
 #endif

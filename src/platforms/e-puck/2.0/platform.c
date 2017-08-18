@@ -39,6 +39,8 @@
 #include <../USB251XB/USB251XB.h>
 #include <../USB251XB/SMBus.h>
 
+#pragma message "Platform options : " PLATFORM_OPTIONS
+
 jmp_buf fatal_error_jmpbuf;
 extern uint32_t _ebss;
 
