@@ -22,7 +22,6 @@ endif
 
 SRC =			\
 	adiv5.c		\
-	adiv5_jtagdp.c	\
 	adiv5_swdp.c	\
 	command.c	\
 	cortexa.c	\
@@ -59,12 +58,15 @@ SRC =			\
 include $(PLATFORM_DIR)/Makefile.inc
 
 # WARNING : MUST STAY AFTER include of Makefile.inc !!
-#   because NO_JTAG must/can be defined in this dedicated platform's file
+#			because NO_JTAG option is globally defined BUT must/can be defined in this
+#			dedicated included platform's file
 ifeq ($(NO_JTAG), 0)
-SRC +=			\
-	jtag_scan.c	\
-	jtagtap.c	\
-	jtagtap_generic.c
+	SRC +=			\
+		adiv5_jtagdp.c	\
+		jtag_scan.c	\
+		jtagtap.c	\
+		jtagtap_generic.c	\
+# To finish the previous lines in order to have the #endif directive
 endif
 
 OBJ = $(SRC:.c=.o)
