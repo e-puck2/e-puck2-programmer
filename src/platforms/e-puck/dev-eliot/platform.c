@@ -123,7 +123,9 @@ void platform_init(void)
 
 	platform_timing_init();
 	cdcacm_init();
+#ifndef PLATFORM_HAS_NO_SERIAL
 	usbuart_init();
+#endif
 }
 
 void platform_srst_set_val(bool assert)

@@ -40,11 +40,12 @@
 #define UPD_IFACE_STRING  "@Internal Flash   /0x08000000/8*001Kg"
 
 /* Hardware definitions... */
-#define TDI_PORT	GPIOA
+#define NOT_USED	0
+#define TDI_PORT	NOT_USED
 #define TMS_PORT	GPIOB
 #define TCK_PORT	GPIOA
 #define TDO_PORT	GPIOA
-#define TDI_PIN		GPIO7
+#define TDI_PIN		NOT_USED
 #define TMS_PIN		GPIO14
 #define TCK_PIN		GPIO5
 #define TDO_PIN		GPIO6
@@ -73,9 +74,11 @@
 	gpio_set_mode(SWDIO_PORT, GPIO_MODE_OUTPUT_50_MHZ, \
 	              GPIO_CNF_OUTPUT_PUSHPULL, SWDIO_PIN);
 
+#ifndef PLATFORM_HAS_NO_SERIAL
 #define UART_PIN_SETUP() \
 	gpio_set_mode(USBUSART_PORT, GPIO_MODE_OUTPUT_2_MHZ, \
 	              GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, USBUSART_TX_PIN);
+#endif
 
 #define USB_DRIVER      stm32f103_usb_driver
 #define USB_IRQ	        NVIC_USB_LP_CAN_RX0_IRQ
@@ -90,6 +93,7 @@
 #define IRQ_PRI_USB_VBUS	(14 << 4)
 #define IRQ_PRI_TIM3		(0 << 4)
 
+#ifndef PLATFORM_HAS_NO_SERIAL
 #define USBUSART USART2
 #define USBUSART_CR1 USART2_CR1
 #define USBUSART_IRQ NVIC_USART2_IRQ
@@ -101,6 +105,7 @@
 #define USBUSART_TIM_CLK_EN() rcc_periph_clock_enable(RCC_TIM4)
 #define USBUSART_TIM_IRQ NVIC_TIM4_IRQ
 #define USBUSART_TIM_ISR tim4_isr
+#endif
 
 #define DEBUG(...)
 
