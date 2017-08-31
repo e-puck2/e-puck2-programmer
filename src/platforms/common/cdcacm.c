@@ -67,6 +67,8 @@ usbd_device * usbdev;
 
 static int configured;
 static int cdcacm_gdb_dtr = 1;
+static bool cdcacm_uart_dtr = true;
+static bool cdcacm_uart_rts = true;
 
 static void cdcacm_set_modem_state(usbd_device *dev, int iface, bool dsr, bool dcd);
 
@@ -459,24 +461,33 @@ static int cdcacm_control_request(usbd_device *dev,
 	case USB_CDC_REQ_SET_CONTROL_LINE_STATE:
 		cdcacm_set_modem_state(dev, req->wIndex, true, true);
 		/* Ignore if not for GDB interface */
-		if(req->wIndex != 0)
+		switch (req->wIndex) {
+		case GDB_COMM_IFACE_NUM:
+			cdcacm_gdb_dtr = req->wValue & 1;
 			return 1;
-
-		cdcacm_gdb_dtr = req->wValue & 1;
-
-		return 1;
+#ifndef PLATFORM_HAS_NO_SERIAL
+		case SERIAL_COMM_IFACE_NUM:
+			cdcacm_uart_dtr = (req->wValue & (1<<0) ? 1 : 0);
+			cdcacm_uart_rts = (req->wValue & (1<<1) ? 1 : 0);
+			gpio_set_val(EN_ESP32_PORT, EN_ESP32_PIN, ~(cdcacm_uart_dtr && ~cdcacm_uart_rts));
+			gpio_set_val(GPIO0_ESP32_PORT, GPIO0_ESP32_PIN, ~(~cdcacm_uart_dtr && cdcacm_uart_rts));
+			return 1;
+#endif
+		default:
+			return 0;
+		}
 	case USB_CDC_REQ_SET_LINE_CODING:
 		if(*len < sizeof(struct usb_cdc_line_coding))
 			return 0;
 
 		switch(req->wIndex) {
-		case 2:
+		case SERIAL_COMM_IFACE_NUM:
 #ifndef PLATFORM_HAS_NO_SERIAL
 			usbuart_set_line_coding((struct usb_cdc_line_coding*)*buf);
 #else
 			return 1; /* Ignore on Serial Port */
 #endif
-		case 0:
+		case GDB_COMM_IFACE_NUM:
 			return 1; /* Ignore on GDB Port */
 		default:
 			return 0;
