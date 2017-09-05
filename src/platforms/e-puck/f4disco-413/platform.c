@@ -36,6 +36,7 @@
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/cm3/cortex.h>
+#include <libopencm3/stm32/otg_fs.h>
 
 #pragma message "Platform options : " PLATFORM_OPTIONS
 
@@ -55,8 +56,8 @@ void platform_init(void)
 	rcc_periph_clock_enable(RCC_CRC);
 
 	/* Set up USB Pins and alternate function*/
-	gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO11 | GPIO12);
-	gpio_set_af(GPIOA, GPIO_AF10, GPIO11 | GPIO12);
+	gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO9 |GPIO11 | GPIO12);
+	gpio_set_af(GPIOA, GPIO_AF10, GPIO9 | GPIO11 | GPIO12);
 
 	GPIOC_OSPEEDR &=~0xF30;
 	GPIOC_OSPEEDR |= 0xA20;
@@ -86,6 +87,22 @@ void platform_init(void)
 	usbuart_init();
 #endif
 	cdcacm_init();
+
+	/* To correct the Pull-UP on D+ management
+	Done in the cdcacm_init code by call of stm32f107_usbd_init :
+	// Enable VBUS sensing in device mode and power down the PHY.
+	OTG_FS_GCCFG |= OTG_FS_GCCFG_VBUSBSEN | OTG_FS_GCCFG_PWRDWN;
+	But for the STM32F413, FS_GCCFG is not exactly the same as the F103 one.
+	Then we correct the bad OTG_FS_GCCFG_VBUSBSEN bit
+	*/
+	OTG_FS_GCCFG &= ~OTG_FS_GCCFG_VBUSBSEN;
+	/* and use the right one */
+	OTG_FS_GCCFG |= (1<<21);
+	/* Disconnect/Reconnect the USB device with a delay in order to respect the bigger delay of 1,025 ms (see Table 217 of F413 Ref. Man.) */
+	OTG_FS_DCTL |= OTG_FS_DCTL_SDIS;
+	platform_delay(2);
+	OTG_FS_DCTL &= ~OTG_FS_DCTL_SDIS;
+
 }
 
 void platform_srst_set_val(bool assert)

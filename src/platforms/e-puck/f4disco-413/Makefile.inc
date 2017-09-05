@@ -1,4 +1,4 @@
--# Select the options that this Blackmagic Probe platform must have implemented
+# Select the options that this Blackmagic Probe platform must have implemented
 # Force because TRACESWO, DFU and JTAG are not available or intrinsic on this platform
 # Force to 1 if support for ESP32 serial is needed
 TRACESWO = 0
@@ -37,7 +37,7 @@ CFLAGS += -DPLATFORM_HAS_NO_JTAG
 endif
 
 LDFLAGS = -lopencm3_stm32f4 -Wl,--defsym,_stack=0x20010000 \
-	-Wl,-T,platforms/e-puck/2.0/e-puck2.ld -nostartfiles -lc -lnosys \
+	-Wl,-T,platforms/e-puck/f4disco-413/e-puck2.ld -nostartfiles -lc -lnosys \
 	-Wl,-Map=mapfile -mthumb -mcpu=cortex-m4 -Wl,-gc-sections \
 	-mfloat-abi=hard -mfpu=fpv4-sp-d16 \
 	-L../libopencm3/lib

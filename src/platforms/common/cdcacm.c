@@ -67,9 +67,10 @@ usbd_device * usbdev;
 
 static int configured;
 static int cdcacm_gdb_dtr = 1;
+#ifndef PLATFORM_HAS_NO_SERIAL
 static bool cdcacm_uart_dtr = true;
 static bool cdcacm_uart_rts = true;
-
+#endif
 static void cdcacm_set_modem_state(usbd_device *dev, int iface, bool dsr, bool dcd);
 
 static const struct usb_device_descriptor dev = {
@@ -481,10 +482,9 @@ static int cdcacm_control_request(usbd_device *dev,
 			return 0;
 
 		switch(req->wIndex) {
-		case SERIAL_COMM_IFACE_NUM:
 #ifndef PLATFORM_HAS_NO_SERIAL
+		case SERIAL_COMM_IFACE_NUM:
 			usbuart_set_line_coding((struct usb_cdc_line_coding*)*buf);
-#else
 			return 1; /* Ignore on Serial Port */
 #endif
 		case GDB_COMM_IFACE_NUM:
