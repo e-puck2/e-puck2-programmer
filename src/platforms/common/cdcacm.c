@@ -67,7 +67,7 @@ usbd_device * usbdev;
 
 static int configured;
 static int cdcacm_gdb_dtr = 1;
-#ifndef PLATFORM_HAS_NO_SERIAL
+#if !defined(PLATFORM_HAS_NO_SERIAL) && defined(EPUCK2)
 static bool cdcacm_uart_dtr = true;
 static bool cdcacm_uart_rts = true;
 #endif
@@ -466,7 +466,7 @@ static int cdcacm_control_request(usbd_device *dev,
 		case GDB_COMM_IFACE_NUM:
 			cdcacm_gdb_dtr = req->wValue & 1;
 			return 1;
-#ifndef PLATFORM_HAS_NO_SERIAL
+#if !defined(PLATFORM_HAS_NO_SERIAL) && defined(EPUCK2)
 		case SERIAL_COMM_IFACE_NUM:
 			cdcacm_uart_dtr = (req->wValue & (1<<0) ? 1 : 0);
 			cdcacm_uart_rts = (req->wValue & (1<<1) ? 1 : 0);
