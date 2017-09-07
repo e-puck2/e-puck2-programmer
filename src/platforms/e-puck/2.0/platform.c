@@ -128,7 +128,7 @@ void platform_init(void)
 
 	gpio_clear(PWR_ON_PORT, PWR_ON_PIN);
 	gpio_set_output_options(PWR_ON_PORT,GPIO_OTYPE_PP,GPIO_OSPEED_2MHZ,PWR_ON_PIN);
-	gpio_mode_setup(PWR_ON_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, PWR_ON_PIN);
+	gpio_mode_setup(PWR_ON_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, PWR_ON_PIN);
 	setup_pwr_button();
 
 //	SMBus_init();
@@ -217,6 +217,19 @@ void platform_set_en_esp32(bool assert)
 bool platform_get_en_esp32(void)
 {
 	return gpio_get(EN_ESP32_PORT, EN_ESP32_PIN) != 0;
+}
+
+void platform_set_gpio0_esp32(bool assert)
+{
+	if (assert)
+		gpio_set(GPIO0_ESP32_PORT, GPIO0_ESP32_PIN);
+	else
+		gpio_clear(GPIO0_ESP32_PORT, GPIO0_ESP32_PIN);
+}
+
+bool platform_get_gpio0_esp32(void)
+{
+	return gpio_get(GPIO0_ESP32_PORT, GPIO0_ESP32_PIN) != 0;
 }
 
 void platform_pwr_on(bool on_state)

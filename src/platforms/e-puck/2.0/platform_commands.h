@@ -3,6 +3,7 @@
 /* Begining of platform dedicated commands. */
 /********************************************/
 static bool cmd_en_esp32(target *t, int argc, const char **argv);
+static bool cmd_gpio0_esp32(target *t, int argc, const char **argv);
 static bool cmd_pwr_on_btn(target *t, int argc, const char **argv);
 static bool cmd_vbus(target *t, int argc, const char **argv);
 static bool cmd_usb_charge(target *t, int argc, const char **argv);
@@ -19,6 +20,7 @@ static bool cmd_usb_500(target *t, int argc, const char **argv);
 /* IMPORTANT : Each line MUST finish with "\"       */
 /****************************************************/
 	{"en_esp32", (cmd_handler)cmd_en_esp32, "(ON|OFF|) Set the EN_ESP32 pin or return the state of this one" }, \
+	{"gpio0_esp32", (cmd_handler)cmd_gpio0_esp32, "(ON|OFF|) Set the GPIO0_ESP32 pin or return the state of this one" }, \
 	{"pwr_on_btn", (cmd_handler)cmd_pwr_on_btn, "(ON|SHUTDOWN|) Power On or Shutdown the robot or return the state of Power On button" }, \
 	{"vbus", (cmd_handler)cmd_vbus, "Return the state of VBus" }, \
 	{"usb_charge", (cmd_handler)cmd_usb_charge, "(ON|OFF|) Set the USB_CHARGE pin or return the state of this one" }, \
@@ -41,6 +43,17 @@ static bool cmd_en_esp32(target *t, int argc, const char **argv)
 			 platform_get_en_esp32() ? "ON" : "OFF");
 	else
 		platform_set_en_esp32(strcmp(argv[1], "ON") == 0);
+	return true;
+}
+
+static bool cmd_gpio0_esp32(target *t, int argc, const char **argv)
+{
+	(void)t;
+	if (argc == 1)
+		gdb_outf("GPIO0_ESP32 state: %s\n",
+			 platform_get_gpio0_esp32() ? "ON" : "OFF");
+	else
+		platform_set_gpio0_esp32(strcmp(argv[1], "ON") == 0);
 	return true;
 }
 

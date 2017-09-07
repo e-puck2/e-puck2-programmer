@@ -229,6 +229,9 @@ static inline int platform_hwversion(void)
 void platform_set_en_esp32(bool assert);
 bool platform_get_en_esp32(void);
 
+void platform_set_gpio0_esp32(bool assert);
+bool platform_get_gpio0_esp32(void);
+
 void platform_pwr_on(bool on_state);
 bool platform_pwr_on_btn_pressed(void);
 

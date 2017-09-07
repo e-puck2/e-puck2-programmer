@@ -468,10 +468,10 @@ static int cdcacm_control_request(usbd_device *dev,
 			return 1;
 #if !defined(PLATFORM_HAS_NO_SERIAL) && defined(EPUCK2)
 		case SERIAL_COMM_IFACE_NUM:
-			cdcacm_uart_dtr = (req->wValue & (1<<0) ? 1 : 0);
-			cdcacm_uart_rts = (req->wValue & (1<<1) ? 1 : 0);
-			gpio_set_val(EN_ESP32_PORT, EN_ESP32_PIN, ~(cdcacm_uart_dtr && ~cdcacm_uart_rts));
-			gpio_set_val(GPIO0_ESP32_PORT, GPIO0_ESP32_PIN, ~(~cdcacm_uart_dtr && cdcacm_uart_rts));
+			cdcacm_uart_dtr = (req->wValue & (1<<0) ? 0 : 1);
+			cdcacm_uart_rts = (req->wValue & (1<<1) ? 0 : 1);
+			gpio_set_val(EN_ESP32_PORT, EN_ESP32_PIN, !(!cdcacm_uart_dtr && cdcacm_uart_rts));
+			gpio_set_val(GPIO0_ESP32_PORT, GPIO0_ESP32_PIN, !(cdcacm_uart_dtr && !cdcacm_uart_rts));
 			return 1;
 #endif
 		default:
