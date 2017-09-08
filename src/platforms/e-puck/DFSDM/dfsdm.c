@@ -1,6 +1,7 @@
-#include <ch.h>
-#include <hal.h>
+#include <libopencm3/stm32/f4/rcc.h>
+#include <libopencm3/stm32/f4/dma.h>
 #include "dfsdm.h"
+#include "register_complement.h"
 
 #ifndef STM32_DMA_REQUIRED
 #error "DFSDM driver requires DMA functions. Please define STM32_DMA_REQUIRED."
