@@ -1,6 +1,7 @@
 #include "general.h"
 #include <libopencm3/stm32/f4/rcc.h>
 #include <libopencm3/stm32/f4/dma.h>
+#include "cdcacm.h"
 #include "dfsdm.h"
 #include "register_complement.h"
 
@@ -239,4 +240,31 @@ void dfsdm_stop_conversion(void)
     dma_disable_stream(DMA2, DMA_STREAM0);
     dma_disable_stream(DMA2, DMA_STREAM1);
 
+}
+
+void dfsdm_data_callback(void *p, int32_t *buffer, size_t n)
+{
+    (void) n;
+    (void) buffer;
+
+    /* Only a half buffer is used at a time. This means that while we are
+     * processing one half of the buffer, the other half already captures the
+     * new data. */
+    if(n != AUDIO_BUFFER_SIZE / 2){
+        usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, "Buffer size is invalid.", 23);
+        while(1);
+    }
+
+    /* Check if it is the microphone we are using. */
+    if ((int) p) {
+        samples = buffer;
+        dfsdm_data_ready = true;
+    }
+}
+
+void dfsdm_err_cb(void *p)
+{
+    (void) p;
+    usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, "DFSDM DMA error\r\n", 19);
+    while(1);
 }

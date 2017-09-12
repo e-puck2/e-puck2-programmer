@@ -18,6 +18,10 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#define AUDIO_BUFFER_SIZE 1000
+volatile bool dfsdm_data_ready;
+int32_t *samples;
+
 /** Callback type for data received
  *
  * @param [in] drv Pointer provided by the user in the DFSDM config.
@@ -58,5 +62,9 @@ void dfsdm_start_conversion(DFSDM_config_t *left_config, DFSDM_config_t *right_c
 
 /** Stops the continous acquisition. */
 void dfsdm_stop_conversion(void);
+
+void dfsdm_data_callback(void *p, int32_t *buffer, size_t n);
+
+void dfsdm_err_cb(void *p);
 
 #endif

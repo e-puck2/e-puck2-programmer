@@ -7,6 +7,7 @@ static bool cmd_pwr_on_btn(target *t, int argc, const char **argv);
 static bool cmd_vbus(target *t, int argc, const char **argv);
 static bool cmd_usb_charge(target *t, int argc, const char **argv);
 static bool cmd_usb_500(target *t, int argc, const char **argv);
+static void cmd_dfsdm(target *t, int argc, const char **argv);
 /***************************************/
 /* End of platform dedicated commands. */
 /***************************************/
@@ -23,6 +24,7 @@ static bool cmd_usb_500(target *t, int argc, const char **argv);
 	{"vbus", (cmd_handler)cmd_vbus, "Return the state of VBus" }, \
 	{"usb_charge", (cmd_handler)cmd_usb_charge, "(ON|OFF|) Set the USB_CHARGE pin or return the state of this one" }, \
 	{"usb_500", (cmd_handler)cmd_usb_500, "(ON|OFF|) Set the USB_500 pin or return the state of this one" }, \
+	{"dfsdm", (cmd_handler)cmd_dfsdm, "Usage: dfsdm left|right"}, \
 /***********************************************/
 /* End of List of platform dedicated commands. */
 /***********************************************/
@@ -30,6 +32,8 @@ static bool cmd_usb_500(target *t, int argc, const char **argv);
 #endif
 
 #if defined(PLATFORM_COMMANDS_CODE)
+#include <../DFSDM/dfsdm.h>
+#include "cdcacm.h"
 /****************************************************/
 /* Begining of Code of platform dedicated commands. */
 /****************************************************/
@@ -86,6 +90,72 @@ static bool cmd_usb_500(target *t, int argc, const char **argv)
 	else
 		platform_set_usb_500(strcmp(argv[1], "ON") == 0);
 	return true;
+}
+
+static int32_t left_buffer[AUDIO_BUFFER_SIZE];
+static DFSDM_config_t left_cfg = {
+    .end_cb = dfsdm_data_callback,
+    .error_cb = dfsdm_err_cb,
+    .samples = left_buffer,
+    .samples_len = AUDIO_BUFFER_SIZE
+};
+
+static int32_t right_buffer[AUDIO_BUFFER_SIZE];
+static DFSDM_config_t right_cfg = {
+    .end_cb = dfsdm_data_callback,
+    .error_cb = dfsdm_err_cb,
+    .samples = right_buffer,
+    .samples_len = AUDIO_BUFFER_SIZE
+};
+
+static void cmd_dfsdm(target *t, int argc, const char **argv)
+{
+    (void) argc;
+    (void) argv;
+    (void) t;
+
+    if (argc != 1) {
+        usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, "Usage: dfsdm left|right\r\n", 27);
+        return;
+    }
+
+    /* We use the callback arg to store which microphone is used. */
+    if (!strcmp(argv[0], "left")) {
+        left_cfg.cb_arg = (void*) 1;
+        right_cfg.cb_arg = (void*) 0;
+    } else {
+        left_cfg.cb_arg = (void*) 0;
+        right_cfg.cb_arg = (void*) 1;
+    }
+
+    dfsdm_start_conversion(&left_cfg, &right_cfg);
+
+    usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, "Done !\r\n", 10);
+
+    /* High pass filter params */
+    const float tau = 1 / 20.; /* 1 / cutoff */
+    const float dt = 1./44e3;  /* Sampling period */
+
+    const float alpha = tau / (tau + dt);
+
+    int32_t x_prev = 0, y = 0, x;
+
+    while (true) {
+        if(dfsdm_data_ready){
+        	dfsdm_data_ready = false;
+	    	size_t i;
+
+	        /* First order high pass filtering is used to remove the DC component
+	         * of the signal. */
+	        for (i = 0; i < AUDIO_BUFFER_SIZE / 2; i++) {
+	            x = samples[i];
+	            y = alpha * y + alpha * (x - x_prev);
+	            x_prev = x;
+	            samples[i] = y;
+	        }
+	        usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, (uint8_t *)samples, sizeof(left_buffer) / 2);
+        }
+    }
 }
 
 /***********************************************/
