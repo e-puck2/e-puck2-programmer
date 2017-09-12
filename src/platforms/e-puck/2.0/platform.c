@@ -41,6 +41,7 @@
 
 #include <../USB251XB/USB251XB.h>
 #include <../USB251XB/SMBus.h>
+#include <../DFSDM/dfsdm.h>
 
 //#pragma message "Platform options : " PLATFORM_OPTIONS
 
@@ -122,6 +123,7 @@ void platform_init(void)
 	rcc_periph_clock_enable(RCC_GPIOC);
 	rcc_periph_clock_enable(RCC_OTGFS);
 	rcc_periph_clock_enable(RCC_CRC);
+	rcc_periph_clock_enable(RCC_DMA2);
 
 	gpio_set(LED_PORT, LED_UART | LED_IDLE_RUN | LED_ERROR);
 	gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,	LED_UART | LED_IDLE_RUN | LED_ERROR);
@@ -187,6 +189,8 @@ void platform_init(void)
 	OTG_FS_DCTL |= OTG_FS_DCTL_SDIS;
 	platform_delay(2);
 	OTG_FS_DCTL &= ~OTG_FS_DCTL_SDIS;
+
+	dfsdm_start();
 
 }
 

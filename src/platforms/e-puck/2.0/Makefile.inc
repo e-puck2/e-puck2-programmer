@@ -50,6 +50,7 @@ SRC += 	cdcacm.c	\
 	timing_stm32.c	\
 	platforms/e-puck/USB251XB/USB251XB.c \
 	platforms/e-puck/USB251XB/SMBus.c \
+	platforms/e-puck/DFSDM/dfsdm.c \
 
 ifeq ($(TRACESWO), 1)
 SRC += 	traceswo.c
