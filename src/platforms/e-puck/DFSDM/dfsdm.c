@@ -1,11 +1,9 @@
+#include "general.h"
 #include <libopencm3/stm32/f4/rcc.h>
 #include <libopencm3/stm32/f4/dma.h>
 #include "dfsdm.h"
 #include "register_complement.h"
 
-#ifndef STM32_DMA_REQUIRED
-#error "DFSDM driver requires DMA functions. Please define STM32_DMA_REQUIRED."
-#endif
 
 /* Those defines are missing from the STM32F769 include, copied them from the L4 one. */
 #define DFSDM_CHCFGR1_CKOUTDIV_Pos           (16U)
@@ -18,32 +16,35 @@
 #define DFSDM_FLTFCR_FORD_Pos                (29U)
 
 /* Both DFSDM units are wired to the same DMA channel, but is changed depending
- * on the DMA stream. Stream 0/4 go to FLT0, 1/5 FLT1, etc.
+ * on the DMA stream.
  *
- * See Table 28 (DMA2 request mapping) in the STM32F7 reference manual for
+ * See Table 28 (DMA2 request mapping) in the STM32F413 reference manual for
  * complete list.
  * */
-#define DFSDM_FLT0_DMA_CHN 8
-#define DFSDM_FLT1_DMA_CHN 8
+#define DFSDM_FLT0_DMA_CHN 7
+#define DFSDM_FLT1_DMA_CHN 3
 
 typedef struct {
-    const stm32_dma_stream_t *dma_stream;
+    //const stm32_dma_stream_t *dma_stream;
     DFSDM_config_t *cfg;
 } DFSDM_driver_t;
 
 DFSDM_driver_t left_drv, right_drv;
 
 /** Function called on DFSDM interrupt. */
-static void dfsdm_serve_dma_interrupt(void *p, uint32_t flags)
+void dma2_stream0_isr(void)
 {
-    DFSDM_driver_t *drv = (DFSDM_driver_t *) p;
-
+    DFSDM_driver_t *drv = (DFSDM_driver_t *) &left_drv;
+    bool teif = dma_get_interrupt_flag(DMA2, DMA_STREAM0, DMA_TEIF);
+    bool htif = dma_get_interrupt_flag(DMA2, DMA_STREAM0, DMA_HTIF);
+    bool tcif = dma_get_interrupt_flag(DMA2, DMA_STREAM0, DMA_TCIF);
+    bool dmeif = dma_get_interrupt_flag(DMA2, DMA_STREAM0, DMA_DMEIF);
     /* DMA errors handling.*/
-    if ((flags & (STM32_DMA_ISR_TEIF | STM32_DMA_ISR_DMEIF)) != 0) {
+    if ((teif || dmeif) != 0) {
         if (drv->cfg->error_cb != NULL) {
             drv->cfg->error_cb(drv->cfg->cb_arg);
         }
-    } else if ((flags & STM32_DMA_ISR_TCIF) != 0) {
+    } else if (tcif != 0) {
         /* End of the second halt of the circular buffer. */
         if (drv->cfg->end_cb != NULL) {
             size_t half = drv->cfg->samples_len / 2;
@@ -51,7 +52,39 @@ static void dfsdm_serve_dma_interrupt(void *p, uint32_t flags)
                              &drv->cfg->samples[half],
                              half);
         }
-    } else if ((flags & STM32_DMA_ISR_HTIF) != 0) {
+    } else if (htif != 0) {
+        /* End of the first half of the circular buffer. */
+        if (drv->cfg->end_cb != NULL) {
+            size_t half = drv->cfg->samples_len / 2;
+            drv->cfg->end_cb(drv->cfg->cb_arg,
+                             drv->cfg->samples,
+                             half);
+        }
+    }
+}
+
+/** Function called on DFSDM interrupt. */
+void dma2_stream1_isr(void)
+{
+    DFSDM_driver_t *drv = (DFSDM_driver_t *) &right_drv;
+    bool teif = dma_get_interrupt_flag(DMA2, DMA_STREAM1, DMA_TEIF);
+    bool htif = dma_get_interrupt_flag(DMA2, DMA_STREAM1, DMA_HTIF);
+    bool tcif = dma_get_interrupt_flag(DMA2, DMA_STREAM1, DMA_TCIF);
+    bool dmeif = dma_get_interrupt_flag(DMA2, DMA_STREAM1, DMA_DMEIF);
+    /* DMA errors handling.*/
+    if ((teif || dmeif) != 0) {
+        if (drv->cfg->error_cb != NULL) {
+            drv->cfg->error_cb(drv->cfg->cb_arg);
+        }
+    } else if (tcif != 0) {
+        /* End of the second halt of the circular buffer. */
+        if (drv->cfg->end_cb != NULL) {
+            size_t half = drv->cfg->samples_len / 2;
+            drv->cfg->end_cb(drv->cfg->cb_arg,
+                             &drv->cfg->samples[half],
+                             half);
+        }
+    } else if (htif != 0) {
         /* End of the first half of the circular buffer. */
         if (drv->cfg->end_cb != NULL) {
             size_t half = drv->cfg->samples_len / 2;
@@ -64,10 +97,9 @@ static void dfsdm_serve_dma_interrupt(void *p, uint32_t flags)
 
 void dfsdm_start(void)
 {
-    bool success;
 
     /* Send clock to peripheral. */
-    rccEnableAPB2(RCC_APB2ENR_DFSDM1EN, true);
+    rcc_periph_clock_enable(RCC_DFSDM1EN);
 
     /* Configure DFSDM clock output (must be before enabling interface).
      *
@@ -75,7 +107,7 @@ void dfsdm_start(void)
      * DFSDM is on APB2 @ 108 Mhz. The MP34DT01 MEMS microphone runs @ 2.4 Mhz,
      * requiring a prescaler of 46.
      */
-    const unsigned clkout_div = 45;
+    const unsigned clkout_div = 20;
     DFSDM1_Channel0->CHCFGR1 |= (clkout_div & 0xff) << DFSDM_CHCFGR1_CKOUTDIV_Pos;
 
     /* Enable DFSDM interface */
@@ -138,62 +170,56 @@ void dfsdm_start(void)
     DFSDM1_Filter1->FLTCR1 |= DFSDM_FLTCR1_DFEN;
 
     /* Allocate DMA streams. */
-    left_drv.dma_stream = STM32_DMA_STREAM(STM32_DFSDM_MICROPHONE_LEFT_DMA_STREAM);
-    success = dmaStreamAllocate(left_drv.dma_stream,
-                                STM32_DFSDM_MICROPHONE_LEFT_DMA_STREAM,
-                                dfsdm_serve_dma_interrupt,
-                                &left_drv);
-    osalDbgAssert(!success, "stream already allocated");
+    dma_stream_reset(DMA2, DMA_STREAM0);
+    dma_set_priority(DMA2, DMA_STREAM0, STM32_DFSDM_MICROPHONE_LEFT_DMA_IRQ_PRIORITY);
 
-    right_drv.dma_stream = STM32_DMA_STREAM(STM32_DFSDM_MICROPHONE_RIGHT_DMA_STREAM);
-    success = dmaStreamAllocate(right_drv.dma_stream,
-                                STM32_DFSDM_MICROPHONE_RIGHT_DMA_STREAM,
-                                dfsdm_serve_dma_interrupt,
-                                &right_drv);
-    osalDbgAssert(!success, "stream already allocated");
+    dma_stream_reset(DMA2, DMA_STREAM1);
+    dma_set_priority(DMA2, DMA_STREAM1, STM32_DFSDM_MICROPHONE_RIGHT_DMA_IRQ_PRIORITY);
 
 }
 
 void dfsdm_start_conversion(DFSDM_config_t *left_config, DFSDM_config_t *right_config)
 {
-    uint32_t dma_mode, left_dma_mode, right_dma_mode;
 
     left_drv.cfg = left_config;
     right_drv.cfg = right_config;
 
-    /* Configure DMA mode */
-    dma_mode =    /* Transfer from peripheral to memory */
-               STM32_DMA_CR_DIR_P2M |
-               /* Transfer 32 bit words at a time. */
-               STM32_DMA_CR_MSIZE_WORD | STM32_DMA_CR_PSIZE_WORD |
-               /* Increment the memory address after each transfer. */
-               STM32_DMA_CR_MINC |
-               /* Circular mode (automatically restart). */
-               STM32_DMA_CR_CIRC |
-               /* Enable one interrupt after each half of the buffer. */
-               STM32_DMA_CR_TCIE | STM32_DMA_CR_HTIE |
-               /* Enable interrupt on errors. */
-               STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
-
-    /* channel specfic settings. */
-    left_dma_mode = dma_mode | STM32_DMA_CR_CHSEL(DFSDM_FLT0_DMA_CHN) |
-                    STM32_DMA_CR_PL(STM32_DFSDM_MICROPHONE_LEFT_DMA_PRIORITY);
-    right_dma_mode = dma_mode | STM32_DMA_CR_CHSEL(DFSDM_FLT1_DMA_CHN) |
-                     STM32_DMA_CR_PL(STM32_DFSDM_MICROPHONE_RIGHT_DMA_PRIORITY);
-
+    ///////LEFT/////////
     /* Configure left DMA stream. */
-    dmaStreamSetPeripheral(left_drv.dma_stream, &DFSDM1_Filter0->FLTRDATAR);
-    dmaStreamSetMemory0(left_drv.dma_stream, left_drv.cfg->samples);
-    dmaStreamSetTransactionSize(left_drv.dma_stream, left_drv.cfg->samples_len);
-    dmaStreamSetMode(left_drv.dma_stream, left_dma_mode);
-    dmaStreamEnable(left_drv.dma_stream);
+    dma_set_peripheral_address(DMA2, DMA_STREAM0, (uint32_t) &DFSDM1_Filter0->FLTRDATAR);
+    dma_set_memory_address(DMA2, DMA_STREAM0, (uint32_t) left_drv.cfg->samples);
+    dma_set_number_of_data(DMA2, DMA_STREAM0, left_drv.cfg->samples_len);
 
+    /*set mode*/
+    dma_channel_select(DMA2, DMA_STREAM0, DFSDM_FLT0_DMA_CHN);
+    nvic_set_priority(NVIC_DMA2_STREAM0_IRQ, STM32_DFSDM_MICROPHONE_LEFT_DMA_IRQ_PRIORITY);
+    dma_set_transfer_mode(DMA2, DMA_STREAM0, DMA_SxCR_DIR_PERIPHERAL_TO_MEM);
+    dma_set_memory_size(DMA2, DMA_STREAM0, DMA_SxCR_MSIZE_32BIT);
+    dma_set_peripheral_size(DMA2, DMA_STREAM0, DMA_SxCR_PSIZE_32BIT);
+    dma_enable_memory_increment_mode(DMA2, DMA_STREAM0);
+    dma_enable_circular_mode(DMA2, DMA_STREAM0);
+    dma_enable_half_transfer_interrupt(DMA2, DMA_STREAM0);
+    dma_enable_transfer_error_interrupt(DMA2, DMA_STREAM0);
+
+    dma_enable_stream(DMA2, DMA_STREAM0);
+
+    ///////RIGHT/////////
     /* Configure right DMA stream. */
-    dmaStreamSetPeripheral(right_drv.dma_stream, &DFSDM1_Filter1->FLTRDATAR);
-    dmaStreamSetMemory0(right_drv.dma_stream, right_drv.cfg->samples);
-    dmaStreamSetTransactionSize(right_drv.dma_stream, right_drv.cfg->samples_len);
-    dmaStreamSetMode(right_drv.dma_stream, right_dma_mode);
-    dmaStreamEnable(right_drv.dma_stream);
+    dma_set_peripheral_address(DMA2, DMA_STREAM1, (uint32_t) &DFSDM1_Filter1->FLTRDATAR);
+    dma_set_memory_address(DMA2, DMA_STREAM1, (uint32_t) left_drv.cfg->samples);
+    dma_set_number_of_data(DMA2, DMA_STREAM1, left_drv.cfg->samples_len);
+    /*set mode*/
+    dma_channel_select(DMA2, DMA_STREAM1, DFSDM_FLT1_DMA_CHN);
+    nvic_set_priority(NVIC_DMA2_STREAM1_IRQ, STM32_DFSDM_MICROPHONE_RIGHT_DMA_IRQ_PRIORITY);
+    dma_set_transfer_mode(DMA2, DMA_STREAM1, DMA_SxCR_DIR_PERIPHERAL_TO_MEM);
+    dma_set_memory_size(DMA2, DMA_STREAM1, DMA_SxCR_MSIZE_32BIT);
+    dma_set_peripheral_size(DMA2, DMA_STREAM1, DMA_SxCR_PSIZE_32BIT);
+    dma_enable_memory_increment_mode(DMA2, DMA_STREAM1);
+    dma_enable_circular_mode(DMA2, DMA_STREAM1);
+    dma_enable_half_transfer_interrupt(DMA2, DMA_STREAM1);
+    dma_enable_transfer_error_interrupt(DMA2, DMA_STREAM1);
+
+    dma_enable_stream(DMA2, DMA_STREAM1);
 
     /* Enable continuous conversion. */
     DFSDM1_Filter0->FLTCR1 |= DFSDM_FLTCR1_RCONT;
@@ -210,6 +236,7 @@ void dfsdm_stop_conversion(void)
     DFSDM1_Filter0->FLTCR1 &= ~DFSDM_FLTCR1_RCONT;
     DFSDM1_Filter1->FLTCR1 &= ~DFSDM_FLTCR1_RCONT;
 
-    dmaStreamDisable(left_drv.dma_stream);
-    dmaStreamDisable(right_drv.dma_stream);
+    dma_disable_stream(DMA2, DMA_STREAM0);
+    dma_disable_stream(DMA2, DMA_STREAM1);
+
 }

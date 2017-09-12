@@ -2,6 +2,8 @@
 #define REG_COMPLEMENT_H
 
 #include <libopencm3/stm32/f4/dma.h>
+#include <libopencm3/stm32/f4/rcc.h>
+#include <libopencmsis/core_cm3.h>
 
 //////////////////////////////////////////TAKEN FROM CHIBIOS////////////////////////////////////
 /**
@@ -17,6 +19,27 @@ typedef struct
   __IO uint32_t CHDATINR;    /*!< DFSDM channel data input register,                Address offset: 0x10 */
 } DFSDM_Channel_TypeDef;
 
+/**
+  * @brief DFSDM module registers
+  */
+typedef struct
+{
+  __IO uint32_t FLTCR1;         /*!< DFSDM control register1,                          Address offset: 0x100 */
+  __IO uint32_t FLTCR2;         /*!< DFSDM control register2,                          Address offset: 0x104 */
+  __IO uint32_t FLTISR;         /*!< DFSDM interrupt and status register,              Address offset: 0x108 */
+  __IO uint32_t FLTICR;         /*!< DFSDM interrupt flag clear register,              Address offset: 0x10C */
+  __IO uint32_t FLTJCHGR;       /*!< DFSDM injected channel group selection register,  Address offset: 0x110 */
+  __IO uint32_t FLTFCR;         /*!< DFSDM filter control register,                    Address offset: 0x114 */
+  __IO uint32_t FLTJDATAR;      /*!< DFSDM data register for injected group,           Address offset: 0x118 */
+  __IO uint32_t FLTRDATAR;      /*!< DFSDM data register for regular group,            Address offset: 0x11C */
+  __IO uint32_t FLTAWHTR;       /*!< DFSDM analog watchdog high threshold register,    Address offset: 0x120 */
+  __IO uint32_t FLTAWLTR;       /*!< DFSDM analog watchdog low threshold register,     Address offset: 0x124 */
+  __IO uint32_t FLTAWSR;        /*!< DFSDM analog watchdog status register             Address offset: 0x128 */
+  __IO uint32_t FLTAWCFR;       /*!< DFSDM analog watchdog clear flag register         Address offset: 0x12C */
+  __IO uint32_t FLTEXMAX;       /*!< DFSDM extreme detector maximum register,          Address offset: 0x130 */
+  __IO uint32_t FLTEXMIN;       /*!< DFSDM extreme detector minimum register           Address offset: 0x134 */
+  __IO uint32_t FLTCNVTIMR;     /*!< DFSDM conversion timer,                           Address offset: 0x138 */
+} DFSDM_Filter_TypeDef;
 
 /*!< APB2 peripherals */
 #define DFSDM1_BASE           (PERIPH_BASE_APB2 + 0x6000U)
@@ -184,14 +207,15 @@ typedef struct
 //////////////////////////////////////COMPLEMENT FOR LIBOPENCM3/////////////////////////////////
 
 /*RCC*/
-#define RCC_DFSDM1EN    = _REG_BIT(0x44, 21)
+//#define RCC_DFSDM1EN	_REG_BIT(0x44, 21)
+#define RCC_DFSDM1EN	(((0x44) << 5) + (21))
 
 /*DMA*/
 #define STM32_DFSDM_MICROPHONE_LEFT_DMA_STREAM DMA2_STREAM0
-#define STM32_DFSDM_MICROPHONE_LEFT_DMA_PRIORITY 2
+#define STM32_DFSDM_MICROPHONE_LEFT_DMA_PRIORITY DMA_SxCR_PL_HIGH
 #define STM32_DFSDM_MICROPHONE_LEFT_DMA_IRQ_PRIORITY 6
 #define STM32_DFSDM_MICROPHONE_RIGHT_DMA_STREAM DMA2_STREAM1
-#define STM32_DFSDM_MICROPHONE_RIGHT_DMA_PRIORITY 2
+#define STM32_DFSDM_MICROPHONE_RIGHT_DMA_PRIORITY DMA_SxCR_PL_HIGH
 #define STM32_DFSDM_MICROPHONE_RIGHT_DMA_IRQ_PRIORITY 6
 
 
