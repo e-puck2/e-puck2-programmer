@@ -8,6 +8,7 @@ static bool cmd_pwr_on_btn(target *t, int argc, const char **argv);
 static bool cmd_vbus(target *t, int argc, const char **argv);
 static bool cmd_usb_charge(target *t, int argc, const char **argv);
 static bool cmd_usb_500(target *t, int argc, const char **argv);
+static bool cmd_reset_F407(target *t, int argc, const char **argv);
 /***************************************/
 /* End of platform dedicated commands. */
 /***************************************/
@@ -25,6 +26,8 @@ static bool cmd_usb_500(target *t, int argc, const char **argv);
 	{"vbus", (cmd_handler)cmd_vbus, "Return the state of VBus" }, \
 	{"usb_charge", (cmd_handler)cmd_usb_charge, "(ON|OFF|) Set the USB_CHARGE pin or return the state of this one" }, \
 	{"usb_500", (cmd_handler)cmd_usb_500, "(ON|OFF|) Set the USB_500 pin or return the state of this one" }, \
+	{"reset_F407", (cmd_handler)cmd_reset_F407, "(ON|OFF|) Force the reset of F407" }, \
+
 /***********************************************/
 /* End of List of platform dedicated commands. */
 /***********************************************/
@@ -98,6 +101,19 @@ static bool cmd_usb_500(target *t, int argc, const char **argv)
 			 platform_get_usb_500() ? "ON" : "OFF");
 	else
 		platform_set_usb_500(strcmp(argv[1], "ON") == 0);
+	return true;
+}
+
+static bool cmd_reset_F407(target *t, int argc, const char **argv)
+{
+	(void)t;
+	if (argc == 1)
+		gdb_outf("Reset F407 state: %s\n",
+			gpio_get(SRST_PORT, SRST_PIN) ? "OFF" : "ON");
+	else if (strcmp(argv[1], "ON") == 0)
+		gpio_clear(SRST_PORT, SRST_PIN);
+ 	else
+		gpio_set(SRST_PORT, SRST_PIN);
 	return true;
 }
 
