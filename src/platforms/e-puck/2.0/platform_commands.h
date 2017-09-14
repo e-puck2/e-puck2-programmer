@@ -34,6 +34,7 @@ static void cmd_dfsdm(target *t, int argc, const char **argv);
 #if defined(PLATFORM_COMMANDS_CODE)
 #include <../DFSDM/dfsdm.h>
 #include "cdcacm.h"
+#include <libopencm3/cm3/nvic.h>
 /****************************************************/
 /* Begining of Code of platform dedicated commands. */
 /****************************************************/
@@ -113,9 +114,10 @@ static void cmd_dfsdm(target *t, int argc, const char **argv)
     (void) argc;
     (void) argv;
     (void) t;
+    dfsdm_data_ready = false;
 
-    if (argc != 1) {
-        usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, "Usage: dfsdm left|right\r\n", 27);
+    if (argc != 2) {
+        while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT,"Usage: dfsdm left|right", 23) <= 0);
         return;
     }
 
@@ -130,7 +132,7 @@ static void cmd_dfsdm(target *t, int argc, const char **argv)
 
     dfsdm_start_conversion(&left_cfg, &right_cfg);
 
-    usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, "Done !\r\n", 10);
+	while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT,"Done !\r\n", 8) <= 0);
 
     /* High pass filter params */
     const float tau = 1 / 20.; /* 1 / cutoff */
@@ -139,21 +141,22 @@ static void cmd_dfsdm(target *t, int argc, const char **argv)
     const float alpha = tau / (tau + dt);
 
     int32_t x_prev = 0, y = 0, x;
-
     while (true) {
         if(dfsdm_data_ready){
         	dfsdm_data_ready = false;
-	    	size_t i;
-
+	    	uint16_t i;
 	        /* First order high pass filtering is used to remove the DC component
 	         * of the signal. */
-	        for (i = 0; i < AUDIO_BUFFER_SIZE / 2; i++) {
+
+	        for (i = 0; i < (AUDIO_BUFFER_SIZE / 2); i++) {
 	            x = samples[i];
 	            y = alpha * y + alpha * (x - x_prev);
 	            x_prev = x;
 	            samples[i] = y;
+	            while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, (uint8_t*)&y, 1) <= 0);
 	        }
-	        usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, (uint8_t *)samples, sizeof(left_buffer) / 2);
+	        nvic_enable_irq(NVIC_DMA2_STREAM0_IRQ);
+	        nvic_enable_irq(NVIC_DMA2_STREAM1_IRQ);
         }
     }
 }

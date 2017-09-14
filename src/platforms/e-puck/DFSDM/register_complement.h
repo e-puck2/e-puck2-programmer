@@ -207,8 +207,8 @@ typedef struct
 //////////////////////////////////////COMPLEMENT FOR LIBOPENCM3/////////////////////////////////
 
 /*RCC*/
-//#define RCC_DFSDM1EN	_REG_BIT(0x44, 21)
-#define RCC_DFSDM1EN	(((0x44) << 5) + (21))
+//#define RCC_DFSDM1EN	_REG_BIT(0x44, 24)
+#define RCC_DFSDM1EN	(((0x44) << 5) + (24))
 
 /*DMA*/
 #define STM32_DFSDM_MICROPHONE_LEFT_DMA_STREAM DMA2_STREAM0

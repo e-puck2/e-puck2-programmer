@@ -22,8 +22,8 @@
  * See Table 28 (DMA2 request mapping) in the STM32F413 reference manual for
  * complete list.
  * */
-#define DFSDM_FLT0_DMA_CHN 7
-#define DFSDM_FLT1_DMA_CHN 3
+#define DFSDM_FLT0_DMA_CHN (7<<25)
+#define DFSDM_FLT1_DMA_CHN (3<<25)
 
 typedef struct {
     //const stm32_dma_stream_t *dma_stream;
@@ -48,6 +48,7 @@ void dma2_stream0_isr(void)
     } else if (tcif != 0) {
         /* End of the second halt of the circular buffer. */
         if (drv->cfg->end_cb != NULL) {
+            nvic_disable_irq(NVIC_DMA2_STREAM0_IRQ);
             size_t half = drv->cfg->samples_len / 2;
             drv->cfg->end_cb(drv->cfg->cb_arg,
                              &drv->cfg->samples[half],
@@ -56,6 +57,7 @@ void dma2_stream0_isr(void)
     } else if (htif != 0) {
         /* End of the first half of the circular buffer. */
         if (drv->cfg->end_cb != NULL) {
+            nvic_disable_irq(NVIC_DMA2_STREAM0_IRQ);
             size_t half = drv->cfg->samples_len / 2;
             drv->cfg->end_cb(drv->cfg->cb_arg,
                              drv->cfg->samples,
@@ -80,6 +82,7 @@ void dma2_stream1_isr(void)
     } else if (tcif != 0) {
         /* End of the second halt of the circular buffer. */
         if (drv->cfg->end_cb != NULL) {
+            nvic_disable_irq(NVIC_DMA2_STREAM1_IRQ);
             size_t half = drv->cfg->samples_len / 2;
             drv->cfg->end_cb(drv->cfg->cb_arg,
                              &drv->cfg->samples[half],
@@ -88,6 +91,7 @@ void dma2_stream1_isr(void)
     } else if (htif != 0) {
         /* End of the first half of the circular buffer. */
         if (drv->cfg->end_cb != NULL) {
+            nvic_disable_irq(NVIC_DMA2_STREAM1_IRQ);
             size_t half = drv->cfg->samples_len / 2;
             drv->cfg->end_cb(drv->cfg->cb_arg,
                              drv->cfg->samples,
@@ -108,7 +112,7 @@ void dfsdm_start(void)
      * DFSDM is on APB2 @ 108 Mhz. The MP34DT01 MEMS microphone runs @ 2.4 Mhz,
      * requiring a prescaler of 46.
      */
-    const unsigned clkout_div = 20;
+    const unsigned clkout_div = 9;
     DFSDM1_Channel0->CHCFGR1 |= (clkout_div & 0xff) << DFSDM_CHCFGR1_CKOUTDIV_Pos;
 
     /* Enable DFSDM interface */
@@ -172,10 +176,12 @@ void dfsdm_start(void)
 
     /* Allocate DMA streams. */
     dma_stream_reset(DMA2, DMA_STREAM0);
-    dma_set_priority(DMA2, DMA_STREAM0, STM32_DFSDM_MICROPHONE_LEFT_DMA_IRQ_PRIORITY);
+    dma_disable_stream(DMA2, DMA_STREAM0);
+    dma_set_priority(DMA2, DMA_STREAM0, STM32_DFSDM_MICROPHONE_LEFT_DMA_PRIORITY);
 
     dma_stream_reset(DMA2, DMA_STREAM1);
-    dma_set_priority(DMA2, DMA_STREAM1, STM32_DFSDM_MICROPHONE_RIGHT_DMA_IRQ_PRIORITY);
+    dma_disable_stream(DMA2, DMA_STREAM1);
+    dma_set_priority(DMA2, DMA_STREAM1, STM32_DFSDM_MICROPHONE_RIGHT_DMA_PRIORITY);
 
 }
 
@@ -192,34 +198,38 @@ void dfsdm_start_conversion(DFSDM_config_t *left_config, DFSDM_config_t *right_c
     dma_set_number_of_data(DMA2, DMA_STREAM0, left_drv.cfg->samples_len);
 
     /*set mode*/
-    dma_channel_select(DMA2, DMA_STREAM0, DFSDM_FLT0_DMA_CHN);
-    nvic_set_priority(NVIC_DMA2_STREAM0_IRQ, STM32_DFSDM_MICROPHONE_LEFT_DMA_IRQ_PRIORITY);
     dma_set_transfer_mode(DMA2, DMA_STREAM0, DMA_SxCR_DIR_PERIPHERAL_TO_MEM);
     dma_set_memory_size(DMA2, DMA_STREAM0, DMA_SxCR_MSIZE_32BIT);
     dma_set_peripheral_size(DMA2, DMA_STREAM0, DMA_SxCR_PSIZE_32BIT);
     dma_enable_memory_increment_mode(DMA2, DMA_STREAM0);
     dma_enable_circular_mode(DMA2, DMA_STREAM0);
     dma_enable_half_transfer_interrupt(DMA2, DMA_STREAM0);
+    dma_enable_transfer_complete_interrupt(DMA2, DMA_STREAM0);
+    dma_enable_direct_mode_error_interrupt(DMA2, DMA_STREAM0);
     dma_enable_transfer_error_interrupt(DMA2, DMA_STREAM0);
+    dma_channel_select(DMA2, DMA_STREAM0, DFSDM_FLT0_DMA_CHN);
 
+    nvic_enable_irq(NVIC_DMA2_STREAM0_IRQ);
     dma_enable_stream(DMA2, DMA_STREAM0);
 
     ///////RIGHT/////////
     /* Configure right DMA stream. */
     dma_set_peripheral_address(DMA2, DMA_STREAM1, (uint32_t) &DFSDM1_Filter1->FLTRDATAR);
-    dma_set_memory_address(DMA2, DMA_STREAM1, (uint32_t) left_drv.cfg->samples);
+    dma_set_memory_address(DMA2, DMA_STREAM1, (uint32_t) right_drv.cfg->samples);
     dma_set_number_of_data(DMA2, DMA_STREAM1, left_drv.cfg->samples_len);
     /*set mode*/
-    dma_channel_select(DMA2, DMA_STREAM1, DFSDM_FLT1_DMA_CHN);
-    nvic_set_priority(NVIC_DMA2_STREAM1_IRQ, STM32_DFSDM_MICROPHONE_RIGHT_DMA_IRQ_PRIORITY);
     dma_set_transfer_mode(DMA2, DMA_STREAM1, DMA_SxCR_DIR_PERIPHERAL_TO_MEM);
     dma_set_memory_size(DMA2, DMA_STREAM1, DMA_SxCR_MSIZE_32BIT);
     dma_set_peripheral_size(DMA2, DMA_STREAM1, DMA_SxCR_PSIZE_32BIT);
     dma_enable_memory_increment_mode(DMA2, DMA_STREAM1);
     dma_enable_circular_mode(DMA2, DMA_STREAM1);
     dma_enable_half_transfer_interrupt(DMA2, DMA_STREAM1);
+    dma_enable_transfer_complete_interrupt(DMA2, DMA_STREAM1);
+    dma_enable_direct_mode_error_interrupt(DMA2, DMA_STREAM1);
     dma_enable_transfer_error_interrupt(DMA2, DMA_STREAM1);
+    dma_channel_select(DMA2, DMA_STREAM1, DFSDM_FLT1_DMA_CHN);
 
+    nvic_enable_irq(NVIC_DMA2_STREAM1_IRQ);
     dma_enable_stream(DMA2, DMA_STREAM1);
 
     /* Enable continuous conversion. */
@@ -251,7 +261,7 @@ void dfsdm_data_callback(void *p, int32_t *buffer, size_t n)
      * processing one half of the buffer, the other half already captures the
      * new data. */
     if(n != AUDIO_BUFFER_SIZE / 2){
-        usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, "Buffer size is invalid.", 23);
+        while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT,"Buffer size is invalid.", 23) <= 0);
         while(1);
     }
 
@@ -265,6 +275,6 @@ void dfsdm_data_callback(void *p, int32_t *buffer, size_t n)
 void dfsdm_err_cb(void *p)
 {
     (void) p;
-    usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, "DFSDM DMA error\r\n", 19);
+    while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT,"DFSDM DMA error", 15) <= 0);
     while(1);
 }
