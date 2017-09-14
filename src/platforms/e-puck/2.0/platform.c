@@ -199,6 +199,7 @@ void platform_init(void)
 	platform_delay(2);
 	OTG_FS_DCTL &= ~OTG_FS_DCTL_SDIS;
 
+	platform_pwr_on(true);
 	dfsdm_start();
 
 }
