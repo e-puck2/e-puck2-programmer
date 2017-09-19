@@ -46,18 +46,18 @@ void dma2_stream0_isr(void)
             drv->cfg->error_cb(drv->cfg->cb_arg);
         }
     } else if (tcif != 0) {
+        DMA_LIFCR(DMA2) |= DMA_LISR_TCIF0;
         /* End of the second halt of the circular buffer. */
         if (drv->cfg->end_cb != NULL) {
-            nvic_disable_irq(NVIC_DMA2_STREAM0_IRQ);
             size_t half = drv->cfg->samples_len / 2;
             drv->cfg->end_cb(drv->cfg->cb_arg,
                              &drv->cfg->samples[half],
                              half);
         }
     } else if (htif != 0) {
+        DMA_LIFCR(DMA2) |= DMA_LISR_HTIF0;
         /* End of the first half of the circular buffer. */
         if (drv->cfg->end_cb != NULL) {
-            nvic_disable_irq(NVIC_DMA2_STREAM0_IRQ);
             size_t half = drv->cfg->samples_len / 2;
             drv->cfg->end_cb(drv->cfg->cb_arg,
                              drv->cfg->samples,
@@ -80,18 +80,18 @@ void dma2_stream1_isr(void)
             drv->cfg->error_cb(drv->cfg->cb_arg);
         }
     } else if (tcif != 0) {
+        DMA_LIFCR(DMA2) |= DMA_LISR_TCIF1;
         /* End of the second halt of the circular buffer. */
         if (drv->cfg->end_cb != NULL) {
-            nvic_disable_irq(NVIC_DMA2_STREAM1_IRQ);
             size_t half = drv->cfg->samples_len / 2;
             drv->cfg->end_cb(drv->cfg->cb_arg,
                              &drv->cfg->samples[half],
                              half);
         }
     } else if (htif != 0) {
+        DMA_LIFCR(DMA2) |= DMA_LISR_HTIF1;
         /* End of the first half of the circular buffer. */
         if (drv->cfg->end_cb != NULL) {
-            nvic_disable_irq(NVIC_DMA2_STREAM1_IRQ);
             size_t half = drv->cfg->samples_len / 2;
             drv->cfg->end_cb(drv->cfg->cb_arg,
                              drv->cfg->samples,
@@ -157,7 +157,7 @@ void dfsdm_start(void)
                              | (1 << DFSDM_FLTCR1_RDMAEN_Pos)
                              | (0 << DFSDM_FLTCR1_RCH_Pos);     /* channel */
     DFSDM1_Filter0->FLTFCR = (3 << DFSDM_FLTFCR_FORD_Pos)       /* filter order */ \
-                             | (55 << DFSDM_FLTFCR_FOSR_Pos)    /* filter oversampling */ \
+                             | (30 << DFSDM_FLTFCR_FOSR_Pos)    /* filter oversampling */ \
                              | (0 << DFSDM_FLTFCR_IOSR_Pos);   /* integrator oversampling */
 
     /* Filter 1 is identical, except that RSYNC is enabled. */
@@ -166,7 +166,7 @@ void dfsdm_start(void)
                              | (1 << DFSDM_FLTCR1_RDMAEN_Pos)
                              | (1 << DFSDM_FLTCR1_RCH_Pos);     /* channel */
     DFSDM1_Filter1->FLTFCR = (3 << DFSDM_FLTFCR_FORD_Pos)       /* filter order */ \
-                             | (55 << DFSDM_FLTFCR_FOSR_Pos)    /* filter oversampling */ \
+                             | (30 << DFSDM_FLTFCR_FOSR_Pos)    /* filter oversampling */ \
                              | (0 << DFSDM_FLTFCR_IOSR_Pos);   /* integrator oversampling */
 
 
