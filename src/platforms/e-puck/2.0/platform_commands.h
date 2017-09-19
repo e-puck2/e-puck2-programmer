@@ -132,7 +132,7 @@ static void cmd_dfsdm(target *t, int argc, const char **argv)
 
     dfsdm_start_conversion(&left_cfg, &right_cfg);
 
-	while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT,"Done !\r\n", 8) <= 0);
+	while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT,"Done !", 6) <= 0);
 
     /* High pass filter params */
     const float tau = 1 / 20.; /* 1 / cutoff */
@@ -153,10 +153,12 @@ static void cmd_dfsdm(target *t, int argc, const char **argv)
 	            y = alpha * y + alpha * (x - x_prev);
 	            x_prev = x;
 	            samples[i] = y;
-	            while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, (uint8_t*)&y, 1) <= 0);
 	        }
-	        nvic_enable_irq(NVIC_DMA2_STREAM0_IRQ);
-	        nvic_enable_irq(NVIC_DMA2_STREAM1_IRQ);
+	        uint16_t nb = 0;
+	        while (nb<10){
+	        	while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, (uint8_t*)&samples[nb*50], 50) <= 0);
+	        	nb+=1;
+	        }
         }
     }
 }
