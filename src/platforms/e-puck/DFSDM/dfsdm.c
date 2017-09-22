@@ -30,7 +30,7 @@ typedef struct {
     DFSDM_config_t *cfg;
 } DFSDM_driver_t;
 
-DFSDM_driver_t left_drv, right_drv;
+static DFSDM_driver_t left_drv, right_drv;
 
 /** Function called on DFSDM interrupt. */
 void dma2_stream0_isr(void)
@@ -47,7 +47,8 @@ void dma2_stream0_isr(void)
         }
     } else if (tcif != 0) {
         DMA_LIFCR(DMA2) |= DMA_LISR_TCIF0;
-        /* End of the second halt of the circular buffer. */
+        dma_disable_stream(DMA2, DMA_STREAM0);
+        /* End of the second half of the circular buffer. */
         if (drv->cfg->end_cb != NULL) {
             size_t half = drv->cfg->samples_len / 2;
             drv->cfg->end_cb(drv->cfg->cb_arg,
@@ -57,12 +58,12 @@ void dma2_stream0_isr(void)
     } else if (htif != 0) {
         DMA_LIFCR(DMA2) |= DMA_LISR_HTIF0;
         /* End of the first half of the circular buffer. */
-        if (drv->cfg->end_cb != NULL) {
-            size_t half = drv->cfg->samples_len / 2;
-            drv->cfg->end_cb(drv->cfg->cb_arg,
-                             drv->cfg->samples,
-                             half);
-        }
+        // if (drv->cfg->end_cb != NULL) {
+        //     size_t half = drv->cfg->samples_len / 2;
+        //     drv->cfg->end_cb(drv->cfg->cb_arg,
+        //                      drv->cfg->samples,
+        //                      half);
+        // }
     }
 }
 
@@ -81,7 +82,8 @@ void dma2_stream1_isr(void)
         }
     } else if (tcif != 0) {
         DMA_LIFCR(DMA2) |= DMA_LISR_TCIF1;
-        /* End of the second halt of the circular buffer. */
+        dma_disable_stream(DMA2, DMA_STREAM1);
+        /* End of the second half of the circular buffer. */
         if (drv->cfg->end_cb != NULL) {
             size_t half = drv->cfg->samples_len / 2;
             drv->cfg->end_cb(drv->cfg->cb_arg,
@@ -91,12 +93,12 @@ void dma2_stream1_isr(void)
     } else if (htif != 0) {
         DMA_LIFCR(DMA2) |= DMA_LISR_HTIF1;
         /* End of the first half of the circular buffer. */
-        if (drv->cfg->end_cb != NULL) {
-            size_t half = drv->cfg->samples_len / 2;
-            drv->cfg->end_cb(drv->cfg->cb_arg,
-                             drv->cfg->samples,
-                             half);
-        }
+    //     if (drv->cfg->end_cb != NULL) {
+    //         size_t half = drv->cfg->samples_len / 2;
+    //         drv->cfg->end_cb(drv->cfg->cb_arg,
+    //                          drv->cfg->samples,
+    //                          half);
+    //     }
     }
 }
 
@@ -157,7 +159,7 @@ void dfsdm_start(void)
                              | (1 << DFSDM_FLTCR1_RDMAEN_Pos)
                              | (0 << DFSDM_FLTCR1_RCH_Pos);     /* channel */
     DFSDM1_Filter0->FLTFCR = (3 << DFSDM_FLTFCR_FORD_Pos)       /* filter order */ \
-                             | (30 << DFSDM_FLTFCR_FOSR_Pos)    /* filter oversampling */ \
+                             | (55 << DFSDM_FLTFCR_FOSR_Pos)    /* filter oversampling */ \
                              | (0 << DFSDM_FLTFCR_IOSR_Pos);   /* integrator oversampling */
 
     /* Filter 1 is identical, except that RSYNC is enabled. */
@@ -166,7 +168,7 @@ void dfsdm_start(void)
                              | (1 << DFSDM_FLTCR1_RDMAEN_Pos)
                              | (1 << DFSDM_FLTCR1_RCH_Pos);     /* channel */
     DFSDM1_Filter1->FLTFCR = (3 << DFSDM_FLTFCR_FORD_Pos)       /* filter order */ \
-                             | (30 << DFSDM_FLTFCR_FOSR_Pos)    /* filter oversampling */ \
+                             | (55 << DFSDM_FLTFCR_FOSR_Pos)    /* filter oversampling */ \
                              | (0 << DFSDM_FLTFCR_IOSR_Pos);   /* integrator oversampling */
 
 
@@ -230,7 +232,7 @@ void dfsdm_start_conversion(DFSDM_config_t *left_config, DFSDM_config_t *right_c
     dma_channel_select(DMA2, DMA_STREAM1, DFSDM_FLT1_DMA_CHN);
 
     nvic_enable_irq(NVIC_DMA2_STREAM1_IRQ);
-    dma_enable_stream(DMA2, DMA_STREAM1);
+    //dma_enable_stream(DMA2, DMA_STREAM1);
 
     /* Enable continuous conversion. */
     DFSDM1_Filter0->FLTCR1 |= DFSDM_FLTCR1_RCONT;
@@ -254,8 +256,6 @@ void dfsdm_stop_conversion(void)
 
 void dfsdm_data_callback(void *p, int32_t *buffer, size_t n)
 {
-    (void) n;
-    (void) buffer;
 
     /* Only a half buffer is used at a time. This means that while we are
      * processing one half of the buffer, the other half already captures the

@@ -163,6 +163,7 @@ static void cmd_dfsdm(target *t, int argc, const char **argv)
 		    	while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, &pointeur[nb*50], 50) <= 0);
 		    	nb+=1;
 		    }
+		    return;
         }
     }
 }
