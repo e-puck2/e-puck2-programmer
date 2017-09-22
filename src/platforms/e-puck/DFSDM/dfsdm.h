@@ -18,7 +18,7 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#define AUDIO_BUFFER_SIZE 1000
+#define AUDIO_BUFFER_SIZE 44100
 volatile bool dfsdm_data_ready;
 int32_t *samples;
 
