@@ -20,8 +20,8 @@ static bool cmd_reset_F407(target *t, int argc, const char **argv);
 /* Begining of List of platform dedicated commands. */
 /* IMPORTANT : Each line MUST finish with "\"       */
 /****************************************************/
-	{"en_esp32", (cmd_handler)cmd_en_esp32, "(ON|OFF|) Set the EN_ESP32 pin or return the state of this one" }, \
-	{"gpio0_esp32", (cmd_handler)cmd_gpio0_esp32, "(ON|OFF|) Set the GPIO0_ESP32 pin or return the state of this one" }, \
+	{"esp32_en", (cmd_handler)cmd_en_esp32, "(ON|OFF|) Set the EN_ESP32 pin or return the state of this one" }, \
+	{"esp32_gpio0", (cmd_handler)cmd_gpio0_esp32, "(ON|OFF|) Set the GPIO0_ESP32 pin or return the state of this one" }, \
 	{"pwr_on_btn", (cmd_handler)cmd_pwr_on_btn, "(ON|SHUTDOWN|) Power On or Shutdown the robot or return the state of Power On button" }, \
 	{"vbus", (cmd_handler)cmd_vbus, "Return the state of VBus" }, \
 	{"usb_charge", (cmd_handler)cmd_usb_charge, "(ON|OFF|) Set the USB_CHARGE pin or return the state of this one" }, \

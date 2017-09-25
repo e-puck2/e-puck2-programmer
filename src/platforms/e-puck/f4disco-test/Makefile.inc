@@ -1,10 +1,10 @@
 # Select the options that this Blackmagic Probe platform must have implemented
 # Force because JTAG is not available on this platform and some one are not yet managed
-TRACESWO = 0
+TRACESWO ?= 0
 NO_SERIAL ?= 0
-NO_DFU = 0
-NO_JTAG= 0
-CMD_PLAT = 0
+NO_DFU ?= 0
+NO_JTAG = 1
+CMD_PLAT ?= 1
 ONLY_STM32F4 = 1
 
 ifeq ($(ONLY_STM32F4), 1)
@@ -53,13 +53,13 @@ SRC += 	cdcacm.c	\
 	timing.c	\
 	timing_stm32.c	\
 
-	ifeq ($(TRACESWO), 1)
-		SRC += 	traceswo.c
-	endif
+ifeq ($(TRACESWO), 1)
+	SRC += 	traceswo.c
+endif
 
-	ifeq ($(NO_SERIAL), 0)
-		SRC += 	usbuart.c
-	endif
+ifeq ($(NO_SERIAL), 0)
+	SRC += 	usbuart.c
+endif
 
 all:	blackmagic.bin
 

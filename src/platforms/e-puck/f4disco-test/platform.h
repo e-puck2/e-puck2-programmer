@@ -31,9 +31,45 @@
 
 #include <setjmp.h>
 
-#define PLATFORM_HAS_TRACESWO
-#define BOARD_IDENT "Black Magic Probe (F4Discovery), (Firmware " FIRMWARE_VERSION ")"
-#define DFU_IDENT   "Black Magic Firmware Upgrade (F4Discovery)"
+#if defined(PLATFORM_HAS_COMMANDS)
+#define COMMANDS_OPTION "C"
+#else
+#define COMMANDS_OPTION "c"
+#endif
+
+#if defined(PLATFORM_HAS_NO_DFU_BOOTLOADER)
+#define DFU_OPTION "d"
+#else
+#define DFU_OPTION "D"
+#endif
+
+#if !defined(PLATFORM_HAS_NO_JTAG)
+#error "NO_JTAG option must be defined for this platform !!"
+#endif
+
+#if defined(PLATFORM_HAS_NO_SERIAL)
+#define SERIAL_OPTION "s"
+#else
+#define SERIAL_OPTION "S"
+#endif
+
+#if defined(PLATFORM_HAS_TRACESWO)
+#error "TRACESWO option is not usable yet on this platform !!"
+#endif
+
+#define PLATFORM_OPTIONS	\
+				COMMANDS_OPTION		\
+				DFU_OPTION				\
+				SERIAL_OPTION			\
+/*			TRACESWO_OPTION 	\*/
+
+//#pragma message "Platform options : " PLATFORM_OPTIONS
+
+// Define the identification's names of the device
+#define BOARD_IDENT "Black Magic Probe (F4Disco-test)-(Options " PLATFORM_OPTIONS ")-(Firmware " FIRMWARE_VERSION ")"
+#ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
+#define DFU_IDENT   "Black Magic Firmware Upgrade (F4Disco-test)"
+#endif
 
 /* Important pin mappings for STM32 implementation:
  *
@@ -78,12 +114,24 @@
 
 #define LED_PORT	GPIOD
 #define LED_PORT_UART	GPIOD
+
+#define LED_GREEN GPIO12
+//#define LED_UART	LED_GREEN
 #define LED_UART	NOT_USED
-#define LED_DTR	GPIO12
-#define LED_IDLE_RUN	NOT_USED
-#define LED_RTS	GPIO13
-#define LED_ERROR	GPIO14
-#define LED_BOOTLOADER	GPIO15
+
+#define LED_ORANGE GPIO13
+#define LED_IDLE_RUN	LED_ORANGE
+
+#define LED_RED GPIO14
+//#define LED_ERROR	LED_RED
+#define LED_ERROR	NOT_USED
+#define LED_RTS	LED_RED
+
+#define LED_BLUE GPIO15
+//#define LED_BOOTLOADER	LED_BLUE
+#define LED_BOOTLOADER	NOT_USED
+#define LED_DTR	LED_BLUE
+
 #define BOOTMAGIC0 0xb007da7a
 #define BOOTMAGIC1 0xbaadfeed
 
@@ -156,6 +204,15 @@ static inline int platform_hwversion(void)
 {
 	return 0;
 }
+
+void platform_set_blue(bool assert);
+bool platform_get_blue(void);
+void platform_set_green(bool assert);
+bool platform_get_green(void);
+void platform_set_red(bool assert);
+bool platform_get_red(void);
+void platform_set_orange(bool assert);
+bool platform_get_orange(void);
 
 /* Use newlib provided integer only stdio functions */
 #define sscanf siscanf

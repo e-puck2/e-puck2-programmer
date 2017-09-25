@@ -18,3 +18,5 @@ blackmagic_upgrade
 *.exe
 
 *.DS_Store
+Objects
+Listings

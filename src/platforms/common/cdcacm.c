@@ -67,7 +67,7 @@ usbd_device * usbdev;
 
 static int configured;
 static int cdcacm_gdb_dtr = 1;
-#if !defined(PLATFORM_HAS_NO_SERIAL) && defined(EPUCK2)
+#if !defined(PLATFORM_HAS_NO_SERIAL) && (defined(EPUCK2) || defined(F4DISCO_TEST))
 static bool cdcacm_uart_dtr = true;
 static bool cdcacm_uart_rts = true;
 #endif
@@ -461,17 +461,26 @@ static int cdcacm_control_request(usbd_device *dev,
 	switch(req->bRequest) {
 	case USB_CDC_REQ_SET_CONTROL_LINE_STATE:
 		cdcacm_set_modem_state(dev, req->wIndex, true, true);
+#if defined(F4DISCO_TEST)
+		gpio_toggle(LED_PORT, LED_GREEN);
+#endif
 		/* Ignore if not for GDB interface */
 		switch (req->wIndex) {
 		case GDB_COMM_IFACE_NUM:
 			cdcacm_gdb_dtr = req->wValue & 1;
 			return 1;
-#if !defined(PLATFORM_HAS_NO_SERIAL) && defined(EPUCK2)
+#if !defined(PLATFORM_HAS_NO_SERIAL)
 		case SERIAL_COMM_IFACE_NUM:
 			cdcacm_uart_dtr = (req->wValue & (1<<0) ? 0 : 1);
 			cdcacm_uart_rts = (req->wValue & (1<<1) ? 0 : 1);
+#if defined(EPUCK2)
 			gpio_set_val(EN_ESP32_PORT, EN_ESP32_PIN, !(!cdcacm_uart_dtr && cdcacm_uart_rts));
 			gpio_set_val(GPIO0_ESP32_PORT, GPIO0_ESP32_PIN, !(cdcacm_uart_dtr && !cdcacm_uart_rts));
+#endif
+#if defined(F4DISCO_TEST)
+			gpio_set_val(LED_PORT, LED_DTR, cdcacm_uart_dtr);
+			gpio_set_val(LED_PORT, LED_RTS, cdcacm_uart_rts);
+#endif
 			return 1;
 #endif
 		default:

@@ -86,7 +86,7 @@ void platform_init(void)
 
 	gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT,
 			GPIO_PUPD_NONE,
-			LED_DTR | LED_RTS | LED_UART | LED_IDLE_RUN | LED_ERROR | LED_BOOTLOADER);
+			LED_RED | LED_GREEN | LED_ORANGE | LED_BLUE);
 
 	platform_timing_init();
 	#ifndef PLATFORM_HAS_NO_SERIAL
@@ -97,6 +97,58 @@ void platform_init(void)
 
 void platform_srst_set_val(bool assert) { (void)assert; }
 bool platform_srst_get_val(void) { return false; }
+
+void platform_set_blue(bool assert)
+{
+	if (assert)
+		gpio_set(LED_PORT, LED_BLUE);
+	else
+		gpio_clear(LED_PORT, LED_BLUE);
+}
+
+bool platform_get_blue(void)
+{
+	return gpio_get(LED_PORT, LED_BLUE) != 0;
+}
+
+void platform_set_green(bool assert)
+{
+	if (assert)
+		gpio_set(LED_PORT, LED_GREEN);
+	else
+		gpio_clear(LED_PORT, LED_GREEN);
+}
+
+bool platform_get_green(void)
+{
+	return gpio_get(LED_PORT, LED_GREEN) != 0;
+}
+
+void platform_set_red(bool assert)
+{
+	if (assert)
+		gpio_set(LED_PORT, LED_RED);
+	else
+		gpio_clear(LED_PORT, LED_RED);
+}
+
+bool platform_get_red(void)
+{
+	return gpio_get(LED_PORT, LED_RED) != 0;
+}
+
+void platform_set_orange(bool assert)
+{
+	if (assert)
+		gpio_set(LED_PORT, LED_ORANGE);
+	else
+		gpio_clear(LED_PORT, LED_ORANGE);
+}
+
+bool platform_get_orange(void)
+{
+	return gpio_get(LED_PORT, LED_ORANGE) != 0;
+}
 
 const char *platform_target_voltage(void)
 {
