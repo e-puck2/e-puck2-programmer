@@ -176,15 +176,6 @@ void dfsdm_start(void)
     DFSDM1_Filter0->FLTCR1 |= DFSDM_FLTCR1_DFEN;
     DFSDM1_Filter1->FLTCR1 |= DFSDM_FLTCR1_DFEN;
 
-    /* Allocate DMA streams. */
-    dma_stream_reset(DMA2, DMA_STREAM0);
-    dma_disable_stream(DMA2, DMA_STREAM0);
-    dma_set_priority(DMA2, DMA_STREAM0, STM32_DFSDM_MICROPHONE_LEFT_DMA_PRIORITY);
-
-    dma_stream_reset(DMA2, DMA_STREAM1);
-    dma_disable_stream(DMA2, DMA_STREAM1);
-    dma_set_priority(DMA2, DMA_STREAM1, STM32_DFSDM_MICROPHONE_RIGHT_DMA_PRIORITY);
-
 }
 
 void dfsdm_start_conversion(DFSDM_config_t *left_config, DFSDM_config_t *right_config)
@@ -194,6 +185,11 @@ void dfsdm_start_conversion(DFSDM_config_t *left_config, DFSDM_config_t *right_c
     right_drv.cfg = right_config;
 
     ///////LEFT/////////
+    /* Allocate DMA stream. */
+    dma_stream_reset(DMA2, DMA_STREAM0);
+    dma_disable_stream(DMA2, DMA_STREAM0);
+    dma_set_priority(DMA2, DMA_STREAM0, STM32_DFSDM_MICROPHONE_LEFT_DMA_PRIORITY);
+
     /* Configure left DMA stream. */
     dma_set_peripheral_address(DMA2, DMA_STREAM0, (uint32_t) &DFSDM1_Filter0->FLTRDATAR);
     dma_set_memory_address(DMA2, DMA_STREAM0, (uint32_t) left_drv.cfg->samples);
@@ -212,9 +208,13 @@ void dfsdm_start_conversion(DFSDM_config_t *left_config, DFSDM_config_t *right_c
     dma_channel_select(DMA2, DMA_STREAM0, DFSDM_FLT0_DMA_CHN);
 
     nvic_enable_irq(NVIC_DMA2_STREAM0_IRQ);
-    dma_enable_stream(DMA2, DMA_STREAM0);
 
     ///////RIGHT/////////
+    /* Allocate DMA stream. */
+    dma_stream_reset(DMA2, DMA_STREAM1);
+    dma_disable_stream(DMA2, DMA_STREAM1);
+    dma_set_priority(DMA2, DMA_STREAM1, STM32_DFSDM_MICROPHONE_RIGHT_DMA_PRIORITY);
+
     /* Configure right DMA stream. */
     dma_set_peripheral_address(DMA2, DMA_STREAM1, (uint32_t) &DFSDM1_Filter1->FLTRDATAR);
     dma_set_memory_address(DMA2, DMA_STREAM1, (uint32_t) right_drv.cfg->samples);
@@ -232,7 +232,11 @@ void dfsdm_start_conversion(DFSDM_config_t *left_config, DFSDM_config_t *right_c
     dma_channel_select(DMA2, DMA_STREAM1, DFSDM_FLT1_DMA_CHN);
 
     nvic_enable_irq(NVIC_DMA2_STREAM1_IRQ);
-    //dma_enable_stream(DMA2, DMA_STREAM1);
+
+    if(left_drv.cfg->cb_arg)
+        dma_enable_stream(DMA2, DMA_STREAM0);
+    else
+        dma_enable_stream(DMA2, DMA_STREAM1);
 
     /* Enable continuous conversion. */
     DFSDM1_Filter0->FLTCR1 |= DFSDM_FLTCR1_RCONT;

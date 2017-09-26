@@ -93,19 +93,20 @@ static bool cmd_usb_500(target *t, int argc, const char **argv)
 	return true;
 }
 
-static int32_t left_buffer[AUDIO_BUFFER_SIZE] = {0};
+static int32_t audio_buffer[AUDIO_BUFFER_SIZE] = {0};
+static DFSDM_config_t* micro_cfg;
+
 static DFSDM_config_t left_cfg = {
     .end_cb = dfsdm_data_callback,
     .error_cb = dfsdm_err_cb,
-    .samples = left_buffer,
+    .samples = NULL,
     .samples_len = AUDIO_BUFFER_SIZE
 };
 
-//static int32_t right_buffer[AUDIO_BUFFER_SIZE] = {0};
 static DFSDM_config_t right_cfg = {
     .end_cb = dfsdm_data_callback,
     .error_cb = dfsdm_err_cb,
-    .samples = NULL,//right_buffer,
+    .samples = NULL,
     .samples_len = AUDIO_BUFFER_SIZE
 };
 
@@ -121,14 +122,20 @@ static void cmd_dfsdm(target *t, int argc, const char **argv)
         return;
     }
 
-    // /* We use the callback arg to store which microphone is used. */
-    // if (!strcmp(argv[0], "left")) {
-    //     left_cfg.cb_arg = (void*) 1;
-    //     right_cfg.cb_arg = (void*) 0;
-    // } else {
+    /* We use the callback arg to store which microphone is used. */
+    if (!strcmp(argv[1], "left")) {
+    	micro_cfg = &left_cfg;
         left_cfg.cb_arg = (void*) 1;
         right_cfg.cb_arg = (void*) 0;
-    // }
+        left_cfg.samples = audio_buffer;
+        right_cfg.samples = NULL;
+    } else {
+    	micro_cfg = &right_cfg;
+        left_cfg.cb_arg = (void*) 0;
+        right_cfg.cb_arg = (void*) 1;
+        left_cfg.samples = NULL;
+        right_cfg.samples = audio_buffer;
+    }
 
     dfsdm_start_conversion(&left_cfg, &right_cfg);
 
@@ -149,16 +156,16 @@ static void cmd_dfsdm(target *t, int argc, const char **argv)
 	         * of the signal. */
 
 	        for (i = 0; i < (AUDIO_BUFFER_SIZE); i++) {
-	            x = left_cfg.samples[i];
+	            x = micro_cfg->samples[i];
 	            y = alpha * y + alpha * (x - x_prev);
 	            x_prev = x;
-	            left_cfg.samples[i] = y;
+	            micro_cfg->samples[i] = y;
 	        }
 
 	        while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT,"Done !\r\n", 8) <= 0);
 	        uint16_t nb = 0;
 	        //uint8_t* pointeur = (uint8_t*) samples;
-	        uint8_t* pointeur = (uint8_t*) left_cfg.samples;
+	        uint8_t* pointeur = (uint8_t*) micro_cfg->samples;
 		    while (nb<((((AUDIO_BUFFER_SIZE)*4)/50))){
 		    	while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, &pointeur[nb*50], 50) <= 0);
 		    	nb+=1;
