@@ -6,27 +6,16 @@
 #include "register_complement.h"
 
 
-/* Those defines are missing from the STM32F769 include, copied them from the L4 one. */
-#define DFSDM_CHCFGR1_CKOUTDIV_Pos           (16U)
-#define DFSDM_CHCFGR1_CKOUTDIV_Msk           (0xFFU << DFSDM_CHCFGR1_CKOUTDIV_Pos) /*!< 0x00FF0000 */
-#define DFSDM_CHCFGR2_DTRBS_Pos              (3U)
-#define DFSDM_FLTCR1_RCH_Pos                 (24U)
-#define DFSDM_FLTCR1_RDMAEN_Pos              (21U)
-#define DFSDM_FLTFCR_IOSR_Pos                (0U)
-#define DFSDM_FLTFCR_FOSR_Pos                (16U)
-#define DFSDM_FLTFCR_FORD_Pos                (29U)
-
 /* Both DFSDM units are wired to the same DMA channel, but is changed depending
  * on the DMA stream.
  *
- * See Table 28 (DMA2 request mapping) in the STM32F413 reference manual for
+ * See Table 31 (DMA2 request mapping) in the STM32F413 reference manual for
  * complete list.
  * */
-#define DFSDM_FLT0_DMA_CHN (7<<25)
-#define DFSDM_FLT1_DMA_CHN (3<<25)
+#define DFSDM_FLT0_DMA_CHN (7<<25)  //channel 7
+#define DFSDM_FLT1_DMA_CHN (3<<25)  //channel 3
 
 typedef struct {
-    //const stm32_dma_stream_t *dma_stream;
     DFSDM_config_t *cfg;
 } DFSDM_driver_t;
 
@@ -58,6 +47,8 @@ void dma2_stream0_isr(void)
     } else if (htif != 0) {
         DMA_LIFCR(DMA2) |= DMA_LISR_HTIF0;
         /* End of the first half of the circular buffer. */
+        /* deactivated beacouse not enough quick to send the buffer over USB FS
+        when connected to a virtual machine */
         // if (drv->cfg->end_cb != NULL) {
         //     size_t half = drv->cfg->samples_len / 2;
         //     drv->cfg->end_cb(drv->cfg->cb_arg,
@@ -93,6 +84,8 @@ void dma2_stream1_isr(void)
     } else if (htif != 0) {
         DMA_LIFCR(DMA2) |= DMA_LISR_HTIF1;
         /* End of the first half of the circular buffer. */
+        /* deactivated beacouse not enough quick to send the buffer over USB FS
+        when connected to a virtual machine */
     //     if (drv->cfg->end_cb != NULL) {
     //         size_t half = drv->cfg->samples_len / 2;
     //         drv->cfg->end_cb(drv->cfg->cb_arg,
@@ -111,8 +104,8 @@ void dfsdm_start(void)
     /* Configure DFSDM clock output (must be before enabling interface).
      *
      * The clock output is used by the microphones to send their data out.
-     * DFSDM is on APB2 @ 108 Mhz. The MP34DT01 MEMS microphone runs @ 2.4 Mhz,
-     * requiring a prescaler of 46.
+     * DFSDM is on APB2 @ 24 Mhz. The MP45DT02 MEMS microphone runs @ 2.4 Mhz,
+     * requiring a prescaler of 10 -> 9 for the register config.
      */
     const unsigned clkout_div = 9;
     DFSDM1_Channel0->CHCFGR1 |= (clkout_div & 0xff) << DFSDM_CHCFGR1_CKOUTDIV_Pos;
@@ -146,11 +139,11 @@ void dfsdm_start(void)
      * - Sinc3 filter (from ST application example)
      * - Oversampling factor (OF) = 55, integrator oversampling (IF) = 1
      *   -> acquisition rate = APB2 / (clkout_div * OF * IF)
-     *                       = 108 Mhz / (45 * 55) = 43.6 Khz.
+     *                       = 24 Mhz / (10 * 55 * 1) = 43.6 Khz.
      *   -> resolution = +/- (OF)^3
      *                 = +/- 166375
      *                 = ~ 19 bits (including sign bit)
-     *    For details on filter configuration see section 17.3.8 of the
+     *    For details on filter configuration see section 15.4.8 of the
      *    reference manual (Digital Filter Configuration).
      *
      * TODO: Get to a precise 44.1 Khz clock using audio PLL
@@ -190,12 +183,12 @@ void dfsdm_start_conversion(DFSDM_config_t *left_config, DFSDM_config_t *right_c
     dma_disable_stream(DMA2, DMA_STREAM0);
     dma_set_priority(DMA2, DMA_STREAM0, STM32_DFSDM_MICROPHONE_LEFT_DMA_PRIORITY);
 
-    /* Configure left DMA stream. */
+    /* Configure DMA stream. */
     dma_set_peripheral_address(DMA2, DMA_STREAM0, (uint32_t) &DFSDM1_Filter0->FLTRDATAR);
     dma_set_memory_address(DMA2, DMA_STREAM0, (uint32_t) left_drv.cfg->samples);
     dma_set_number_of_data(DMA2, DMA_STREAM0, left_drv.cfg->samples_len);
 
-    /*set mode*/
+    /* set mode */
     dma_set_transfer_mode(DMA2, DMA_STREAM0, DMA_SxCR_DIR_PERIPHERAL_TO_MEM);
     dma_set_memory_size(DMA2, DMA_STREAM0, DMA_SxCR_MSIZE_32BIT);
     dma_set_peripheral_size(DMA2, DMA_STREAM0, DMA_SxCR_PSIZE_32BIT);
@@ -215,11 +208,11 @@ void dfsdm_start_conversion(DFSDM_config_t *left_config, DFSDM_config_t *right_c
     dma_disable_stream(DMA2, DMA_STREAM1);
     dma_set_priority(DMA2, DMA_STREAM1, STM32_DFSDM_MICROPHONE_RIGHT_DMA_PRIORITY);
 
-    /* Configure right DMA stream. */
+    /* Configure DMA stream. */
     dma_set_peripheral_address(DMA2, DMA_STREAM1, (uint32_t) &DFSDM1_Filter1->FLTRDATAR);
     dma_set_memory_address(DMA2, DMA_STREAM1, (uint32_t) right_drv.cfg->samples);
     dma_set_number_of_data(DMA2, DMA_STREAM1, left_drv.cfg->samples_len);
-    /*set mode*/
+    /* set mode */
     dma_set_transfer_mode(DMA2, DMA_STREAM1, DMA_SxCR_DIR_PERIPHERAL_TO_MEM);
     dma_set_memory_size(DMA2, DMA_STREAM1, DMA_SxCR_MSIZE_32BIT);
     dma_set_peripheral_size(DMA2, DMA_STREAM1, DMA_SxCR_PSIZE_32BIT);
@@ -233,6 +226,7 @@ void dfsdm_start_conversion(DFSDM_config_t *left_config, DFSDM_config_t *right_c
 
     nvic_enable_irq(NVIC_DMA2_STREAM1_IRQ);
 
+/* Launch the desired stream */
     if(left_drv.cfg->cb_arg)
         dma_enable_stream(DMA2, DMA_STREAM0);
     else
@@ -265,7 +259,7 @@ void dfsdm_data_callback(void *p, int32_t *buffer, size_t n)
      * processing one half of the buffer, the other half already captures the
      * new data. */
     if(n != AUDIO_BUFFER_SIZE / 2){
-        while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT,"Buffer size is invalid.", 23) <= 0);
+        while(usbd_ep_write_packet(usbdev, CDCACM_GDB_ENDPOINT,"Buffer size is invalid.", 23) <= 0);
         while(1);
     }
 
@@ -279,6 +273,6 @@ void dfsdm_data_callback(void *p, int32_t *buffer, size_t n)
 void dfsdm_err_cb(void *p)
 {
     (void) p;
-    while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT,"DFSDM DMA error", 15) <= 0);
+    while(usbd_ep_write_packet(usbdev, CDCACM_GDB_ENDPOINT,"DFSDM DMA error", 15) <= 0);
     while(1);
 }

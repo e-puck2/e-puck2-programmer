@@ -118,7 +118,7 @@ static void cmd_dfsdm(target *t, int argc, const char **argv)
     dfsdm_data_ready = false;
 
     if (argc != 2) {
-        while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT,"Usage: dfsdm left|right", 23) <= 0);
+        while(usbd_ep_write_packet(usbdev, CDCACM_GDB_ENDPOINT,"Usage: dfsdm left|right", 23) <= 0);
         return;
     }
 
@@ -138,8 +138,6 @@ static void cmd_dfsdm(target *t, int argc, const char **argv)
     }
 
     dfsdm_start_conversion(&left_cfg, &right_cfg);
-
-	//while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT,"Done !\r\n", 10) <= 0);
 
     /* High pass filter params */
     const float tau = 1 / 20.; /* 1 / cutoff */
@@ -162,9 +160,12 @@ static void cmd_dfsdm(target *t, int argc, const char **argv)
 	            micro_cfg->samples[i] = y;
 	        }
 
+	        /* here, we don't send half a buffer at every interruption of the DMa because 
+	           we don't reach a sufficient speed to send them before the buffer is modified
+	           again so when the buffer is full, the DMA stream is disabled and the full buffer
+	           is sent */
 	        while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT,"Done !\r\n", 8) <= 0);
 	        uint16_t nb = 0;
-	        //uint8_t* pointeur = (uint8_t*) samples;
 	        uint8_t* pointeur = (uint8_t*) micro_cfg->samples;
 		    while (nb<((((AUDIO_BUFFER_SIZE)*4)/50))){
 		    	while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, &pointeur[nb*50], 50) <= 0);

@@ -8,9 +8,8 @@
  * store the samples. This allows real time processing of the samples without
  * data loss. It is similar to what is done for the ADCs drivers by ChibiOS.
  *
- * This driver is tailored to the hardware present on the STM32F7 discovery
- * board, but the implementation should be relatively easy to adapt to another
- * target / use case.
+ * This driver has been adapted from the one made for the DiscoveryF7
+ * board
  */
 #ifndef DFSDM_H
 #define DFSDM_H

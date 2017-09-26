@@ -6,6 +6,17 @@
 #include <libopencmsis/core_cm3.h>
 
 //////////////////////////////////////////TAKEN FROM CHIBIOS////////////////////////////////////
+
+/* Those defines are missing from the STM32F769 include, copied them from the L4 one. */
+#define DFSDM_CHCFGR1_CKOUTDIV_Pos           (16U)
+#define DFSDM_CHCFGR1_CKOUTDIV_Msk           (0xFFU << DFSDM_CHCFGR1_CKOUTDIV_Pos) /*!< 0x00FF0000 */
+#define DFSDM_CHCFGR2_DTRBS_Pos              (3U)
+#define DFSDM_FLTCR1_RCH_Pos                 (24U)
+#define DFSDM_FLTCR1_RDMAEN_Pos              (21U)
+#define DFSDM_FLTFCR_IOSR_Pos                (0U)
+#define DFSDM_FLTFCR_FOSR_Pos                (16U)
+#define DFSDM_FLTFCR_FORD_Pos                (29U)
+
 /**
   * @brief DFSDM channel configuration registers
   */
@@ -201,8 +212,6 @@ typedef struct
 
 /******************  Bit definition for DFSDM_FLTCNVTIMR register ******************/
 #define  DFSDM_FLTCNVTIMR_CNVCNT              0xFFFFFFF0U             /*!< CNVCNT[27:0]: 28-bit timer counting conversion time */
-
-//////////////////////////////////////////TAKEN FROM CHIBIOS////////////////////////////////////
 
 //////////////////////////////////////COMPLEMENT FOR LIBOPENCM3/////////////////////////////////
 
