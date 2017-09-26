@@ -43,6 +43,7 @@ def main():
     args = parse_args()
     conn = serial.Serial(args.port, args.baudrate)
 
+    conn.flushInput()
     # First place the board in dfsdm acquisition mode
     if args.left:
         conn.write("dfsdm left\r\n".encode())
