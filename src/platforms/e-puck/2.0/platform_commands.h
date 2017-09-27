@@ -116,28 +116,45 @@ static void cmd_dfsdm(target *t, int argc, const char **argv)
     (void) argv;
     (void) t;
     dfsdm_data_ready = false;
+    uint8_t group_mic = DFSDM_MIC_GROUP_1;
 
     if (argc != 2) {
-        while(usbd_ep_write_packet(usbdev, CDCACM_GDB_ENDPOINT,"Usage: dfsdm left|right", 23) <= 0);
+        while(usbd_ep_write_packet(usbdev, CDCACM_GDB_ENDPOINT,"Usage: dfsdm left|right|top|down", 23) <= 0);
         return;
     }
 
     /* We use the callback arg to store which microphone is used. */
     if (!strcmp(argv[1], "left")) {
-    	micro_cfg = &left_cfg;
-        left_cfg.cb_arg = (void*) 1;
-        right_cfg.cb_arg = (void*) 0;
-        left_cfg.samples = audio_buffer;
-        right_cfg.samples = NULL;
-    } else {
     	micro_cfg = &right_cfg;
         left_cfg.cb_arg = (void*) 0;
         right_cfg.cb_arg = (void*) 1;
         left_cfg.samples = NULL;
         right_cfg.samples = audio_buffer;
+        group_mic = DFSDM_MIC_GROUP_1;
+    }else if (!strcmp(argv[1], "right")) {
+        micro_cfg = &left_cfg;
+        left_cfg.cb_arg = (void*) 1;
+        right_cfg.cb_arg = (void*) 0;
+        left_cfg.samples = audio_buffer;
+        right_cfg.samples = NULL;
+        group_mic = DFSDM_MIC_GROUP_1;
+    }else if (!strcmp(argv[1], "top")){
+    	micro_cfg = &left_cfg;
+        left_cfg.cb_arg = (void*) 1;
+        right_cfg.cb_arg = (void*) 0;
+        left_cfg.samples = audio_buffer;
+        right_cfg.samples = NULL;
+        group_mic = DFSDM_MIC_GROUP_2;
+    }else if (!strcmp(argv[1], "bottom")){
+    	micro_cfg = &left_cfg;
+        left_cfg.cb_arg = (void*) 0;
+        right_cfg.cb_arg = (void*) 1;
+        left_cfg.samples = audio_buffer;
+        right_cfg.samples = NULL;
+        group_mic = DFSDM_MIC_GROUP_2;
     }
 
-    dfsdm_start_conversion(&left_cfg, &right_cfg);
+    dfsdm_start_conversion(&left_cfg, &right_cfg, group_mic);
 
     /* High pass filter params */
     const float tau = 1 / 20.; /* 1 / cutoff */

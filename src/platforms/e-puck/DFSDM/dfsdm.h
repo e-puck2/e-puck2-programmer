@@ -17,7 +17,9 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#define AUDIO_BUFFER_SIZE 44100
+#define AUDIO_BUFFER_SIZE   44100
+#define DFSDM_MIC_GROUP_1   0
+#define DFSDM_MIC_GROUP_2   1
 volatile bool dfsdm_data_ready;
 int32_t *samples;
 
@@ -57,7 +59,7 @@ typedef struct {
 void dfsdm_start(void);
 
 /** Starts the continous acquisition. */
-void dfsdm_start_conversion(DFSDM_config_t *left_config, DFSDM_config_t *right_config);
+void dfsdm_start_conversion(DFSDM_config_t *left_config, DFSDM_config_t *right_config, uint8_t mic_group);
 
 /** Stops the continous acquisition. */
 void dfsdm_stop_conversion(void);

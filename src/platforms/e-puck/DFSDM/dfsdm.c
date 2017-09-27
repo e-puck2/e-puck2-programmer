@@ -131,6 +131,18 @@ void dfsdm_start(void)
     DFSDM1_Channel0->CHCFGR1 |= DFSDM_CHCFGR1_CHEN;
     DFSDM1_Channel1->CHCFGR1 |= DFSDM_CHCFGR1_CHEN;
 
+    /* Serial input configuration.
+     *
+     * The two microphones are connected to channel 2 instead of channel 3.
+     * So we can only read one. The distinction is between the rising edge or the 
+     * falling edge. This is changed in dfsdm_start_conversion() when called.
+     * */
+    DFSDM1_Channel2->CHCFGR1 |= DFSDM_CHCFGR1_SPICKSEL_0;
+    DFSDM1_Channel2->CHCFGR1 |= DFSDM_CHCFGR1_SITP_0;
+
+    /* Enable channel 2 */
+    DFSDM1_Channel2->CHCFGR1 |= DFSDM_CHCFGR1_CHEN;
+
     /* Filter units configuration:
      * - Fast mode enabled
      * - Corresponding channel must be selected
@@ -171,11 +183,47 @@ void dfsdm_start(void)
 
 }
 
-void dfsdm_start_conversion(DFSDM_config_t *left_config, DFSDM_config_t *right_config)
+void dfsdm_start_conversion(DFSDM_config_t *left_config, DFSDM_config_t *right_config, uint8_t mic_group)
 {
 
     left_drv.cfg = left_config;
     right_drv.cfg = right_config;
+    uint8_t channel = 0;
+
+    if( (mic_group != DFSDM_MIC_GROUP_1) && (mic_group != DFSDM_MIC_GROUP_2) ){
+        while(usbd_ep_write_packet(usbdev, CDCACM_GDB_ENDPOINT,"Mic group invalid", 17) <= 0);
+        while(1);
+    }
+
+    //stops the filters
+    DFSDM1_Filter0->FLTCR1 &= ~DFSDM_FLTCR1_RCONT;
+    DFSDM1_Filter1->FLTCR1 &= ~DFSDM_FLTCR1_RCONT;
+
+    /* disable the filters */
+    DFSDM1_Filter0->FLTCR1 &= ~DFSDM_FLTCR1_DFEN;
+    DFSDM1_Filter1->FLTCR1 &= ~DFSDM_FLTCR1_DFEN;
+
+    if(mic_group == DFSDM_MIC_GROUP_2){
+        channel = 2;
+        /* disable channel 2 */
+        DFSDM1_Channel2->CHCFGR1 &= ~DFSDM_CHCFGR1_CHEN;
+
+        /* choose if rising edge or falling edge has to be read*/
+        if(left_drv.cfg->cb_arg)
+            DFSDM1_Channel2->CHCFGR1 &= ~DFSDM_CHCFGR1_SITP_0;//rising
+        else
+            DFSDM1_Channel2->CHCFGR1 |= DFSDM_CHCFGR1_SITP_0;//falling
+
+        left_drv.cfg->cb_arg = (void*)1;
+        /* enable channel 2 */
+        DFSDM1_Channel2->CHCFGR1 |= DFSDM_CHCFGR1_CHEN;
+    }
+
+    uint32_t temp_cr1 = DFSDM1_Filter0->FLTCR1;
+    temp_cr1 &= ~0x007000000;
+    temp_cr1 |= channel << DFSDM_FLTCR1_RCH_Pos;
+    DFSDM1_Filter0->FLTCR1 = temp_cr1;
+
 
     ///////LEFT/////////
     /* Allocate DMA stream. */
@@ -211,7 +259,7 @@ void dfsdm_start_conversion(DFSDM_config_t *left_config, DFSDM_config_t *right_c
     /* Configure DMA stream. */
     dma_set_peripheral_address(DMA2, DMA_STREAM1, (uint32_t) &DFSDM1_Filter1->FLTRDATAR);
     dma_set_memory_address(DMA2, DMA_STREAM1, (uint32_t) right_drv.cfg->samples);
-    dma_set_number_of_data(DMA2, DMA_STREAM1, left_drv.cfg->samples_len);
+    dma_set_number_of_data(DMA2, DMA_STREAM1, right_drv.cfg->samples_len);
     /* set mode */
     dma_set_transfer_mode(DMA2, DMA_STREAM1, DMA_SxCR_DIR_PERIPHERAL_TO_MEM);
     dma_set_memory_size(DMA2, DMA_STREAM1, DMA_SxCR_MSIZE_32BIT);
@@ -227,11 +275,19 @@ void dfsdm_start_conversion(DFSDM_config_t *left_config, DFSDM_config_t *right_c
     nvic_enable_irq(NVIC_DMA2_STREAM1_IRQ);
 
 /* Launch the desired stream */
-    if(left_drv.cfg->cb_arg)
+    if(mic_group == DFSDM_MIC_GROUP_1){
+        if(left_drv.cfg->cb_arg)
+            dma_enable_stream(DMA2, DMA_STREAM0);
+        else
+            dma_enable_stream(DMA2, DMA_STREAM1);
+    }else if (mic_group == DFSDM_MIC_GROUP_2){
+        /* we always use Filter0 with channel 2*/
         dma_enable_stream(DMA2, DMA_STREAM0);
-    else
-        dma_enable_stream(DMA2, DMA_STREAM1);
-
+    }
+    
+    /* Enable the filters */
+    DFSDM1_Filter0->FLTCR1 |= DFSDM_FLTCR1_DFEN;
+    DFSDM1_Filter1->FLTCR1 |= DFSDM_FLTCR1_DFEN;
     /* Enable continuous conversion. */
     DFSDM1_Filter0->FLTCR1 |= DFSDM_FLTCR1_RCONT;
     DFSDM1_Filter1->FLTCR1 |= DFSDM_FLTCR1_RCONT;
