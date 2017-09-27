@@ -24,7 +24,7 @@ static void cmd_dfsdm(target *t, int argc, const char **argv);
 	{"vbus", (cmd_handler)cmd_vbus, "Return the state of VBus" }, \
 	{"usb_charge", (cmd_handler)cmd_usb_charge, "(ON|OFF|) Set the USB_CHARGE pin or return the state of this one" }, \
 	{"usb_500", (cmd_handler)cmd_usb_500, "(ON|OFF|) Set the USB_500 pin or return the state of this one" }, \
-	{"dfsdm", (cmd_handler)cmd_dfsdm, "Usage: dfsdm left|right"}, \
+	{"dfsdm", (cmd_handler)cmd_dfsdm, "Usage: dfsdm left|right|top|bottom"}, \
 /***********************************************/
 /* End of List of platform dedicated commands. */
 /***********************************************/
@@ -35,6 +35,7 @@ static void cmd_dfsdm(target *t, int argc, const char **argv);
 #include <../DFSDM/dfsdm.h>
 #include "cdcacm.h"
 #include <libopencm3/cm3/nvic.h>
+#include "gdb_packet.h" 
 /****************************************************/
 /* Begining of Code of platform dedicated commands. */
 /****************************************************/
@@ -94,20 +95,89 @@ static bool cmd_usb_500(target *t, int argc, const char **argv)
 }
 
 static int32_t audio_buffer[AUDIO_BUFFER_SIZE] = {0};
-static DFSDM_config_t* micro_cfg;
+static DFSDM_config_t* mic_used;
 
+/*microphones config rules :
+* 1) 	The DMA, DMA stream and DMA channel must be set accordingly with the DMA request mapping
+* 		to be able to work with the DFSDM filter chosen
+* 
+* 2) 	The DSFDM channel is dependant on the hardware conection of the microphone
+* 3)	Two microphones can be connected to one input, then each channel can be connected
+* 		to its line or the its line+1. It should be configured accordingly with the hardware conenction
+* 4)	The edge specifiy which microphone connected to the line has to be read
+* 5) 	Beware of the hardware limitations of the uC. DFSDM1 has 3 inputs, 4 channels and 2 filters
+* 		and DFSDM2 had 4 inputs, 8 channels and 4 filters
+* 		
+* 		If one filter can only compute on channel at at time and one input can connect two microphones
+* 		
+* 		Actual connection for e-puck 2 first prototype :
+* 		
+* 		Left and Right mics connected to DFSDM1 input 1 (channel 0 and 1 can read)
+* 		Top and Bottom mics connected to DFSDM1 input 2 (channel 1 and 2 can read)
+* 		
+*/
 static DFSDM_config_t left_cfg = {
     .end_cb = dfsdm_data_callback,
     .error_cb = dfsdm_err_cb,
-    .samples = NULL,
-    .samples_len = AUDIO_BUFFER_SIZE
+    .cb_arg = (void*) 1,
+    .samples = audio_buffer,
+    .samples_len = AUDIO_BUFFER_SIZE,
+    .dma = DMA2,
+    .dma_stream = DMA_STREAM0,
+    .dma_channel = DMA_SxCR_CHSEL_7,
+    .dma_priority = STM32_DFSDM_MICROPHONE_DMA_PRIORITY,
+    .dfsdm_channel = DFSDM1_Channel0,
+    .dfsdm_input =	DFSDM_NEXT,
+    .dfsdm_edge = DFSDM_FALLING_EDGE,
+    .dfsdm_filter = DFSDM1_Filter0,
 };
 
 static DFSDM_config_t right_cfg = {
     .end_cb = dfsdm_data_callback,
     .error_cb = dfsdm_err_cb,
-    .samples = NULL,
-    .samples_len = AUDIO_BUFFER_SIZE
+    .cb_arg = (void*) 1,
+    .samples = audio_buffer,
+    .samples_len = AUDIO_BUFFER_SIZE,
+    .dma = DMA2,
+    .dma_stream = DMA_STREAM1,
+    .dma_channel = DMA_SxCR_CHSEL_3,
+    .dma_priority = STM32_DFSDM_MICROPHONE_DMA_PRIORITY,
+    .dfsdm_channel = DFSDM1_Channel1,
+    .dfsdm_input =	DFSDM_SELF,
+    .dfsdm_edge = DFSDM_RISING_EDGE,
+    .dfsdm_filter = DFSDM1_Filter1,
+};
+
+static DFSDM_config_t bottom_cfg = {
+    .end_cb = dfsdm_data_callback,
+    .error_cb = dfsdm_err_cb,
+    .cb_arg = (void*) 1,
+    .samples = audio_buffer,
+    .samples_len = AUDIO_BUFFER_SIZE,
+    .dma = DMA2,
+    .dma_stream = DMA_STREAM0,
+    .dma_channel = DMA_SxCR_CHSEL_7,
+    .dma_priority = STM32_DFSDM_MICROPHONE_DMA_PRIORITY,
+    .dfsdm_channel = DFSDM1_Channel2,
+    .dfsdm_input =	DFSDM_SELF,
+    .dfsdm_edge = DFSDM_FALLING_EDGE,
+    .dfsdm_filter = DFSDM1_Filter0,
+};
+
+static DFSDM_config_t top_cfg = {
+    .end_cb = dfsdm_data_callback,
+    .error_cb = dfsdm_err_cb,
+    .cb_arg = (void*) 1,
+    .samples = audio_buffer,
+    .samples_len = AUDIO_BUFFER_SIZE,
+    .dma = DMA2,
+    .dma_stream = DMA_STREAM0,
+    .dma_channel = DMA_SxCR_CHSEL_7,
+    .dma_priority = STM32_DFSDM_MICROPHONE_DMA_PRIORITY,
+    .dfsdm_channel = DFSDM1_Channel2,
+    .dfsdm_input =	DFSDM_SELF,
+    .dfsdm_edge = DFSDM_RISING_EDGE,
+    .dfsdm_filter = DFSDM1_Filter0,
 };
 
 static void cmd_dfsdm(target *t, int argc, const char **argv)
@@ -116,45 +186,24 @@ static void cmd_dfsdm(target *t, int argc, const char **argv)
     (void) argv;
     (void) t;
     dfsdm_data_ready = false;
-    uint8_t group_mic = DFSDM_MIC_GROUP_1;
 
     if (argc != 2) {
-        while(usbd_ep_write_packet(usbdev, CDCACM_GDB_ENDPOINT,"Usage: dfsdm left|right|top|down", 23) <= 0);
+    	gdb_out("Usage: dfsdm left|right|top|down\n");
         return;
     }
 
     /* We use the callback arg to store which microphone is used. */
     if (!strcmp(argv[1], "left")) {
-    	micro_cfg = &right_cfg;
-        left_cfg.cb_arg = (void*) 0;
-        right_cfg.cb_arg = (void*) 1;
-        left_cfg.samples = NULL;
-        right_cfg.samples = audio_buffer;
-        group_mic = DFSDM_MIC_GROUP_1;
+    	mic_used = &left_cfg;
     }else if (!strcmp(argv[1], "right")) {
-        micro_cfg = &left_cfg;
-        left_cfg.cb_arg = (void*) 1;
-        right_cfg.cb_arg = (void*) 0;
-        left_cfg.samples = audio_buffer;
-        right_cfg.samples = NULL;
-        group_mic = DFSDM_MIC_GROUP_1;
+    	mic_used = &right_cfg;
     }else if (!strcmp(argv[1], "top")){
-    	micro_cfg = &left_cfg;
-        left_cfg.cb_arg = (void*) 1;
-        right_cfg.cb_arg = (void*) 0;
-        left_cfg.samples = audio_buffer;
-        right_cfg.samples = NULL;
-        group_mic = DFSDM_MIC_GROUP_2;
+    	mic_used = &top_cfg;
     }else if (!strcmp(argv[1], "bottom")){
-    	micro_cfg = &left_cfg;
-        left_cfg.cb_arg = (void*) 0;
-        right_cfg.cb_arg = (void*) 1;
-        left_cfg.samples = audio_buffer;
-        right_cfg.samples = NULL;
-        group_mic = DFSDM_MIC_GROUP_2;
+    	mic_used = &bottom_cfg;
     }
 
-    dfsdm_start_conversion(&left_cfg, &right_cfg, group_mic);
+    dfsdm_start_conversion(mic_used, DFSDM_ONESHOT);
 
     /* High pass filter params */
     const float tau = 1 / 20.; /* 1 / cutoff */
@@ -171,10 +220,10 @@ static void cmd_dfsdm(target *t, int argc, const char **argv)
 	         * of the signal. */
 
 	        for (i = 0; i < (AUDIO_BUFFER_SIZE); i++) {
-	            x = micro_cfg->samples[i];
+	            x = mic_used->samples[i];
 	            y = alpha * y + alpha * (x - x_prev);
 	            x_prev = x;
-	            micro_cfg->samples[i] = y;
+	            mic_used->samples[i] = y;
 	        }
 
 	        /* here, we don't send half a buffer at every interruption of the DMa because 
@@ -183,7 +232,7 @@ static void cmd_dfsdm(target *t, int argc, const char **argv)
 	           is sent */
 	        while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT,"Done !\r\n", 8) <= 0);
 	        uint16_t nb = 0;
-	        uint8_t* pointeur = (uint8_t*) micro_cfg->samples;
+	        uint8_t* pointeur = (uint8_t*) mic_used->samples;
 		    while (nb<((((AUDIO_BUFFER_SIZE)*4)/50))){
 		    	while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, &pointeur[nb*50], 50) <= 0);
 		    	nb+=1;

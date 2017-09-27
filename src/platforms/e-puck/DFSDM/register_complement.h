@@ -10,6 +10,8 @@
 /* Those defines are missing from the STM32F769 include, copied them from the L4 one. */
 #define DFSDM_CHCFGR1_CKOUTDIV_Pos           (16U)
 #define DFSDM_CHCFGR1_CKOUTDIV_Msk           (0xFFU << DFSDM_CHCFGR1_CKOUTDIV_Pos) /*!< 0x00FF0000 */
+#define DFSDM_CHCFGR1_CHINSEL_Pos            (8U)
+#define DFSDM_CHCFGR1_SITP_Pos               (0U)
 #define DFSDM_CHCFGR2_DTRBS_Pos              (3U)
 #define DFSDM_FLTCR1_RCH_Pos                 (24U)
 #define DFSDM_FLTCR1_RDMAEN_Pos              (21U)
@@ -219,13 +221,6 @@ typedef struct
 //#define RCC_DFSDM1EN	_REG_BIT(0x44, 24)
 #define RCC_DFSDM1EN	(((0x44) << 5) + (24))
 
-/*DMA*/
-#define STM32_DFSDM_MICROPHONE_LEFT_DMA_STREAM DMA2_STREAM0
-#define STM32_DFSDM_MICROPHONE_LEFT_DMA_PRIORITY DMA_SxCR_PL_HIGH
-#define STM32_DFSDM_MICROPHONE_LEFT_DMA_IRQ_PRIORITY 6
-#define STM32_DFSDM_MICROPHONE_RIGHT_DMA_STREAM DMA2_STREAM1
-#define STM32_DFSDM_MICROPHONE_RIGHT_DMA_PRIORITY DMA_SxCR_PL_HIGH
-#define STM32_DFSDM_MICROPHONE_RIGHT_DMA_IRQ_PRIORITY 6
 
 
 #endif/*REG_COMPLEMENT_H*/
