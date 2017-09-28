@@ -113,11 +113,12 @@
 
 #define LED_PORT		GPIOA
 #define LED_PORT_UART	GPIOA
-// #define LED_UART		GPIO14
-// #define LED_IDLE_RUN	GPIO15
+
+// #define LED_ERROR		GPIO13	// Not used because SWDP used instead
+#define LED_ERROR		NOT_USED
+// #define LED_UART		GPIO14		// Not used because SWDP used instead
 #define LED_UART		NOT_USED
-#define LED_IDLE_RUN	NOT_USED
-#define LED_ERROR		GPIO13
+#define LED_IDLE_RUN	GPIO15
 #define LED_BOOTLOADER	NOT_USED
 
 #define PWR_ON_PORT	GPIOA
