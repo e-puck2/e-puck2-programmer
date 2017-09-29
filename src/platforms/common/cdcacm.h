@@ -29,6 +29,7 @@
 #define __CDCACM_H
 
 #include <libopencm3/usb/usbd.h>
+#include "../f4discovery/audio_class.h"
 
 #define CDCACM_PACKET_SIZE 	64
 
