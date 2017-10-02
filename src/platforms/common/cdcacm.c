@@ -405,7 +405,7 @@ static const struct {
 		           1 * sizeof(struct usb_audio_header_descriptor_body),
 		.bDescriptorType = USB_AUDIO_DT_CS_INTERFACE,
 		.bDescriptorSubtype = USB_AUDIO_TYPE_HEADER,
-		.bcdADC = 0x0110, //Revision of calss specification 1.1
+		.bcdADC = 0x0100, //Revision of calss specification 1.1
 		// Total number of bytes returned for the class-specific AudioControl interface descriptor.
 	    // Includes the combined length of this descriptor header and all Unit and Terminal descriptors.    
 		.wTotalLength = sizeof(struct usb_audio_header_descriptor_head) +
@@ -475,12 +475,14 @@ static const struct {
 
 /** Table B-11: USB Microphone Standard Endpoint Descriptor */
 static const struct usb_endpoint_descriptor audio_streaming_endp[] = {{
-	.bLength = USB_DT_ENDPOINT_SIZE,// A valider devrait être 9 mais les deux champs sont unused 
+	.bLength = 0x09, 
 	.bDescriptorType = USB_DT_ENDPOINT,
 	.bEndpointAddress = 0x85,
 	.bmAttributes = USB_ENDPOINT_ATTR_ISOCHRONOUS,
 	.wMaxPacketSize = 0x0010, //16 bytes per packet
 	.bInterval = 0x01, //one paquet per frame
+	.bRefresh = 0x00, //unused
+	.bSynchAddress = 0x00, //unused
 
 	.extra = &audio_streaming_extra_endpoint_streaming,
 	.extralen = sizeof(audio_streaming_extra_endpoint_streaming),
