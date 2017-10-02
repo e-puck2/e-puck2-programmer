@@ -110,6 +110,13 @@ void setup_pwr_button() {
 	// Enable TIM2 interrupt.
 	nvic_enable_irq(NVIC_TIM2_IRQ);
 	timer_enable_irq(PWR_ON_BTN_TIM, TIM_DIER_UIE);
+
+	// Needed if no USB connexion : Test if PowerOn button is just pressed then power up the system
+  if(platform_pwr_on_btn_pressed()) {
+		pwrBtnCounter = 0;
+		timer_enable_counter(PWR_ON_BTN_TIM);
+	}
+
 }
 
 void platform_init(void)
@@ -151,7 +158,7 @@ void platform_init(void)
 	gpio_set_output_options(SRST_PORT,GPIO_OTYPE_OD,GPIO_OSPEED_50MHZ,SRST_PIN);
 	gpio_mode_setup(SRST_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, SRST_PIN);
 
-	gpio_set(USB_CHARGE_PORT, USB_CHARGE_PIN);
+	gpio_clear(USB_CHARGE_PORT, USB_CHARGE_PIN);
 	gpio_set_output_options(USB_CHARGE_PORT,GPIO_OTYPE_PP,GPIO_OSPEED_2MHZ,USB_CHARGE_PIN);
 	gpio_mode_setup(USB_CHARGE_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, USB_CHARGE_PIN);
 
