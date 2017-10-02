@@ -384,11 +384,11 @@ static const struct usb_iface_assoc_descriptor trace_assoc = {
 /** Interface Association Audio Class */
 static const struct usb_iface_assoc_descriptor audio_assoc = {
 	.bLength = USB_DT_INTERFACE_ASSOCIATION_SIZE,
-	.bDescriptorType = USB_DT_INTERFACE,
+	.bDescriptorType = USB_DT_INTERFACE_ASSOCIATION,
 	.bFirstInterface = AUDIO_CONTROL_IFACE_NUM,
 	.bInterfaceCount = 2,
 	.bFunctionClass = USB_CLASS_AUDIO,
-	.bFunctionSubClass = USB_AUDIO_SUBCLASS_CONTROL,
+	.bFunctionSubClass = USB_AUDIO_SUBCLASS_UNDEFINED,
 	.bFunctionProtocol = USB_AUDIO_PROTOCOL_CODE_UNDIFINED,
 	.iFunction = 0x00,
 };
@@ -453,7 +453,7 @@ static const struct usb_interface_descriptor audio_control_iface[] = {{
 	.bInterfaceClass = USB_CLASS_AUDIO,
 	.bInterfaceSubClass = USB_AUDIO_SUBCLASS_CONTROL,
 	.bInterfaceProtocol = USB_AUDIO_PROTOCOL_CODE_UNDIFINED, //unused
-	.iInterface = 0, //unused
+	.iInterface = 8,
 
 	.extra = &audio_control_interface_descriptors,
 	.extralen = sizeof(audio_control_interface_descriptors)
@@ -622,6 +622,7 @@ static const char *usb_strings[] = {
 	"No DFU",
 #endif
 	"Black Magic Trace Capture",
+	"Microphone BlackMagic"
 };
 
 #ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
