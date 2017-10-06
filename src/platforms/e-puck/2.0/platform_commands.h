@@ -233,10 +233,16 @@ static void cmd_dfsdm(target *t, int argc, const char **argv)
 	        while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT,"Done !\r\n", 8) <= 0);
 	        uint16_t nb = 0;
 	        uint8_t* pointeur = (uint8_t*) mic_used->samples;
-		    while (nb<((((AUDIO_BUFFER_SIZE)*4)/50))){
-		    	while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, &pointeur[nb*50], 50) <= 0);
-		    	nb+=1;
-		    }
+            uint16_t nb2 = 0;
+            while(nb2<8){
+                while (nb<((((AUDIO_BUFFER_SIZE)*4)/63))){
+                    while(usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, &pointeur[nb*63], 63) <= 0);
+                    nb+=1;
+                }
+                nb=0;
+                nb2++;
+            }
+		    
 		    return;
         }
     }
