@@ -204,6 +204,7 @@ void platform_init(void)
 	OTG_FS_DCTL &= ~OTG_FS_DCTL_SDIS;
 
 	platform_pwr_on(true);
+	platform_set_en_esp32(false);
 	dfsdm_start();
 
 }
