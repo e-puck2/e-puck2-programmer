@@ -1,8 +1,13 @@
+#if defined(_WIN32) || defined(WIN32) || defined(__CYGWIN__) || defined(__MINGW32__) || defined(__BORLANDC__)
+#define OS_WIN
+#endif
+
 PROBE_HOST ?= native
 PLATFORM_DIR = platforms/$(PROBE_HOST)
 VPATH += $(PLATFORM_DIR) platforms/common target
 ENABLE_DEBUG ?=
 NO_JTAG ?= 0
+ONLY_STM32F4 ?= 0
 
 ifneq ($(V), 1)
 MAKEFLAGS += --no-print-dir
@@ -27,30 +32,15 @@ SRC =			\
 	cortexa.c	\
 	cortexm.c	\
 	crc32.c		\
-	efm32.c		\
 	exception.c	\
 	gdb_if.c	\
 	gdb_main.c	\
 	gdb_hostio.c	\
 	gdb_packet.c	\
 	hex_utils.c	\
-	lmi.c		\
-	lpc_common.c	\
-	lpc11xx.c	\
-	lpc15xx.c	\
-	lpc43xx.c	\
-	kinetis.c	\
 	main.c		\
 	morse.c		\
-	nrf51.c		\
 	platform.c	\
-	sam3x.c		\
-	sam4l.c	\
-	samd.c		\
-	stm32f1.c	\
-	stm32f4.c	\
-	stm32l0.c	\
-	stm32l4.c	\
 	swdptap.c	\
 	swdptap_generic.c	\
 	target.c	\
@@ -58,15 +48,37 @@ SRC =			\
 include $(PLATFORM_DIR)/Makefile.inc
 
 # WARNING : MUST STAY AFTER include of Makefile.inc !!
-#			because NO_JTAG option is globally defined BUT must/can be defined in this
+#	because these options are globally defined BUT must/can be defined in this dedicated included platform's file
+#		NO_JTAG : about use of dedicated pins for JTAG interface
+#		ONLY_STM32F4 : about target than can be debugged
 #			dedicated included platform's file
+SRC +=		\
+	stm32f4.c	\
+
+ifeq ($(ONLY_STM32F4), 0)
+SRC +=		\
+	stm32f1.c	\
+	stm32l0.c	\
+	stm32l4.c	\
+	lpc_common.c	\
+	lpc11xx.c	\
+	lpc15xx.c	\
+	lpc43xx.c	\
+	sam3x.c		\
+	sam4l.c	\
+	nrf51.c		\
+	samd.c		\
+	lmi.c		\
+	kinetis.c	\
+	efm32.c
+endif
+
 ifeq ($(NO_JTAG), 0)
-	SRC +=			\
-		adiv5_jtagdp.c	\
-		jtag_scan.c	\
-		jtagtap.c	\
-		jtagtap_generic.c	\
-# To finish the previous lines in order to have the #endif directive
+SRC +=			\
+	adiv5_jtagdp.c \
+	jtag_scan.c	\
+	jtagtap.c	\
+	jtagtap_generic.c
 endif
 
 OBJ = $(SRC:.c=.o)

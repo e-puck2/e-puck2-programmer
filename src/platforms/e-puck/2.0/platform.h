@@ -113,14 +113,27 @@
 
 #define LED_PORT		GPIOA
 #define LED_PORT_UART	GPIOA
-#define LED_UART		GPIO14
+
+// #define LED_ERROR		GPIO13	// Not used because SWDP used instead
+#define LED_ERROR		NOT_USED
+// #define LED_UART		GPIO14		// Not used because SWDP used instead
+#define LED_UART		NOT_USED
 #define LED_IDLE_RUN	GPIO15
-#define LED_ERROR		GPIO13
 #define LED_BOOTLOADER	NOT_USED
 
-#define POWERFUNC_PORT	GPIOA
+#define PWR_ON_PORT	GPIOA
 #define PWR_ON_PIN			GPIO6
 #define PWR_ON_BTN_PIN	GPIO7
+
+#define PWR_ON_BTN_PORT GPIOA
+#define PWR_ON_BTN_PIN GPIO7
+#define PWR_ON_BTN_EXTI EXTI7
+#define PWR_ON_BTN_TIM TIM2
+#define PWR_ON_BTN_TIM_ISR tim2_isr
+#define TURN_ON_TIME 10
+#define TURN_OFF_TIME 100
+#define ROBOT_OFF 0
+#define ROBOT_ON 1
 
 #define VBUS_PORT	GPIOA
 #define VBUS_PIN	GPIO9
@@ -133,6 +146,9 @@
 
 #define EN_ESP32_PORT	GPIOC
 #define EN_ESP32_PIN	GPIO13
+
+#define GPIO0_ESP32_PORT	GPIOB
+#define GPIO0_ESP32_PIN	GPIO1
 
 #define TMS_SET_MODE() \
 	gpio_mode_setup(TMS_PORT, GPIO_MODE_OUTPUT, \
@@ -205,8 +221,8 @@
 } while(0)
 
 #define SET_RUN_STATE(state)	{running_status = (state);}
-#define SET_IDLE_STATE(state)	{gpio_set_val(LED_PORT, LED_IDLE_RUN, !state);}
-#define SET_ERROR_STATE(state)	{gpio_set_val(LED_PORT, LED_ERROR, !state);}
+#define SET_IDLE_STATE(state)	{gpio_set_val(LED_PORT, LED_IDLE_RUN, !(state==1));}
+#define SET_ERROR_STATE(state)	{gpio_set_val(LED_PORT, LED_ERROR, !(state==1));}
 
 static inline int platform_hwversion(void)
 {
@@ -215,6 +231,9 @@ static inline int platform_hwversion(void)
 
 void platform_set_en_esp32(bool assert);
 bool platform_get_en_esp32(void);
+
+void platform_set_gpio0_esp32(bool assert);
+bool platform_get_gpio0_esp32(void);
 
 void platform_pwr_on(bool on_state);
 bool platform_pwr_on_btn_pressed(void);

@@ -36,28 +36,43 @@
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/cm3/cortex.h>
-#include <libopencm3/stm32/otg_fs.h>
-
-#pragma message "Platform options : " PLATFORM_OPTIONS
 
 jmp_buf fatal_error_jmpbuf;
 extern uint32_t _ebss;
 
 void platform_init(void)
 {
-	rcc_periph_clock_enable(RCC_GPIOA);		// Necessary for other GPIOA
+	volatile uint32_t *magic = (uint32_t *) &_ebss;
+	/* Check the USER button*/
+	rcc_periph_clock_enable(RCC_GPIOA);
+	if (gpio_get(GPIOA, GPIO0) ||
+	   ((magic[0] == BOOTMAGIC0) && (magic[1] == BOOTMAGIC1))) {
+		magic[0] = 0;
+		magic[1] = 0;
+		/* Assert blue LED as indicator we are in the bootloader */
+		rcc_periph_clock_enable(RCC_GPIOD);
+		gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT,
+						GPIO_PUPD_NONE, LED_BOOTLOADER);
+		gpio_set(LED_PORT, LED_BOOTLOADER);
+		/* Jump to the built in bootloader by mapping System flash.
+		   As we just come out of reset, no other deinit is needed!*/
+		rcc_periph_clock_enable(RCC_SYSCFG);
+		SYSCFG_MEMRM &= ~3;
+		SYSCFG_MEMRM |=  1;
+		scb_reset_core();
+	}
+
 	rcc_clock_setup_hse_3v3(&hse_8mhz_3v3[CLOCK_3V3_48MHZ]);
 
 	/* Enable peripherals */
 	rcc_periph_clock_enable(RCC_OTGFS);
-	rcc_periph_clock_enable(RCC_GPIOB);
 	rcc_periph_clock_enable(RCC_GPIOC);
-//	rcc_periph_clock_enable(RCC_GPIOD);
+	rcc_periph_clock_enable(RCC_GPIOD);
 	rcc_periph_clock_enable(RCC_CRC);
 
 	/* Set up USB Pins and alternate function*/
-	gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO9 |GPIO11 | GPIO12);
-	gpio_set_af(GPIOA, GPIO_AF10, GPIO9 | GPIO11 | GPIO12);
+	gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO11 | GPIO12);
+	gpio_set_af(GPIOA, GPIO_AF10, GPIO11 | GPIO12);
 
 	GPIOC_OSPEEDR &=~0xF30;
 	GPIOC_OSPEEDR |= 0xA20;
@@ -65,68 +80,85 @@ void platform_init(void)
 			GPIO_PUPD_NONE,
 			TMS_PIN | TCK_PIN | TDI_PIN);
 
-/* Can be needed for TRACESWO but NO_JTAG yet
 	gpio_mode_setup(TDO_PORT, GPIO_MODE_INPUT,
 			GPIO_PUPD_NONE,
 			TDO_PIN);
-*/
 
-	gpio_set(SRST_PORT, SRST_PIN);
-	gpio_set_output_options(SRST_PORT,GPIO_OTYPE_OD,GPIO_OSPEED_50MHZ,SRST_PIN);
-	gpio_mode_setup(SRST_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, SRST_PIN);
-
-	SET_IDLE_STATE(false);
-	SET_ERROR_STATE(false);
 	gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT,
 			GPIO_PUPD_NONE,
-			LED_UART | LED_IDLE_RUN | LED_ERROR | LED_BOOTLOADER);
-
+			LED_RED | LED_GREEN | LED_ORANGE | LED_BLUE);
 
 	platform_timing_init();
-#ifndef PLATFORM_HAS_NO_SERIAL
-	usbuart_init();
-#endif
+	#ifndef PLATFORM_HAS_NO_SERIAL
+		usbuart_init();
+	#endif
 	cdcacm_init();
-
-	/* To correct the Pull-UP on D+ management
-	Done in the cdcacm_init code by call of stm32f107_usbd_init :
-	// Enable VBUS sensing in device mode and power down the PHY.
-	OTG_FS_GCCFG |= OTG_FS_GCCFG_VBUSBSEN | OTG_FS_GCCFG_PWRDWN;
-	But for the STM32F413, FS_GCCFG is not exactly the same as the F103 one.
-	Then we correct the bad OTG_FS_GCCFG_VBUSBSEN bit
-	*/
-	OTG_FS_GCCFG &= ~OTG_FS_GCCFG_VBUSBSEN;
-	/* and use the right one */
-	OTG_FS_GCCFG |= (1<<21);
-	/* Disconnect/Reconnect the USB device with a delay in order to respect the bigger delay of 1,025 ms (see Table 217 of F413 Ref. Man.) */
-	OTG_FS_DCTL |= OTG_FS_DCTL_SDIS;
-	platform_delay(2);
-	OTG_FS_DCTL &= ~OTG_FS_DCTL_SDIS;
-
 }
 
-void platform_srst_set_val(bool assert)
+void platform_srst_set_val(bool assert) { (void)assert; }
+bool platform_srst_get_val(void) { return false; }
+
+void platform_set_blue(bool assert)
 {
-	volatile int i;
-	if (assert) {
-		gpio_clear(SRST_PORT, SRST_PIN);
-		for(i = 0; i < 10000; i++) asm("nop");
-	} else {
-		gpio_set(SRST_PORT, SRST_PIN);
-	}
+	if (assert)
+		gpio_set(LED_PORT, LED_BLUE);
+	else
+		gpio_clear(LED_PORT, LED_BLUE);
 }
 
-bool platform_srst_get_val(void)
+bool platform_get_blue(void)
 {
-	return gpio_get(SRST_PORT, SRST_PIN) == 0;
+	return gpio_get(LED_PORT, LED_BLUE) != 0;
 }
 
-bool platform_vbus(void)
+void platform_set_green(bool assert)
 {
-	return gpio_get(VBUS_PORT, VBUS_PIN) != 0;
+	if (assert)
+		gpio_set(LED_PORT, LED_GREEN);
+	else
+		gpio_clear(LED_PORT, LED_GREEN);
+}
+
+bool platform_get_green(void)
+{
+	return gpio_get(LED_PORT, LED_GREEN) != 0;
+}
+
+void platform_set_red(bool assert)
+{
+	if (assert)
+		gpio_set(LED_PORT, LED_RED);
+	else
+		gpio_clear(LED_PORT, LED_RED);
+}
+
+bool platform_get_red(void)
+{
+	return gpio_get(LED_PORT, LED_RED) != 0;
+}
+
+void platform_set_orange(bool assert)
+{
+	if (assert)
+		gpio_set(LED_PORT, LED_ORANGE);
+	else
+		gpio_clear(LED_PORT, LED_ORANGE);
+}
+
+bool platform_get_orange(void)
+{
+	return gpio_get(LED_PORT, LED_ORANGE) != 0;
 }
 
 const char *platform_target_voltage(void)
 {
 	return "ABSENT!";
+}
+
+void platform_request_boot(void)
+{
+	uint32_t *magic = (uint32_t *) &_ebss;
+	magic[0] = BOOTMAGIC0;
+	magic[1] = BOOTMAGIC1;
+	scb_reset_system();
 }

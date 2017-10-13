@@ -37,11 +37,13 @@
 #define COMMANDS_OPTION "c"
 #endif
 
-#ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
-#error "NO_DFU option must be defined for this platform !!"
+#if defined(PLATFORM_HAS_NO_DFU_BOOTLOADER)
+#define DFU_OPTION "d"
+#else
+#define DFU_OPTION "D"
 #endif
 
-#ifndef PLATFORM_HAS_NO_JTAG
+#if !defined(PLATFORM_HAS_NO_JTAG)
 #error "NO_JTAG option must be defined for this platform !!"
 #endif
 
@@ -57,65 +59,81 @@
 
 #define PLATFORM_OPTIONS	\
 				COMMANDS_OPTION		\
+				DFU_OPTION				\
 				SERIAL_OPTION			\
 /*			TRACESWO_OPTION 	\*/
 
 //#pragma message "Platform options : " PLATFORM_OPTIONS
 
 // Define the identification's names of the device
-#define BOARD_IDENT "Black Magic Probe (stlink413)-(Options " PLATFORM_OPTIONS ")-(Firmware " FIRMWARE_VERSION ")"
+#define BOARD_IDENT "Black Magic Probe (F4Disco-test)-(Options " PLATFORM_OPTIONS ")-(Firmware " FIRMWARE_VERSION ")"
 #ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
-#define DFU_IDENT   "Black Magic Firmware Upgrade (stlink413)"
+#define DFU_IDENT   "Black Magic Firmware Upgrade (F4Disco-test)"
 #endif
 
-/* Important pin mappings for f4disco-413 implementation:
+/* Important pin mappings for STM32 implementation:
  *
- * PC14	(Green LED 	: Running/Idle)
- * PC13	(Red LED    : Error)
- * There is no BootlLoader active LED because this mode is intrinsic to the uC
+ * LED0 = 	PD12	(Green  LED : Running)
+ * LED1 = 	PD13	(Orange LED : Idle)
+ * LED2 = 	PD12	(Red LED    : Error)
+ * LED3 = 	PD15	(Blue LED   : Bootloader active)
  *
- * JTAG is not usable on this platform then pins can be reduced
- * TRACESWO is not usable on this platform then pins can be reduced
+ * nTRST = 	PC1
+ * SRST_OUT =   PC8
+ * TDI = 	PC2
+ * TMS = 	PC4 (input for SWDP)
+ * TCK = 	PC5/SWCLK
+ * TDO = 	PC6 (input for TRACESWO
+ * nSRST =
  *
- * TMS		:	PB14/SWDIO
- * TCK		:	PB13/SWCLK
- * TDO		:	To be checked but not needed (input for TRACESWO)
- * nSRST	:	PB0
- *
- * DFU mode selection : Boot0 with a jumper
+ * Force DFU mode button: PA0
  */
 
 /* Hardware definitions... */
-#define NOT_USED	0
-#define JTAG_PORT GPIOB
-#define TDI_PORT	NOT_USED
+#define NOT_USED 0
+
+#define JTAG_PORT 	GPIOC
+#define TDI_PORT	JTAG_PORT
 #define TMS_PORT	JTAG_PORT
 #define TCK_PORT	JTAG_PORT
-#define TDO_PORT	NOT_USED
-#define TDI_PIN		NOT_USED
-#define TMS_PIN		GPIO14
-#define TCK_PIN		GPIO13
-#define TDO_PIN		NOT_USED
+#define TDO_PORT	GPIOC
+#define TDI_PIN		GPIO2
+#define TMS_PIN		GPIO4
+#define TCK_PIN		GPIO5
+#define TDO_PIN		GPIO6
 
 #define SWDIO_PORT 	JTAG_PORT
 #define SWCLK_PORT 	JTAG_PORT
 #define SWDIO_PIN	TMS_PIN
 #define SWCLK_PIN	TCK_PIN
 
-#define TRST_PORT	NOT_USED
-#define TRST_PIN	NOT_USED
-#define SRST_PORT	GPIOB
-#define SRST_PIN	GPIO0
+#define TRST_PORT	GPIOC
+#define TRST_PIN	GPIO1
+#define SRST_PORT	GPIOC
+#define SRST_PIN	GPIO8
 
-#define LED_PORT		GPIOC
-#define LED_PORT_UART	NOT_USED
-#define LED_UART		NOT_USED
-#define LED_ERROR		GPIO13
-#define LED_IDLE_RUN	GPIO14
+#define LED_PORT	GPIOD
+#define LED_PORT_UART	GPIOD
+
+#define LED_GREEN GPIO12
+//#define LED_UART	LED_GREEN
+#define LED_UART	NOT_USED
+
+#define LED_ORANGE GPIO13
+#define LED_IDLE_RUN	LED_ORANGE
+
+#define LED_RED GPIO14
+//#define LED_ERROR	LED_RED
+#define LED_ERROR	NOT_USED
+#define LED_RTS	LED_RED
+
+#define LED_BLUE GPIO15
+//#define LED_BOOTLOADER	LED_BLUE
 #define LED_BOOTLOADER	NOT_USED
+#define LED_DTR	LED_BLUE
 
-#define VBUS_PORT	GPIOA
-#define VBUS_PIN	GPIO9
+#define BOOTMAGIC0 0xb007da7a
+#define BOOTMAGIC1 0xbaadfeed
 
 #define TMS_SET_MODE() \
 	gpio_mode_setup(TMS_PORT, GPIO_MODE_OUTPUT, \
@@ -132,30 +150,24 @@
 #define USB_DRIVER      stm32f107_usb_driver
 #define USB_IRQ         NVIC_OTG_FS_IRQ
 #define USB_ISR         otg_fs_isr
-
 /* Interrupt priorities.  Low numbers are high priority.
- * For now USART2 preempts USB which may spin while buffer is drained.
+ * For now USART1 preempts USB which may spin while buffer is drained.
  * TIM3 is used for traceswo capture and must be highest priority.
  */
 #define IRQ_PRI_USB		(2 << 4)
-
-#ifndef PLATFORM_HAS_NO_SERIAL
 #define IRQ_PRI_USBUSART	(1 << 4)
 #define IRQ_PRI_USBUSART_TIM	(3 << 4)
-#endif
-
 #define IRQ_PRI_TRACE		(0 << 4)
 
-#ifndef PLATFORM_HAS_NO_SERIAL
-#define USBUSART USART2
-#define USBUSART_CR1 USART2_CR1
-#define USBUSART_IRQ NVIC_USART2_IRQ
-#define USBUSART_CLK RCC_USART2
-#define USBUSART_TX_PORT GPIOA
-#define USBUSART_TX_PIN  GPIO2
-#define USBUSART_RX_PORT GPIOA
-#define USBUSART_RX_PIN  GPIO3
-#define USBUSART_ISR usart2_isr
+#define USBUSART USART3
+#define USBUSART_CR1 USART3_CR1
+#define USBUSART_IRQ NVIC_USART3_IRQ
+#define USBUSART_CLK RCC_USART3
+#define USBUSART_TX_PORT GPIOD
+#define USBUSART_TX_PIN  GPIO8
+#define USBUSART_RX_PORT GPIOD
+#define USBUSART_RX_PIN  GPIO9
+#define USBUSART_ISR usart3_isr
 #define USBUSART_TIM TIM4
 #define USBUSART_TIM_CLK_EN() rcc_periph_clock_enable(RCC_TIM4)
 #define USBUSART_TIM_IRQ NVIC_TIM4_IRQ
@@ -169,14 +181,11 @@
 	gpio_set_af(USBUSART_TX_PORT, GPIO_AF7, USBUSART_TX_PIN); \
 	gpio_set_af(USBUSART_RX_PORT, GPIO_AF7, USBUSART_RX_PIN); \
     } while(0)
-#endif
 
-#ifdef PLATFORM_HAS_TRACESWO
 #define TRACE_TIM TIM3
 #define TRACE_TIM_CLK_EN() rcc_periph_clock_enable(RCC_TIM3)
 #define TRACE_IRQ   NVIC_TIM3_IRQ
 #define TRACE_ISR   tim3_isr
-#endif
 
 #define DEBUG(...)
 
@@ -188,7 +197,7 @@
 } while(0)
 
 #define SET_RUN_STATE(state)	{running_status = (state);}
-#define SET_IDLE_STATE(state)	{gpio_set_val(LED_PORT, LED_IDLE_RUN, !state);}
+#define SET_IDLE_STATE(state)	{gpio_set_val(LED_PORT, LED_IDLE_RUN, state);}
 #define SET_ERROR_STATE(state)	{gpio_set_val(LED_PORT, LED_ERROR, state);}
 
 static inline int platform_hwversion(void)
@@ -196,7 +205,14 @@ static inline int platform_hwversion(void)
 	return 0;
 }
 
-bool platform_vbus(void);
+void platform_set_blue(bool assert);
+bool platform_get_blue(void);
+void platform_set_green(bool assert);
+bool platform_get_green(void);
+void platform_set_red(bool assert);
+bool platform_get_red(void);
+void platform_set_orange(bool assert);
+bool platform_get_orange(void);
 
 /* Use newlib provided integer only stdio functions */
 #define sscanf siscanf

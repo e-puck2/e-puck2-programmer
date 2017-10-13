@@ -438,9 +438,13 @@ void adiv5_dp_init(ADIv5_DP_t *dp)
 		if (ap == NULL)
 			continue;
 
+#if !defined(PLATFORM_HAS_ONLY_STM32F4)
+#pragma message "PLATFORM_HAS_ONLY_STM32F4 is NOT defined"
 		extern void kinetis_mdm_probe(ADIv5_AP_t *);
 		kinetis_mdm_probe(ap);
-
+#else
+#pragma message "PLATFORM_HAS_ONLY_STM32F4 is defined"
+#endif
 		if (ap->base == 0xffffffff) {
 			/* No debug entries... useless AP */
 			adiv5_ap_unref(ap);
