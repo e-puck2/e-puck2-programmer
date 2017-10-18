@@ -71,8 +71,8 @@
 /* Important pin mappings for e-puck2 implementation:
  *
  * PA15	(Green LED 	: Running/Idle)
- * PA13	(Red LED    : Error)
- * PA14	(Blue LED   : Serial)
+ * PB13	(Red LED    : Error)
+ * PB15	(Blue LED   : Serial)
  * There is no BootlLoader active LED because this mode is intrinsic to the uC
  *
  * JTAG is not usable on this platform then pins can be reduced
@@ -81,10 +81,10 @@
  * nTRST	:	To be checked but not needed
  * SRST_OUT	:	To be checked but seems not needed
  * TDI		:	To be checked but not needed
- * TMS		:	PA10/SWDIO
+ * TMS		:	PA8/SWDIO
  * TCK		:	PA5/SWCLK
  * TDO		:	To be checked but not needed (input for TRACESWO)
- * nSRST	:	PB0
+ * nSRST	:	PB4
  *
  * DFU mode selection : Boot0 with a jumper
  */
@@ -97,7 +97,7 @@
 #define TCK_PORT	JTAG_PORT
 #define TDO_PORT	NOT_USED
 #define TDI_PIN		NOT_USED
-#define TMS_PIN		GPIO10
+#define TMS_PIN		GPIO8
 #define TCK_PIN		GPIO5
 #define TDO_PIN		NOT_USED
 
@@ -109,25 +109,25 @@
 #define TRST_PORT	NOT_USED
 #define TRST_PIN	NOT_USED
 #define SRST_PORT	GPIOB
-#define SRST_PIN	GPIO0
+#define SRST_PIN	GPIO4
 
-#define LED_PORT		GPIOA
-#define LED_PORT_UART	GPIOA
+#define LED_PORT_ERROR		GPIOB
+#define LED_PORT_UART		GPIOB
+#define LED_PORT			GPIOA  //IDLE_RUN
 
-// #define LED_ERROR		GPIO13	// Not used because SWDP used instead
-#define LED_ERROR		NOT_USED
-// #define LED_UART		GPIO14		// Not used because SWDP used instead
-#define LED_UART		NOT_USED
+
+#define LED_ERROR		GPIO13
+#define LED_UART		GPIO15
 #define LED_IDLE_RUN	GPIO15
 #define LED_BOOTLOADER	NOT_USED
 
-#define PWR_ON_PORT	GPIOA
-#define PWR_ON_PIN			GPIO6
-#define PWR_ON_BTN_PIN	GPIO7
+#define PWR_ON_PORT		GPIOA
+#define PWR_ON_PIN		GPIO6
 
 #define PWR_ON_BTN_PORT GPIOA
-#define PWR_ON_BTN_PIN GPIO7
-#define PWR_ON_BTN_EXTI EXTI7
+#define PWR_ON_BTN_PIN GPIO4
+#define PWR_ON_BTN_EXTI EXTI4
+#define PWR_ON_BTN_EXTI_ISR	exti4_isr
 #define PWR_ON_BTN_TIM TIM2
 #define PWR_ON_BTN_TIM_ISR tim2_isr
 #define TURN_ON_TIME 10
@@ -142,13 +142,13 @@
 #define USB_CHARGE_PIN	GPIO5
 
 #define USB_500_PORT	GPIOB
-#define USB_500_PIN 	GPIO6
+#define USB_500_PIN 	GPIO3
 
 #define EN_ESP32_PORT	GPIOC
 #define EN_ESP32_PIN	GPIO13
 
 #define GPIO0_ESP32_PORT	GPIOB
-#define GPIO0_ESP32_PIN	GPIO1
+#define GPIO0_ESP32_PIN		GPIO12
 
 #define TMS_SET_MODE() \
 	gpio_mode_setup(TMS_PORT, GPIO_MODE_OUTPUT, \
@@ -222,7 +222,7 @@
 
 #define SET_RUN_STATE(state)	{running_status = (state);}
 #define SET_IDLE_STATE(state)	{gpio_set_val(LED_PORT, LED_IDLE_RUN, !(state==1));}
-#define SET_ERROR_STATE(state)	{gpio_set_val(LED_PORT, LED_ERROR, !(state==1));}
+#define SET_ERROR_STATE(state)	{gpio_set_val(LED_PORT_ERROR, LED_ERROR, !(state==1));}
 
 static inline int platform_hwversion(void)
 {

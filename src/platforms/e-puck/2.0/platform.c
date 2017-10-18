@@ -63,19 +63,19 @@ void PWR_ON_BTN_TIM_ISR(void) {
 		timer_disable_counter(PWR_ON_BTN_TIM);
 		platform_pwr_on(false);
 	}
-//	gpio_toggle(LED_PORT, LED_ERROR);
+//	gpio_toggle(LED_PORT_ERROR, LED_ERROR);
 }
 
-void exti9_5_isr(void) {
+void PWR_ON_BTN_EXTI_ISR(void) {
 	if(exti_get_flag_status(PWR_ON_BTN_EXTI)) {
 		exti_reset_request(PWR_ON_BTN_EXTI);
 		if(!platform_pwr_on_btn_pressed()) { // Button released.
 			timer_disable_counter(PWR_ON_BTN_TIM);
-//			gpio_set(LED_PORT, LED_UART);
+//			gpio_set(LED_PORT_UART, LED_UART);
 		} else { // Button pressed.
 			pwrBtnCounter = 0;
 			timer_enable_counter(PWR_ON_BTN_TIM);
-//			gpio_clear(LED_PORT, LED_UART);
+//			gpio_clear(LED_PORT_UART, LED_UART);
 		}
 	}
 }
@@ -130,8 +130,14 @@ void platform_init(void)
 	rcc_periph_clock_enable(RCC_OTGFS);
 	rcc_periph_clock_enable(RCC_CRC);
 
-	gpio_set(LED_PORT, LED_UART | LED_IDLE_RUN | LED_ERROR);
-	gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,	LED_UART | LED_IDLE_RUN | LED_ERROR);
+	gpio_set(LED_PORT_ERROR, LED_ERROR);
+	gpio_mode_setup(LED_PORT_ERROR, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_ERROR);
+
+	gpio_set(LED_PORT_UART, LED_UART);
+	gpio_mode_setup(LED_PORT_UART, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_UART);
+
+	gpio_set(LED_PORT, LED_IDLE_RUN);
+	gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_IDLE_RUN);
 
 	gpio_clear(PWR_ON_PORT, PWR_ON_PIN);
 	gpio_set_output_options(PWR_ON_PORT,GPIO_OTYPE_PP,GPIO_OSPEED_2MHZ,PWR_ON_PIN);
@@ -147,8 +153,8 @@ void platform_init(void)
 	gpio_set_af(GPIOA, GPIO_AF10, GPIO11 | GPIO12);
 
 	// Configure the programming pins to "fast speed".
-	GPIOA_OSPEEDR &= ~0x00300C00; // Reset PA5 (SWCLK), PA10 (SWDIO).
-	GPIOA_OSPEEDR |= 0x00200800; // PA5 (SWCLK), PA10 (SWDIO) to fast speed.
+	GPIOA_OSPEEDR &= ~0x00030C00; // Reset PA5 (SWCLK), PA8 (SWDIO).
+	GPIOA_OSPEEDR |= 0x00020800; // PA5 (SWCLK), PA8 (SWDIO) to fast speed.
 	gpio_mode_setup(JTAG_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,  SWDIO_PIN | SWCLK_PIN);
 
 /* Can be needed for TRACESWO but not yet. */
