@@ -82,7 +82,7 @@ void PWR_ON_BTN_EXTI_ISR(void) {
 
 void setup_pwr_button() {
 	// Enable EXTI9_5 interrupt (power button connected to PA7).
-	nvic_enable_irq(NVIC_EXTI9_5_IRQ);
+	nvic_enable_irq(PWR_ON_BTN_EXTI_IRQ);
 
 	gpio_mode_setup(PWR_ON_BTN_PORT, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, PWR_ON_BTN_PIN);
 

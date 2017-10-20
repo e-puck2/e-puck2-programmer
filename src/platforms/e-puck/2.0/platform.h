@@ -128,6 +128,7 @@
 #define PWR_ON_BTN_PIN GPIO4
 #define PWR_ON_BTN_EXTI EXTI4
 #define PWR_ON_BTN_EXTI_ISR	exti4_isr
+#define PWR_ON_BTN_EXTI_IRQ NVIC_EXTI4_IRQ
 #define PWR_ON_BTN_TIM TIM2
 #define PWR_ON_BTN_TIM_ISR tim2_isr
 #define TURN_ON_TIME 10
