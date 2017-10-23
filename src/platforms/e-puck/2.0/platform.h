@@ -229,6 +229,11 @@ static inline int platform_hwversion(void)
 {
 	return 0;
 }
+//theses diefines exist because we can not include the file containing it here
+//aka. flash_common_f24.h
+#define FLASH_ACR_ICE_COPY				(1 << 9)
+#define FLASH_ACR_DCE_COPY				(1 << 10)
+#define FLASH_ACR_LATENCY_3WS_COPY		0x03
 
 void platform_set_en_esp32(bool assert);
 bool platform_get_en_esp32(void);

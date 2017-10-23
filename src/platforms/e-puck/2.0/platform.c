@@ -42,6 +42,22 @@
 #include <../USB251XB/USB251XB.h>
 #include <../USB251XB/SMBus.h>
 
+const clock_scale_t hse_8mhz_413_epuck = {
+	 /* 96MHz */
+	.pllm = 4,
+	.plln = 96,
+	.pllp = 2,
+	.pllq = 4,
+	.hpre = RCC_CFGR_HPRE_DIV_NONE,
+	.ppre1 = RCC_CFGR_PPRE_DIV_2,
+	.ppre2 = RCC_CFGR_PPRE_DIV_NONE,
+	.power_save = 1,
+	.flash_config = FLASH_ACR_ICE_COPY | FLASH_ACR_DCE_COPY |
+			FLASH_ACR_LATENCY_3WS_COPY,
+	.apb1_frequency = 48000000,
+	.apb2_frequency = 96000000,
+};
+
 //#pragma message "Platform options : " PLATFORM_OPTIONS
 
 jmp_buf fatal_error_jmpbuf;
@@ -121,7 +137,8 @@ void setup_pwr_button() {
 
 void platform_init(void)
 {
-	rcc_clock_setup_hse_3v3(&hse_8mhz_3v3[CLOCK_3V3_48MHZ]);
+	//rcc_clock_setup_hse_3v3(&hse_8mhz_3v3[CLOCK_3V3_48MHZ]);
+	rcc_clock_setup_hse_3v3(&hse_8mhz_413_epuck);
 
 	/* Enable peripherals */
 	rcc_periph_clock_enable(RCC_GPIOA);
