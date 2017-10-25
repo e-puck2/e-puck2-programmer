@@ -515,6 +515,7 @@ static int cdcacm_control_request(usbd_device *dev,
 
 			return 1;
 		}
+		return 0;
 	case DFU_DETACH:
 		if(req->wIndex == DFU_IFACE_NUM) {
 			*complete = dfu_detach_complete;

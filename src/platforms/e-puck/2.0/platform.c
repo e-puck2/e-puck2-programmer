@@ -42,18 +42,20 @@
 #include <../USB251XB/USB251XB.h>
 #include <../USB251XB/SMBus.h>
 
-const clock_scale_t hse_8mhz_413_epuck = {
+const struct rcc_clock_scale hse_8mhz_413_epuck = {
 	 /* 96MHz */
 	.pllm = 4,
 	.plln = 96,
 	.pllp = 2,
 	.pllq = 4,
+	.pllr = 0,
 	.hpre = RCC_CFGR_HPRE_DIV_NONE,
 	.ppre1 = RCC_CFGR_PPRE_DIV_2,
 	.ppre2 = RCC_CFGR_PPRE_DIV_NONE,
 	.power_save = 1,
 	.flash_config = FLASH_ACR_ICE_COPY | FLASH_ACR_DCE_COPY |
 			FLASH_ACR_LATENCY_3WS_COPY,
+	.ahb_frequency = 96000000,
 	.apb1_frequency = 48000000,
 	.apb2_frequency = 96000000,
 };
@@ -118,7 +120,7 @@ void setup_pwr_button() {
 	timer_set_mode(PWR_ON_BTN_TIM, TIM_CR1_CKD_CK_INT, TIM_CR1_CMS_EDGE, TIM_CR1_DIR_UP);
 
 	// Timer2 clock source is APB1 x 2. Set the prescaler to have the timer run at 1 KHz.
-	timer_set_prescaler(PWR_ON_BTN_TIM, ((rcc_ppre1_frequency * 2) / 1000)-1);
+	timer_set_prescaler(PWR_ON_BTN_TIM, ((rcc_apb1_frequency * 2) / 1000)-1);
 
 	// An interrupt every 10 ms.
 	timer_set_period(PWR_ON_BTN_TIM, 10);
@@ -210,13 +212,13 @@ void platform_init(void)
 	But for the STM32F413, FS_GCCFG is not exactly the same as the F103 one.
 	Then we correct the bad OTG_FS_GCCFG_VBUSBSEN bit
 	*/
-	OTG_FS_GCCFG &= ~OTG_FS_GCCFG_VBUSBSEN;
+	OTG_FS_GCCFG &= ~OTG_GCCFG_VBUSBSEN;
 	/* and use the right one */
 	OTG_FS_GCCFG |= (1<<21);
 	/* Disconnect/Reconnect the USB device with a delay in order to respect the bigger delay of 1,025 ms (see Table 217 of F413 Ref. Man.) */
-	OTG_FS_DCTL |= OTG_FS_DCTL_SDIS;
+	OTG_FS_DCTL |= OTG_DCTL_SDIS;
 	platform_delay(2);
-	OTG_FS_DCTL &= ~OTG_FS_DCTL_SDIS;
+	OTG_FS_DCTL &= ~OTG_DCTL_SDIS;
 
 }
 

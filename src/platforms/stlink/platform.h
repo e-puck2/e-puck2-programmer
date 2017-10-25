@@ -33,6 +33,11 @@
 #include <libopencm3/stm32/f1/memorymap.h>
 #include <libopencm3/usb/usbd.h>
 
+#ifdef ENABLE_DEBUG
+# define PLATFORM_HAS_DEBUG
+# define USBUART_DEBUG
+#endif
+
 #define BOARD_IDENT       "Black Magic Probe (STLINK), (Firmware " FIRMWARE_VERSION ")"
 #define BOARD_IDENT_DFU   "Black Magic (Upgrade) for STLink/Discovery, (Firmware " FIRMWARE_VERSION ")"
 #define BOARD_IDENT_UPD   "Black Magic (DFU Upgrade) for STLink/Discovery, (Firmware " FIRMWARE_VERSION ")"
@@ -77,7 +82,7 @@
 	gpio_set_mode(USBUSART_PORT, GPIO_MODE_OUTPUT_2_MHZ, \
 	              GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, USBUSART_TX_PIN);
 
-#define USB_DRIVER      stm32f103_usb_driver
+#define USB_DRIVER      st_usbfs_v1_usb_driver
 #define USB_IRQ	        NVIC_USB_LP_CAN_RX0_IRQ
 #define USB_ISR	        usb_lp_can_rx0_isr
 /* Interrupt priorities.  Low numbers are high priority.
@@ -102,13 +107,21 @@
 #define USBUSART_TIM_IRQ NVIC_TIM4_IRQ
 #define USBUSART_TIM_ISR tim4_isr
 
-#define DEBUG(...)
+#ifdef ENABLE_DEBUG
+extern bool debug_bmp;
+int usbuart_debug_write(const char *buf, size_t len);
+# define DEBUG printf
+#else
+# define DEBUG(...)
+#endif
 
 extern uint16_t led_idle_run;
 #define LED_IDLE_RUN            led_idle_run
 #define SET_RUN_STATE(state)	{running_status = (state);}
 #define SET_IDLE_STATE(state)	{gpio_set_val(LED_PORT, led_idle_run, state);}
 #define SET_ERROR_STATE(x)
+
+extern uint32_t detect_rev(void);
 
 /* Use newlib provided integer only stdio functions */
 #define sscanf siscanf
