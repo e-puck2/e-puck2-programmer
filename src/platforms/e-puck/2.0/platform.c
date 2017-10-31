@@ -52,7 +52,10 @@ const struct rcc_clock_scale hse_8mhz_413_epuck = {
 	.hpre = RCC_CFGR_HPRE_DIV_NONE,
 	.ppre1 = RCC_CFGR_PPRE_DIV_2,
 	.ppre2 = RCC_CFGR_PPRE_DIV_NONE,
-	.power_save = 1,
+	//power_save = 1 if ahb_frequency <= 84MHz
+	//cf. 5.4.1 PWR power control register (PWR_CR) of the
+	//stm32f413 reference manual
+	.power_save = 0,
 	.flash_config = FLASH_ACR_ICE_COPY | FLASH_ACR_DCE_COPY |
 			FLASH_ACR_LATENCY_3WS_COPY,
 	.ahb_frequency = 96000000,
