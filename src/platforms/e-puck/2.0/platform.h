@@ -149,7 +149,7 @@
 #define EN_ESP32_PIN	GPIO13
 
 #define GPIO0_ESP32_PORT	GPIOB
-#define GPIO0_ESP32_PIN		GPIO12
+#define GPIO0_ESP32_PIN		GPIO1
 
 #define TMS_SET_MODE() \
 	gpio_mode_setup(TMS_PORT, GPIO_MODE_OUTPUT, \
