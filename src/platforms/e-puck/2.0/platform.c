@@ -42,9 +42,9 @@
 #include <../USB251XB/USB251XB.h>
 #include <../USB251XB/SMBus.h>
 
-const struct rcc_clock_scale hse_8mhz_413_epuck = {
+const struct rcc_clock_scale hse_24mhz_to_96mhz_413_epuck = {
 	 /* 96MHz */
-	.pllm = 4,
+	.pllm = 12,
 	.plln = 96,
 	.pllp = 2,
 	.pllq = 4,
@@ -52,7 +52,10 @@ const struct rcc_clock_scale hse_8mhz_413_epuck = {
 	.hpre = RCC_CFGR_HPRE_DIV_NONE,
 	.ppre1 = RCC_CFGR_PPRE_DIV_2,
 	.ppre2 = RCC_CFGR_PPRE_DIV_NONE,
-	.power_save = 1,
+	//power_save = 1 if ahb_frequency <= 84MHz
+	//cf. 5.4.1 PWR power control register (PWR_CR) of the
+	//stm32f413 reference manual
+	.power_save = 0,
 	.flash_config = FLASH_ACR_ICE_COPY | FLASH_ACR_DCE_COPY |
 			FLASH_ACR_LATENCY_3WS_COPY,
 	.ahb_frequency = 96000000,
@@ -139,8 +142,9 @@ void setup_pwr_button() {
 
 void platform_init(void)
 {
+	rcc_osc_bypass_enable(RCC_HSE);
 	//rcc_clock_setup_hse_3v3(&hse_8mhz_3v3[CLOCK_3V3_48MHZ]);
-	rcc_clock_setup_hse_3v3(&hse_8mhz_413_epuck);
+	rcc_clock_setup_hse_3v3(&hse_24mhz_to_96mhz_413_epuck);
 
 	/* Enable peripherals */
 	rcc_periph_clock_enable(RCC_GPIOA);
