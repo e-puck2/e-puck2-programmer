@@ -10,6 +10,7 @@
 #include <../USB251XB/SMBus.h>
 #include <../2.0/platform.h>
 #include "timing.h"
+#include "morse.h"
 
 ////////////// PARAMETERS ////////////////
 #define I2C_SMBUS_HOST_MODE     0x000A
@@ -36,7 +37,11 @@ void i2c_smbus_host_mode(uint32_t i2c)
 
 void SMBus_error(void){
 
-    SET_ERROR_STATE(true);
+    static uint8_t smbusError = 0;
+    if(smbusError == 0) {
+        morse("SOS", true);
+        smbusError = 1;
+    }
 }
 
 
