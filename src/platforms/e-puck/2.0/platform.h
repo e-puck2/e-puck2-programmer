@@ -150,6 +150,13 @@
 #define GPIO0_ESP32_PORT	GPIOB
 #define GPIO0_ESP32_PIN	GPIO1
 
+#define I2C_HUB			I2C2
+#define I2C_PORT		GPIOB
+#define I2C_SDA_PIN		GPIO3
+#define I2C_SDA_AF		GPIO_AF9
+#define I2C_SCL_PIN		GPIO10
+#define I2C_SCL_AF		GPIO_AF4
+
 #define TMS_SET_MODE() \
 	gpio_mode_setup(TMS_PORT, GPIO_MODE_OUTPUT, \
 	                GPIO_PUPD_NONE, TMS_PIN);
