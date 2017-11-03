@@ -155,8 +155,8 @@ void USB251XB_usb_detach(void){
 
 void USB251XB_init(t_USB251XB choice_of_USB251XB){
 
-	USB251XB_reset();
 	USB251XB_usb_detach();
+	USB251XB_reset();
 
 	uint8_t temp_reg[17] = {	VENDOR_ID_LSB,
 								VENDOR_ID_MSB,
