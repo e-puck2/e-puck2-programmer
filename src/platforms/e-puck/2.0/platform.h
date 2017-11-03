@@ -151,6 +151,7 @@
 #define GPIO0_ESP32_PIN	GPIO1
 
 #define I2C_HUB			I2C2
+#define I2C_RCC_HUB		RCC_I2C2
 #define I2C_PORT		GPIOB
 #define I2C_SDA_PIN		GPIO3
 #define I2C_SDA_AF		GPIO_AF9

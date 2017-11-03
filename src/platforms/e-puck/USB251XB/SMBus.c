@@ -46,7 +46,7 @@ void SMBus_init()
     /* Enable clocks for rigth I2C */
 #if defined(EPUCK2)
 #define I2C_USB_HUB I2C_HUB
-    rcc_periph_clock_enable(RCC_I2C2);
+    rcc_periph_clock_enable(I2C_RCC_HUB);
 #elif defined(DEV_ELIOT)
 #define I2C_USB_HUB I2C1
     rcc_periph_clock_enable(RCC_I2C1);
