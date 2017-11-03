@@ -37,7 +37,6 @@ void i2c_smbus_host_mode(uint32_t i2c)
 void SMBus_error(void){
 
     SET_ERROR_STATE(true);
-    while(1);
 }
 
 
@@ -118,6 +117,7 @@ void SMBus_write(uint8_t i2c_addr, uint8_t reg, uint8_t nbDatas, uint8_t* datas)
         while ((I2C_SR2(I2C_USB_HUB) & I2C_SR2_BUSY)){
             if(platform_timeout_is_expired(&timeout)){
                 SMBus_error();
+                return;
             }
         }
 
@@ -130,6 +130,7 @@ void SMBus_write(uint8_t i2c_addr, uint8_t reg, uint8_t nbDatas, uint8_t* datas)
             & (I2C_SR2(I2C_USB_HUB) & (I2C_SR2_MSL | I2C_SR2_BUSY)))){
             if(platform_timeout_is_expired(&timeout)){
                 SMBus_error();
+                return;
             }
         }
 
@@ -141,6 +142,7 @@ void SMBus_write(uint8_t i2c_addr, uint8_t reg, uint8_t nbDatas, uint8_t* datas)
         while (!(I2C_SR1(I2C_USB_HUB) & I2C_SR1_ADDR)){
             if(platform_timeout_is_expired(&timeout)){
                 SMBus_error();
+                return;
             }
         }
 
@@ -153,6 +155,7 @@ void SMBus_write(uint8_t i2c_addr, uint8_t reg, uint8_t nbDatas, uint8_t* datas)
         while (!(I2C_SR1(I2C_USB_HUB) & (I2C_SR1_BTF))){
             if(platform_timeout_is_expired(&timeout)){
                 SMBus_error();
+                return;
             }
         }
 
@@ -162,6 +165,7 @@ void SMBus_write(uint8_t i2c_addr, uint8_t reg, uint8_t nbDatas, uint8_t* datas)
         while (!(I2C_SR1(I2C_USB_HUB) & (I2C_SR1_BTF))){
             if(platform_timeout_is_expired(&timeout)){
                 SMBus_error();
+                return;
             }
         }
 
@@ -171,7 +175,8 @@ void SMBus_write(uint8_t i2c_addr, uint8_t reg, uint8_t nbDatas, uint8_t* datas)
             platform_timeout_set(&timeout, SMBUS_TIMOUT_MS);
             while (!(I2C_SR1(I2C_USB_HUB) & (I2C_SR1_BTF))){
                 if(platform_timeout_is_expired(&timeout)){
-                SMBus_error();
+                    SMBus_error();
+                    return;
                 }
             }
             nbDatas--;
@@ -201,6 +206,7 @@ void SMBus_read(uint8_t i2c_addr, uint8_t reg, uint8_t nbDatas, uint8_t* datas)
             & (I2C_SR2(I2C_USB_HUB) & (I2C_SR2_MSL | I2C_SR2_BUSY)))){
             if(platform_timeout_is_expired(&timeout)){
                 SMBus_error();
+                return;
             }
         }
 
@@ -212,6 +218,7 @@ void SMBus_read(uint8_t i2c_addr, uint8_t reg, uint8_t nbDatas, uint8_t* datas)
         while (!(I2C_SR1(I2C_USB_HUB) & I2C_SR1_ADDR)){
             if(platform_timeout_is_expired(&timeout)){
                 SMBus_error();
+                return;
             }
         }
 
@@ -224,6 +231,7 @@ void SMBus_read(uint8_t i2c_addr, uint8_t reg, uint8_t nbDatas, uint8_t* datas)
         while (!(I2C_SR1(I2C_USB_HUB) & (I2C_SR1_BTF))){
             if(platform_timeout_is_expired(&timeout)){
                 SMBus_error();
+                return;
             }
         }
 
@@ -238,6 +246,7 @@ void SMBus_read(uint8_t i2c_addr, uint8_t reg, uint8_t nbDatas, uint8_t* datas)
             & (I2C_SR2(I2C_USB_HUB) & (I2C_SR2_MSL | I2C_SR2_BUSY)))){
             if(platform_timeout_is_expired(&timeout)){
                 SMBus_error();
+                return;
             }
         }
 
@@ -249,6 +258,7 @@ void SMBus_read(uint8_t i2c_addr, uint8_t reg, uint8_t nbDatas, uint8_t* datas)
         while (!(I2C_SR1(I2C_USB_HUB) & I2C_SR1_ADDR)){
             if(platform_timeout_is_expired(&timeout)){
                 SMBus_error();
+                return;
             }
         }
         /* Cleaning ADDR condition sequence. */
@@ -262,7 +272,8 @@ void SMBus_read(uint8_t i2c_addr, uint8_t reg, uint8_t nbDatas, uint8_t* datas)
             platform_timeout_set(&timeout, SMBUS_TIMOUT_MS);
             while (!(I2C_SR1(I2C_USB_HUB) & I2C_SR1_RxNE)){
                 if(platform_timeout_is_expired(&timeout)){
-                SMBus_error();
+                    SMBus_error();
+                    return;
                 }
             }
             if(i == 0){
