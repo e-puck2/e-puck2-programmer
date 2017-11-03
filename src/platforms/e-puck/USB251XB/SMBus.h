@@ -3,7 +3,7 @@
 
 /**
  * @file    SMBus.h
- * @brief   Functions to configure SMBus host over I2C1
+ * @brief   Functions to configure SMBus host over I2C
  * 
  * @author  Eliot Ferragni
  */

@@ -167,10 +167,6 @@ void platform_init(void)
 	gpio_mode_setup(PWR_ON_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, PWR_ON_PIN);
 	setup_pwr_button();
 
-//	SMBus_init();
-
-//	USB251XB_init(USB2512B);
-
 	/* Set up USB Pins and alternate function*/
 	gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO11 | GPIO12);
 	gpio_set_af(GPIOA, GPIO_AF10, GPIO11 | GPIO12);
@@ -208,6 +204,10 @@ void platform_init(void)
 	usbuart_init();
 #endif
 	cdcacm_init();
+	//wait for the USB HUB to be running
+	platform_delay(100);
+	SMBus_init();
+	USB251XB_init(USB2512B);
 
 	/* To correct the Pull-UP on D+ management
 	Done in the cdcacm_init code by call of stm32f107_usbd_init :
