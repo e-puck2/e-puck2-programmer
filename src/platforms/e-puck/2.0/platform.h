@@ -136,8 +136,18 @@
 #define ROBOT_OFF 0
 #define ROBOT_ON 1
 
-#define VBUS_PORT	GPIOA
-#define VBUS_PIN	GPIO9
+#define VBUS_HUB_PORT	GPIOA
+#define VBUS_HUB_PIN	GPIO9
+
+#define VBUS_PORT			GPIOC
+#define VBUS_PIN			GPIO14
+#define VBUS_EXTI			EXTI14
+#define VBUS_EXTI_ISR		exti15_10_isr
+#define VBUS_EXTI_IRQ		NVIC_EXTI15_10_IRQ
+#define VBUS_EXTI_ISR_PRI	(15 << 4) //lowest priority
+
+#define CONFIGURED		1
+#define NOT_CONFIGURED	0
 
 #define USB_CHARGE_PORT	GPIOB
 #define USB_CHARGE_PIN	GPIO5
@@ -252,7 +262,9 @@ bool platform_get_gpio0_esp32(void);
 void platform_pwr_on(bool on_state);
 bool platform_pwr_on_btn_pressed(void);
 
-bool platform_vbus(void);
+bool platform_vbus_hub(void);
+
+bool platform_get_vbus(void);
 
 void platform_set_usb_charge(bool assert);
 bool platform_get_usb_charge(void);
