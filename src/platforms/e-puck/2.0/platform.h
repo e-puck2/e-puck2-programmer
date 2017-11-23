@@ -199,27 +199,45 @@
 #define IRQ_PRI_TRACE		(0 << 4)
 
 #ifndef PLATFORM_HAS_NO_SERIAL
-#define USBUSART USART2
-#define USBUSART_CR1 USART2_CR1
-#define USBUSART_IRQ NVIC_USART2_IRQ
-#define USBUSART_CLK RCC_USART2
-#define USBUSART_TX_PORT GPIOA
-#define USBUSART_TX_PIN  GPIO2
-#define USBUSART_RX_PORT GPIOA
-#define USBUSART_RX_PIN  GPIO3
-#define USBUSART_ISR usart2_isr
+
+#define USBUSART_ESP USART2
+#define USBUSART_ESP_CR1 USART2_CR1
+#define USBUSART_ESP_IRQ NVIC_USART2_IRQ
+#define USBUSART_ESP_CLK RCC_USART2
+#define USBUSART_ESP_TX_PORT GPIOA
+#define USBUSART_ESP_TX_PIN  GPIO2
+#define USBUSART_ESP_RX_PORT GPIOA
+#define USBUSART_ESP_RX_PIN  GPIO3
+#define USBUSART_ESP_ISR usart2_isr
+
+#define USBUSART_407 UART4
+#define USBUSART_407_CR1 UART4_CR1
+#define USBUSART_407_IRQ NVIC_UART4_IRQ
+#define USBUSART_407_CLK RCC_UART4
+#define USBUSART_407_TX_PORT GPIOA
+#define USBUSART_407_TX_PIN  GPIO0
+#define USBUSART_407_RX_PORT GPIOA
+#define USBUSART_407_RX_PIN  GPIO1
+#define USBUSART_407_ISR uart4_isr
+
 #define USBUSART_TIM TIM4
 #define USBUSART_TIM_CLK_EN() rcc_periph_clock_enable(RCC_TIM4)
 #define USBUSART_TIM_IRQ NVIC_TIM4_IRQ
 #define USBUSART_TIM_ISR tim4_isr
 
 #define UART_PIN_SETUP() do { \
-	gpio_mode_setup(USBUSART_TX_PORT, GPIO_MODE_AF, GPIO_PUPD_NONE, \
-	                USBUSART_TX_PIN); \
-	gpio_mode_setup(USBUSART_RX_PORT, GPIO_MODE_AF, GPIO_PUPD_NONE, \
-	                USBUSART_RX_PIN); \
-	gpio_set_af(USBUSART_TX_PORT, GPIO_AF7, USBUSART_TX_PIN); \
-	gpio_set_af(USBUSART_RX_PORT, GPIO_AF7, USBUSART_RX_PIN); \
+	gpio_mode_setup(USBUSART_ESP_TX_PORT, GPIO_MODE_AF, GPIO_PUPD_NONE, \
+	                USBUSART_ESP_TX_PIN); \
+	gpio_mode_setup(USBUSART_ESP_RX_PORT, GPIO_MODE_AF, GPIO_PUPD_NONE, \
+	                USBUSART_ESP_RX_PIN); \
+	gpio_set_af(USBUSART_ESP_TX_PORT, GPIO_AF7, USBUSART_ESP_TX_PIN); \
+	gpio_set_af(USBUSART_ESP_RX_PORT, GPIO_AF7, USBUSART_ESP_RX_PIN); \
+	gpio_mode_setup(USBUSART_407_TX_PORT, GPIO_MODE_AF, GPIO_PUPD_NONE, \
+	                USBUSART_407_TX_PIN); \
+	gpio_mode_setup(USBUSART_407_RX_PORT, GPIO_MODE_AF, GPIO_PUPD_NONE, \
+	                USBUSART_407_RX_PIN); \
+	gpio_set_af(USBUSART_407_TX_PORT, GPIO_AF8, USBUSART_407_TX_PIN); \
+	gpio_set_af(USBUSART_407_RX_PORT, GPIO_AF8, USBUSART_407_RX_PIN); \
     } while(0)
 #endif
 
@@ -252,6 +270,8 @@ static inline int platform_hwversion(void)
 #define FLASH_ACR_ICE_COPY				(1 << 9)
 #define FLASH_ACR_DCE_COPY				(1 << 10)
 #define FLASH_ACR_LATENCY_3WS_COPY		0x03
+
+void platform_switch_uart_to(uint8_t choice);
 
 void platform_set_en_esp32(bool assert);
 bool platform_get_en_esp32(void);

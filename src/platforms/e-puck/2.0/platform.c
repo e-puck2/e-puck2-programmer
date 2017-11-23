@@ -70,6 +70,7 @@ extern uint32_t _ebss;
 uint16_t pwrBtnCounter = 0;
 uint8_t pwrBtnState = ROBOT_OFF;
 uint8_t hub_state = NOT_CONFIGURED;
+uint32_t uartUsed = USBUSART_ESP;
 
 void PWR_ON_BTN_TIM_ISR(void) {
 	/* need to clear timer update event */
