@@ -69,6 +69,7 @@ jmp_buf fatal_error_jmpbuf;
 extern uint32_t _ebss;
 uint16_t pwrBtnCounter = 0;
 uint8_t pwrBtnState = ROBOT_OFF;
+uint8_t hub_state = NOT_CONFIGURED;
 
 void PWR_ON_BTN_TIM_ISR(void) {
 	/* need to clear timer update event */
@@ -97,6 +98,56 @@ void exti9_5_isr(void) {
 			pwrBtnCounter = 0;
 			timer_enable_counter(PWR_ON_BTN_TIM);
 //			gpio_clear(LED_PORT, LED_UART);
+		}
+	}
+}
+
+void VBUS_EXTI_ISR(void) {
+	if(exti_get_flag_status(VBUS_EXTI)) {
+		//wait a few moments to be sure the interruption was not triggered
+		//by a glitch and then test the GPIO
+		//also wait for the USB HUB to be running
+		platform_delay(100);
+		if(platform_get_vbus()){
+			if(hub_state == NOT_CONFIGURED){
+				// //reinit SMBus because of BUSY flag being kept high
+				// //when certain glitches appear on the I2C bus.
+				SMBus_init();
+				USB251XB_init(USB2512B);
+				hub_state = CONFIGURED;
+			}
+		}else{
+			hub_state = NOT_CONFIGURED;
+		}
+		exti_reset_request(VBUS_EXTI);
+	 }
+}
+
+void setup_vbus_detection(void){
+
+	gpio_mode_setup(VBUS_PORT, GPIO_MODE_INPUT, GPIO_PUPD_NONE, VBUS_PIN);
+
+	// Configure the EXTI subsystem.
+	exti_select_source(VBUS_EXTI, VBUS_PORT);
+	exti_set_trigger(VBUS_EXTI, EXTI_TRIGGER_BOTH);
+	exti_enable_request(VBUS_EXTI);
+
+	exti_reset_request(VBUS_EXTI);
+	nvic_set_priority(VBUS_EXTI_IRQ, VBUS_EXTI_ISR_PRI);
+	// Enable EXTI interrupt.
+	nvic_enable_irq(VBUS_EXTI_IRQ);
+
+	//test if vbus is present on power on to configure the hub
+	//because the interruption can not be triggered on power on
+	if(platform_get_vbus()){
+		if(hub_state == NOT_CONFIGURED){
+			//wait for the USB HUB to be running
+			platform_delay(100);
+			// //reinit SMBus because of BUSY flag being kept high
+			// //when certain glitches appear on the I2C bus.
+			SMBus_init();
+			USB251XB_init(USB2512B);
+			hub_state = CONFIGURED;
 		}
 	}
 }
@@ -152,6 +203,7 @@ void platform_init(void)
 	rcc_periph_clock_enable(RCC_GPIOC);
 	rcc_periph_clock_enable(RCC_OTGFS);
 	rcc_periph_clock_enable(RCC_CRC);
+	rcc_periph_clock_enable(RCC_SYSCFG);
 
 	gpio_set(LED_PORT, LED_UART | LED_IDLE_RUN | LED_ERROR);
 	gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,	LED_UART | LED_IDLE_RUN | LED_ERROR);
@@ -178,7 +230,7 @@ void platform_init(void)
 	gpio_mode_setup(SRST_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, SRST_PIN);
 
 	gpio_set(USB_CHARGE_PORT, USB_CHARGE_PIN);
-	gpio_set_output_options(USB_CHARGE_PORT,GPIO_OTYPE_PP,GPIO_OSPEED_2MHZ,USB_CHARGE_PIN);
+	gpio_set_output_options(USB_CHARGE_PORT,GPIO_OTYPE_OD,GPIO_OSPEED_2MHZ,USB_CHARGE_PIN);
 	gpio_mode_setup(USB_CHARGE_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, USB_CHARGE_PIN);
 
 	gpio_set(USB_500_PORT, USB_500_PIN);
@@ -198,10 +250,8 @@ void platform_init(void)
 	usbuart_init();
 #endif
 	cdcacm_init();
-	//wait for the USB HUB to be running
-	platform_delay(100);
-	SMBus_init();
-	USB251XB_init(USB2512B);
+	
+	setup_vbus_detection();
 
 	/* To correct the Pull-UP on D+ management
 	Done in the cdcacm_init code by call of stm32f107_usbd_init :
@@ -217,7 +267,6 @@ void platform_init(void)
 	OTG_FS_DCTL |= OTG_DCTL_SDIS;
 	platform_delay(2);
 	OTG_FS_DCTL &= ~OTG_DCTL_SDIS;
-
 }
 
 void platform_srst_set_val(bool assert)
@@ -276,7 +325,12 @@ bool platform_pwr_on_btn_pressed(void)
 	return gpio_get(PWR_ON_PORT, PWR_ON_BTN_PIN) == 0;
 }
 
-bool platform_vbus(void)
+bool platform_vbus_hub(void)
+{
+	return gpio_get(VBUS_HUB_PORT, VBUS_HUB_PIN) != 0;
+}
+
+bool platform_get_vbus(void)
 {
 	return gpio_get(VBUS_PORT, VBUS_PIN) != 0;
 }
