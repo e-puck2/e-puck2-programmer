@@ -276,6 +276,25 @@ void platform_init(void)
 	OTG_FS_DCTL &= ~OTG_DCTL_SDIS;
 }
 
+void platform_switch_uart_to(uint8_t choice){
+	if((choice == 0) && (uartUsed == USBUSART_407)){
+		usart_disable(USBUSART_407);
+		nvic_disable_irq(USBUSART_407_IRQ);
+
+		uartUsed = USBUSART_ESP;
+		usart_enable(USBUSART_ESP);
+		nvic_enable_irq(USBUSART_ESP_IRQ);
+	}
+	else if((choice == 1) && (uartUsed == USBUSART_ESP)){
+		usart_disable(USBUSART_ESP);
+		nvic_disable_irq(USBUSART_ESP_IRQ);
+
+		uartUsed = USBUSART_407;
+		usart_enable(USBUSART_407);
+		nvic_enable_irq(USBUSART_407_IRQ);
+	}
+}
+
 void platform_srst_set_val(bool assert)
 {
 	volatile int i;
