@@ -35,7 +35,12 @@
 
 #define FIFO_SIZE 128
 
+#ifdef EPUCK2
 extern uint32_t uartUsed;
+#else
+uint32_t uartUsed = USBUSART;
+#endif /* EPUCK2 */
+
 
 /* RX Fifo buffer */
 static uint8_t buf_rx[FIFO_SIZE];
@@ -48,30 +53,31 @@ static void usbuart_run(void);
 
 void usbuart_init(void)
 {
-	rcc_periph_clock_enable(USBUSART_ESP_CLK);
-	rcc_periph_clock_enable(USBUSART_407_CLK);
-
 	UART_PIN_SETUP();
 
-	/* Setup UART parameters. */
+#ifdef EPUCK2 //setup specific uart ports for e-puck2
+	rcc_periph_clock_enable(USBUSART_ESP_CLK);
+
+	/* Setup UART ESP parameters. */
 	usart_set_baudrate(USBUSART_ESP, 38400);
 	usart_set_databits(USBUSART_ESP, 8);
 	usart_set_stopbits(USBUSART_ESP, USART_STOPBITS_1);
 	usart_set_mode(USBUSART_ESP, USART_MODE_TX_RX);
 	usart_set_parity(USBUSART_ESP, USART_PARITY_NONE);
 	usart_set_flow_control(USBUSART_ESP, USART_FLOWCONTROL_NONE);
+	/* Enable interrupts */
+	USBUSART_ESP_CR1 |= USART_CR1_RXNEIE;
+	nvic_set_priority(USBUSART_ESP_IRQ, IRQ_PRI_USBUSART);
 
-	/* Setup UART parameters. */
+	rcc_periph_clock_enable(USBUSART_407_CLK);
+
+	/* Setup UART 407 parameters. */
 	usart_set_baudrate(USBUSART_407, 38400);
 	usart_set_databits(USBUSART_407, 8);
 	usart_set_stopbits(USBUSART_407, USART_STOPBITS_1);
 	usart_set_mode(USBUSART_407, USART_MODE_TX_RX);
 	usart_set_parity(USBUSART_407, USART_PARITY_NONE);
 	usart_set_flow_control(USBUSART_407, USART_FLOWCONTROL_NONE);
-
-	/* Enable interrupts */
-	USBUSART_ESP_CR1 |= USART_CR1_RXNEIE;
-	nvic_set_priority(USBUSART_ESP_IRQ, IRQ_PRI_USBUSART);
 
 	/* Enable interrupts */
 	USBUSART_407_CR1 |= USART_CR1_RXNEIE;
@@ -87,6 +93,23 @@ void usbuart_init(void)
 		usart_enable(USBUSART_407);
 		nvic_enable_irq(USBUSART_407_IRQ);
 	}
+#else //setup standard UART for other platforms
+	rcc_periph_clock_enable(USBUSART_CLK);
+
+	/* Setup UART parameters. */
+	usart_set_baudrate(USBUSART, 38400);
+	usart_set_databits(USBUSART, 8);
+	usart_set_stopbits(USBUSART, USART_STOPBITS_1);
+	usart_set_mode(USBUSART, USART_MODE_TX_RX);
+	usart_set_parity(USBUSART, USART_PARITY_NONE);
+	usart_set_flow_control(USBUSART, USART_FLOWCONTROL_NONE);
+	/* Enable interrupts */
+	USBUSART_CR1 |= USART_CR1_RXNEIE;
+	nvic_set_priority(USBUSART_IRQ, IRQ_PRI_USBUSART);
+
+	usart_enable(USBUSART);
+	nvic_enable_irq(USBUSART_IRQ);
+#endif /* EPUCK2 */
 
 	/* Setup timer for running deferred FIFO processing */
 	USBUSART_TIM_CLK_EN();
@@ -235,10 +258,9 @@ void usbuart_usb_in_cb(usbd_device *dev, uint8_t ep)
  * Allowed to read from FIFO out pointer, but not write to it.
  * Allowed to write to FIFO in pointer.
  */
-void USBUSART_ESP_ISR(void)
-{
-	uint32_t err = USART_SR(USBUSART_ESP);
-	char c = usart_recv(USBUSART_ESP);
+void usbuart_isr(void){
+	uint32_t err = USART_SR(uartUsed);
+	char c = usart_recv(uartUsed);
 	if (err & (USART_SR_ORE | USART_SR_FE))
 		return;
 
@@ -264,6 +286,11 @@ void USBUSART_ESP_ISR(void)
 	}
 }
 
+void USBUSART_ESP_ISR(void)
+{
+	usbuart_isr();
+}
+
 /*
  * Read a character from the UART RX and stuff it in a software FIFO.
  * Allowed to read from FIFO out pointer, but not write to it.
@@ -271,31 +298,7 @@ void USBUSART_ESP_ISR(void)
  */
 void USBUSART_407_ISR(void)
 {
-	uint32_t err = USART_SR(USBUSART_407);
-	char c = usart_recv(USBUSART_407);
-	if (err & (USART_SR_ORE | USART_SR_FE))
-		return;
-
-	/* Turn on LED */
-	gpio_set(LED_PORT_UART, LED_UART);
-
-	/* If the next increment of rx_in would put it at the same point
-	* as rx_out, the FIFO is considered full.
-	*/
-	if (((buf_rx_in + 1) % FIFO_SIZE) != buf_rx_out)
-	{
-		/* insert into FIFO */
-		buf_rx[buf_rx_in++] = c;
-
-		/* wrap out pointer */
-		if (buf_rx_in >= FIFO_SIZE)
-		{
-			buf_rx_in = 0;
-		}
-
-		/* enable deferred processing if we put data in the FIFO */
-		timer_enable_irq(USBUSART_TIM, TIM_DIER_UIE);
-	}
+	usbuart_isr();
 }
 
 void USBUSART_TIM_ISR(void)
