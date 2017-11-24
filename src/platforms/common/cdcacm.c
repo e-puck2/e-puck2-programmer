@@ -36,7 +36,11 @@
 
 #ifndef PLATFORM_HAS_NO_SERIAL
 #include "usbuart.h"
-#endif
+#include <libopencm3/stm32/usart.h>
+#ifdef EPUCK2
+extern uint32_t uartUsed;
+#endif /* EPUCK2 */
+#endif /* PLATFORM_HAS_NO_SERIAL */
 
 #include "serialno.h"
 
@@ -475,8 +479,10 @@ static int cdcacm_control_request(usbd_device *dev,
 #if defined(EPUCK2)
 			cdcacm_uart_dtr = (req->wValue & (1<<0) ? 1 : 0);
 			cdcacm_uart_rts = (req->wValue & (1<<1) ? 1 : 0);
-			gpio_set_val(EN_ESP32_PORT, EN_ESP32_PIN, !cdcacm_uart_rts || cdcacm_uart_dtr);
-			gpio_set_val(GPIO0_ESP32_PORT, GPIO0_ESP32_PIN, cdcacm_uart_rts || !cdcacm_uart_dtr);
+			if(uartUsed == USBUSART_ESP){
+				gpio_set_val(EN_ESP32_PORT, EN_ESP32_PIN, !cdcacm_uart_rts || cdcacm_uart_dtr);
+				gpio_set_val(GPIO0_ESP32_PORT, GPIO0_ESP32_PIN, cdcacm_uart_rts || !cdcacm_uart_dtr);
+			}
 #endif
 #if defined(F4DISCO_TEST)
 			gpio_set_val(LED_PORT, LED_DTR, cdcacm_uart_dtr);

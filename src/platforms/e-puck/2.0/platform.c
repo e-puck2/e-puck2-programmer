@@ -70,6 +70,7 @@ extern uint32_t _ebss;
 uint16_t pwrBtnCounter = 0;
 uint8_t pwrBtnState = ROBOT_OFF;
 uint8_t hub_state = NOT_CONFIGURED;
+uint32_t uartUsed = USBUSART_ESP;
 
 void PWR_ON_BTN_TIM_ISR(void) {
 	/* need to clear timer update event */
@@ -273,6 +274,25 @@ void platform_init(void)
 	OTG_FS_DCTL |= OTG_DCTL_SDIS;
 	platform_delay(2);
 	OTG_FS_DCTL &= ~OTG_DCTL_SDIS;
+}
+
+void platform_switch_uart_to(uint8_t choice){
+	if((choice == 0) && (uartUsed == USBUSART_407)){
+		usart_disable(USBUSART_407);
+		nvic_disable_irq(USBUSART_407_IRQ);
+
+		uartUsed = USBUSART_ESP;
+		usart_enable(USBUSART_ESP);
+		nvic_enable_irq(USBUSART_ESP_IRQ);
+	}
+	else if((choice == 1) && (uartUsed == USBUSART_ESP)){
+		usart_disable(USBUSART_ESP);
+		nvic_disable_irq(USBUSART_ESP_IRQ);
+
+		uartUsed = USBUSART_407;
+		usart_enable(USBUSART_407);
+		nvic_enable_irq(USBUSART_407_IRQ);
+	}
 }
 
 void platform_srst_set_val(bool assert)

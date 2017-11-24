@@ -11,6 +11,7 @@ static bool cmd_usb_charge(target *t, int argc, const char **argv);
 static bool cmd_usb_500(target *t, int argc, const char **argv);
 static bool cmd_reset_F407(target *t, int argc, const char **argv);
 static bool cmd_esp32(target *t, int argc, const char **argv);
+static bool cmd_choose_monitor(target *t, int argc, const char **argv);
 
 /***************************************/
 /* End of platform dedicated commands. */
@@ -32,6 +33,7 @@ static bool cmd_esp32(target *t, int argc, const char **argv);
 	{"usb_charge", (cmd_handler)cmd_usb_charge, "(ON|OFF|) Set the USB_CHARGE pin or return the state of this one" }, \
 	{"usb_500", (cmd_handler)cmd_usb_500, "(ON|OFF|) Set the USB_500 pin or return the state of this one" }, \
 	{"reset_F407", (cmd_handler)cmd_reset_F407, "(ON|OFF|) Force the reset of F407" }, \
+	{"choose_monitor", (cmd_handler)cmd_choose_monitor, "(ESP|MAIN|) Choose to use the serial monitor with the ESP or the MAIN uC" }, \
 
 /***********************************************/
 /* End of List of platform dedicated commands. */
@@ -132,6 +134,20 @@ static bool cmd_reset_F407(target *t, int argc, const char **argv)
  	else
 		gpio_set(SRST_PORT, SRST_PIN);
 	return true;
+}
+
+static bool cmd_choose_monitor(target *t, int argc, const char **argv){
+	(void)t;
+	if (argc == 1)
+		gdb_outf("You must choose between ESP or MAIN\n");
+	else if (strcmp(argv[1], "ESP") == 0){
+		platform_switch_uart_to(0);
+		gdb_outf("Switched to ESP\n");
+	}else if (strcmp(argv[1], "MAIN") == 0){
+ 		platform_switch_uart_to(1);
+		gdb_outf("Switched to MAIN\n");
+ 	}
+ 	return true;
 }
 
 /***********************************************/
