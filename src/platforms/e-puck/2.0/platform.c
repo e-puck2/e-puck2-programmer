@@ -274,6 +274,8 @@ void platform_init(void)
 	OTG_FS_DCTL |= OTG_DCTL_SDIS;
 	platform_delay(2);
 	OTG_FS_DCTL &= ~OTG_DCTL_SDIS;
+
+	usbcan_init();
 }
 
 void platform_switch_uart_to(uint8_t choice){

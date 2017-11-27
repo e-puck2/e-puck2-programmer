@@ -169,6 +169,26 @@
 #define I2C_SCL_PIN		GPIO6
 #define I2C_SCL_AF		GPIO_AF4
 
+
+#define CAN_RX_PORT		GPIOB
+#define CAN_RX_PIN		GPIO8
+#define CAN_TX_PORT		GPIOB	
+#define CAN_TX_PIN		GPIO9
+
+#define IRQ_PRI_CAN_RX	(1 << 4)
+#define CAN_RX_ISR		can1_rx0_isr
+
+#define CAN_PIN_SETUP() do { \
+	gpio_set_output_options(CAN_TX_PORT,GPIO_OTYPE_PP,GPIO_OSPEED_100MHZ,CAN_TX_PIN);\
+	gpio_set_output_options(CAN_RX_PORT,GPIO_OTYPE_PP,GPIO_OSPEED_100MHZ,CAN_RX_PIN);\
+	gpio_mode_setup(CAN_TX_PORT, GPIO_MODE_AF, GPIO_PUPD_NONE, \
+	                CAN_TX_PIN); \
+	gpio_mode_setup(CAN_RX_PORT, GPIO_MODE_AF, GPIO_PUPD_NONE, \
+	                CAN_RX_PIN); \
+	gpio_set_af(CAN_TX_PORT, GPIO_AF8, CAN_TX_PIN); \
+	gpio_set_af(CAN_RX_PORT, GPIO_AF8, CAN_RX_PIN); \
+    } while(0)
+
 #define TMS_SET_MODE() \
 	gpio_mode_setup(TMS_PORT, GPIO_MODE_OUTPUT, \
 	                GPIO_PUPD_NONE, TMS_PIN);

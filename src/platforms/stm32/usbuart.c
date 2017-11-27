@@ -26,6 +26,7 @@
 #include <libopencm3/cm3/scs.h>
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/usb/cdc.h>
+#include <libopencm3/stm32/can.h>
 
 #include "general.h"
 #include "cdcacm.h"
@@ -83,16 +84,16 @@ void usbuart_init(void)
 	USBUSART_407_CR1 |= USART_CR1_RXNEIE;
 	nvic_set_priority(USBUSART_407_IRQ, IRQ_PRI_USBUSART);
 
-	if(uartUsed == USBUSART_ESP){
-		/* Finally enable the USART. */
-		usart_enable(USBUSART_ESP);
-		nvic_enable_irq(USBUSART_ESP_IRQ);
+	// if(uartUsed == USBUSART_ESP){
+	// 	/* Finally enable the USART. */
+	// 	usart_enable(USBUSART_ESP);
+	// 	nvic_enable_irq(USBUSART_ESP_IRQ);
 
-	}else if(uartUsed == USBUSART_407){
-		/* Finally enable the USART. */
-		usart_enable(USBUSART_407);
-		nvic_enable_irq(USBUSART_407_IRQ);
-	}
+	// }else if(uartUsed == USBUSART_407){
+	// 	/* Finally enable the USART. */
+	// 	usart_enable(USBUSART_407);
+	// 	nvic_enable_irq(USBUSART_407_IRQ);
+	// }
 #else //setup standard UART for other platforms
 	rcc_periph_clock_enable(USBUSART_CLK);
 
@@ -225,9 +226,32 @@ void usbuart_usb_out_cb(usbd_device *dev, uint8_t ep)
 #endif
 
 	gpio_set(LED_PORT_UART, LED_UART);
-	for(int i = 0; i < len; i++)
-		usart_send_blocking(uartUsed, buf[i]);
-	gpio_clear(LED_PORT_UART, LED_UART);
+	// for(int i = 0; i < len; i++)
+	// 	usart_send_blocking(uartUsed, buf[i]);
+	// gpio_clear(LED_PORT_UART, LED_UART);
+	uint8_t count = len;
+	uint8_t len2 = 0;
+	uint8_t* pt_buf = (uint8_t*)buf;
+
+	while(count > 0){
+		len2 = count;
+		if(len2 > 8){
+			len2 = 8;
+		}
+		while(can_transmit(CAN1,
+			 0,     /* (EX/ST)ID: CAN ID */
+			 false, /* IDE: CAN ID extended? */
+			 false, /* RTR: Request transmit? */
+			 len2,     /* DLC: Data length */
+			 pt_buf) == -1){
+			usbd_ep_write_packet(usbdev,
+				CDCACM_UART_ENDPOINT, "transmit failed \n", 17);
+		}
+
+		pt_buf+=len2;
+		count-=len2;
+	}
+
 }
 
 #ifdef USBUART_DEBUG
@@ -291,11 +315,6 @@ void USBUSART_ESP_ISR(void)
 	usbuart_isr();
 }
 
-/*
- * Read a character from the UART RX and stuff it in a software FIFO.
- * Allowed to read from FIFO out pointer, but not write to it.
- * Allowed to write to FIFO in pointer.
- */
 void USBUSART_407_ISR(void)
 {
 	usbuart_isr();
@@ -308,6 +327,89 @@ void USBUSART_TIM_ISR(void)
 
 	/* process FIFO */
 	usbuart_run();
+}
+
+void CAN_RX_ISR(void)
+{
+	int8_t i = 0;
+	uint32_t id;
+	bool ext, rtr;
+	uint8_t fmi, length, data[8];
+
+	can_receive(CAN1, 0, true, &id, &ext, &rtr, &fmi, &length, data, NULL);
+
+
+	for(i = 0 ; i < length ; i++){
+		/* Turn on LED */
+		gpio_set(LED_PORT_UART, LED_UART);
+
+		/* If the next increment of rx_in would put it at the same point
+		* as rx_out, the FIFO is considered full.
+		*/
+		if (((buf_rx_in + 1) % FIFO_SIZE) != buf_rx_out)
+		{
+			/* insert into FIFO */
+			buf_rx[buf_rx_in++] = data[i];
+
+			/* wrap out pointer */
+			if (buf_rx_in >= FIFO_SIZE)
+			{
+				buf_rx_in = 0;
+			}
+
+			/* enable deferred processing if we put data in the FIFO */
+			timer_enable_irq(USBUSART_TIM, TIM_DIER_UIE);
+		}
+	}
+
+}
+
+void usbcan_init(void)
+{
+	/* Enable peripheral clocks. */
+	rcc_periph_clock_enable(RCC_CAN1);
+
+	CAN_PIN_SETUP();
+
+	/* NVIC setup. */
+	nvic_enable_irq(NVIC_CAN1_RX0_IRQ);
+	nvic_set_priority(NVIC_CAN1_RX0_IRQ, IRQ_PRI_CAN_RX);
+
+	/* Reset CAN. */
+	can_reset(CAN1);
+
+	/* CAN cell init.
+     * Setting the bitrate to 1MBit. APB1 = 48MHz,
+     * prescaler = 3 -> 16MHz time quanta frequency.
+     * 1tq sync + 9tq bit segment1 (TS1) + 6tq bit segment2 (TS2) =
+     * 16time quanta per bit period, therefor 16MHz/16 = 1MHz
+     */
+    if (can_init(CAN1,          // Interface
+             false,             // Time triggered communication mode.
+             true,              // Automatic bus-off management.
+             false,             // Automatic wakeup mode.
+             false,             // No automatic retransmission.
+             false,             // Receive FIFO locked mode.
+             false,             // Transmit FIFO priority.
+             CAN_BTR_SJW_1TQ,   // Resynchronization time quanta jump width
+             CAN_BTR_TS1_9TQ,  	// Time segment 1 time quanta width
+             CAN_BTR_TS2_6TQ,   // Time segment 2 time quanta width
+             3,                 // Prescaler
+             false,             // Loopback
+             false)) {          // Silent
+    }
+
+    can_filter_id_mask_32bit_init(
+        CAN1,
+        0,      // nr
+        0,      // id
+        0,      // mask
+        0,      // fifo
+        true    // enable
+    ); // match any id
+
+	/* Enable CAN RX interrupt. */
+	can_enable_irq(CAN1, CAN_IER_FMPIE0);
 }
 
 #ifdef ENABLE_DEBUG
