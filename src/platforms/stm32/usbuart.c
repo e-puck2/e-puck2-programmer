@@ -36,12 +36,29 @@
 
 #define FIFO_SIZE 128
 
+#define TYPE_SMALL_PACKET 0x3
+#define TYPE_PACKET_NORMAL 0x0
+#define TYPE_PACKET_START 0x1
+#define TYPE_PACKET_STOP 0x2
+
+#define CANID_TO_TYPE(canid) ((canid) >> 8)
+#define CANID_TO_ID(canid) ((canid) & 0xff)
+
+#define ASEBA_MAX_INNER_PACKET_SIZE 1048
+
+typedef union {
+    uint8_t u8[2];
+    uint16_t u16;
+} uint16_8_t;
+
+static uint8_t can_rx_buf[ASEBA_MAX_INNER_PACKET_SIZE];
+static uint32_t can_rx_pos = 0;
+
 #ifdef EPUCK2
 extern uint32_t uartUsed;
 #else
 uint32_t uartUsed = USBUSART;
 #endif /* EPUCK2 */
-
 
 /* RX Fifo buffer */
 static uint8_t buf_rx[FIFO_SIZE];
@@ -209,6 +226,47 @@ void usbuart_set_line_coding(struct usb_cdc_line_coding *coding)
 	}
 }
 
+void aseba_can_transmit(uint8_t* data, uint16_t length, uint16_t source){
+
+	if (length <= 8)
+	{
+		while(can_transmit(CAN1,
+			 (((TYPE_SMALL_PACKET) << 8) | (source)),     /* (EX/ST)ID: CAN ID */
+			 false, /* IDE: CAN ID extended? */
+			 false, /* RTR: Request transmit? */
+			 length,     /* DLC: Data length */
+			 data) == -1);
+	}
+	else
+	{
+		size_t pos = 8;
+		
+		while(can_transmit(CAN1,
+			 (((TYPE_PACKET_START) << 8) | (source)),     /* (EX/ST)ID: CAN ID */
+			 false, /* IDE: CAN ID extended? */
+			 false, /* RTR: Request transmit? */
+			 8,     /* DLC: Data length */
+			 data) == -1);
+
+		while (pos + 8 < length)
+		{
+			while(can_transmit(CAN1,
+				 (((TYPE_PACKET_NORMAL) << 8) | (source)),     /* (EX/ST)ID: CAN ID */
+				 false, /* IDE: CAN ID extended? */
+				 false, /* RTR: Request transmit? */
+				 8,     /* DLC: Data length */
+				 data + pos) == -1);
+			pos += 8;
+		}
+		while(can_transmit(CAN1,
+			 (((TYPE_PACKET_STOP) << 8) | (source)),     /* (EX/ST)ID: CAN ID */
+			 false, /* IDE: CAN ID extended? */
+			 false, /* RTR: Request transmit? */
+			 length - pos,     /* DLC: Data length */
+			 data + pos) == -1);
+	}
+}
+
 void usbuart_usb_out_cb(usbd_device *dev, uint8_t ep)
 {
 	(void)ep;
@@ -229,28 +287,19 @@ void usbuart_usb_out_cb(usbd_device *dev, uint8_t ep)
 	// for(int i = 0; i < len; i++)
 	// 	usart_send_blocking(uartUsed, buf[i]);
 	// gpio_clear(LED_PORT_UART, LED_UART);
-	uint8_t count = len;
-	uint8_t len2 = 0;
-	uint8_t* pt_buf = (uint8_t*)buf;
 
-	while(count > 0){
-		len2 = count;
-		if(len2 > 8){
-			len2 = 8;
-		}
-		while(can_transmit(CAN1,
-			 0,     /* (EX/ST)ID: CAN ID */
-			 false, /* IDE: CAN ID extended? */
-			 false, /* RTR: Request transmit? */
-			 len2,     /* DLC: Data length */
-			 pt_buf) == -1){
-			usbd_ep_write_packet(usbdev,
-				CDCACM_UART_ENDPOINT, "transmit failed \n", 17);
-		}
+	if(len){
+		uint16_8_t length, source; 
+		length.u8[0] = buf[0];
+		length.u8[1] = buf[1];
 
-		pt_buf+=len2;
-		count-=len2;
+		source.u8[0] = buf[2];
+		source.u8[1] = buf[3];
+		uint8_t* pt_buf = (uint8_t*)buf+4;
+
+		aseba_can_transmit(pt_buf, length.u16 + 2, source.u16);
 	}
+	
 
 }
 
@@ -329,38 +378,95 @@ void USBUSART_TIM_ISR(void)
 	usbuart_run();
 }
 
+void usbcan_run(void){
+
+	/* send nothing if no USB endpoint */
+	if (cdcacm_get_config() != 1)
+	{
+		return;
+	}
+
+	can_rx_pos += 4;
+	if(can_rx_pos > CDCACM_PACKET_SIZE){
+		uint16_t times_to_send = can_rx_pos / CDCACM_PACKET_SIZE;
+		uint16_t rest_to_send = can_rx_pos % CDCACM_PACKET_SIZE;
+		uint16_t i = 0;
+
+		while(i < times_to_send){
+			while(usbd_ep_write_packet(usbdev,CDCACM_UART_ENDPOINT,
+			 &can_rx_buf[i * CDCACM_PACKET_SIZE], CDCACM_PACKET_SIZE) <= 0);
+			i++;
+		}
+		if( can_rx_pos > CDCACM_PACKET_SIZE){
+			while(usbd_ep_write_packet(usbdev,CDCACM_UART_ENDPOINT,
+			 &can_rx_buf[i * CDCACM_PACKET_SIZE], rest_to_send) <= 0);
+		}
+	}else{
+		while(usbd_ep_write_packet(usbdev,CDCACM_UART_ENDPOINT,
+		 can_rx_buf, can_rx_pos) <= 0);
+	}
+
+	can_rx_pos = 0;
+	
+}
+
 void CAN_RX_ISR(void)
 {
 	int8_t i = 0;
 	uint32_t id;
 	bool ext, rtr;
-	uint8_t fmi, length, data[8];
+	uint8_t fmi, len, data[8];
 
-	can_receive(CAN1, 0, true, &id, &ext, &rtr, &fmi, &length, data, NULL);
+	can_receive(CAN1, 0, true, &id, &ext, &rtr, &fmi, &len, data, NULL);
 
+	uint16_8_t source, length;
 
-	for(i = 0 ; i < length ; i++){
-		/* Turn on LED */
-		gpio_set(LED_PORT_UART, LED_UART);
+	source.u16 = CANID_TO_ID(id);
+	length.u16 = len - 2; /* Aseba transmits length minus the type. */
 
-		/* If the next increment of rx_in would put it at the same point
-		* as rx_out, the FIFO is considered full.
-		*/
-		if (((buf_rx_in + 1) % FIFO_SIZE) != buf_rx_out)
-		{
-			/* insert into FIFO */
-			buf_rx[buf_rx_in++] = data[i];
+	if(CANID_TO_TYPE(id) == TYPE_SMALL_PACKET){
 
-			/* wrap out pointer */
-			if (buf_rx_in >= FIFO_SIZE)
-			{
-				buf_rx_in = 0;
-			}
-
-			/* enable deferred processing if we put data in the FIFO */
-			timer_enable_irq(USBUSART_TIM, TIM_DIER_UIE);
+		for(i = 0 ; i < len ; i++){
+			can_rx_buf[i + 4 + can_rx_pos] = data[i];
 		}
+		can_rx_pos += len;
+
+		length.u16 = len - 2;  // Aseba transmits length minus the type. 
+
+		can_rx_buf[0] = length.u8[0];
+		can_rx_buf[1] = length.u8[1];	
+		can_rx_buf[2] = source.u8[0];
+		can_rx_buf[3] = source.u8[1];
+
+		usbcan_run();
+
+	}else if(CANID_TO_TYPE(id) == TYPE_PACKET_STOP){
+
+		for(i = 0 ; i < len ; i++){
+			can_rx_buf[i + 4 + can_rx_pos] = data[i];
+		}
+		can_rx_pos += len;
+
+		length.u16 = can_rx_pos - 2; //Aseba transmits length minus the type.
+
+		can_rx_buf[0] = length.u8[0];
+		can_rx_buf[1] = length.u8[1];	
+		can_rx_buf[2] = source.u8[0];
+		can_rx_buf[3] = source.u8[1];
+
+		usbcan_run();
+
+	}else{//TYPE_PACKET_NORMAL or TYPE_PACKET_START //just fill the buffer
+
+		for(i = 0 ; i < len ; i++){
+			can_rx_buf[i + 4 + can_rx_pos] = data[i];
+		}
+
+		can_rx_pos += len;
+
 	}
+
+	
 
 }
 
