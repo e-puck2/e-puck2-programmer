@@ -36,12 +36,14 @@
 
 #define FIFO_SIZE 128
 
-#define TYPE_SMALL_PACKET 0x3
-#define TYPE_PACKET_NORMAL 0x0
-#define TYPE_PACKET_START 0x1
-#define TYPE_PACKET_STOP 0x2
+#ifdef EPUCK2
 
-#define ASEBA_HEADER_SIZE		(2* sizeof(uint16_8_t))
+#define TYPE_SMALL_PACKET 	0x3
+#define TYPE_PACKET_NORMAL 	0x0
+#define TYPE_PACKET_START 	0x1
+#define TYPE_PACKET_STOP 	0x2
+
+#define ASEBA_HEADER_SIZE		(2 * sizeof(uint16_8_t))
 #define ASEBA_CAN_PAYLOAD_SIZE	8 //8 bytes
 
 #define PROCESS_LENGTH		1
@@ -81,9 +83,8 @@ static uint32_t can_tx_in = 0;
 static uint32_t can_tx_out = 0; 
 static uint32_t can_tx_count = 0;
 
-#ifdef EPUCK2
 extern uint32_t uartUsed;
-#else
+#else /* EPUCK2 */
 uint32_t uartUsed = USBUSART;
 #endif /* EPUCK2 */
 
@@ -175,6 +176,9 @@ void usbuart_init(void)
 
 	/* turn the timer on */
 	timer_enable_counter(USBUSART_TIM);
+
+	timer_enable_irq(USBUSART_TIM, TIM_DIER_UIE);
+
 }
 
 /*
@@ -384,13 +388,28 @@ void USBUSART_407_ISR(void)
 }
 
 /* 
+ * Function to fill the can_tx_buf in a circular manner with the source_buf provided
+ * Also updates the variable decrement (needed in process_usbcan())
+*/
+void fill_can_tx_buffer(uint8_t* source_buf,uint32_t* decrement, uint32_t size){
+	uint32_t i = 0;
+
+	for(i = 0 ; i < size ; i++){
+		source_buf[i] = can_tx_buf[can_tx_out++];
+		(*decrement)++;
+		if(can_tx_out >= ASEBA_MAX_INNER_PACKET_SIZE){
+			can_tx_out = 0;
+		}
+	}
+}
+
+/* 
  * State machine used to process the datas present in the buffer in order
  * to convert them to the Aseba CAN format and to send them over CAN
 */
 void process_usbcan(void){
 
 	static uint8_t state = PROCESS_LENGTH;
-	static uint32_t i = 0;
 	static uint16_8_t length, source; 
 	static uint8_t data_buffer[8];
 	static uint32_t data_sent = 0;
@@ -410,13 +429,9 @@ void process_usbcan(void){
 	//case where we must read the length field
 	if(state == PROCESS_LENGTH){
 		if(count >= sizeof(length)){
-			for(i = 0 ; i < sizeof(length) ; i++){
-				length.u8[i] = can_tx_buf[can_tx_out++];
-				decrement++;
-				if(can_tx_out >= ASEBA_MAX_INNER_PACKET_SIZE){
-					can_tx_out = 0;
-				}
-			}
+
+			fill_can_tx_buffer(length.u8, &decrement, sizeof(length));
+
 			length.u16 += 2; // Aseba transmits length minus the type. 
 			//next step is to read the source field
 			state = PROCESS_SOURCE;
@@ -425,13 +440,9 @@ void process_usbcan(void){
 	//case where we must read the source field
 	if(state == PROCESS_SOURCE){
 		if(count >= sizeof(source)){
-			for(i = 0 ; i < sizeof(source) ; i++){
-				source.u8[i] = can_tx_buf[can_tx_out++];
-				decrement++;
-				if(can_tx_out >= ASEBA_MAX_INNER_PACKET_SIZE){
-					can_tx_out = 0;
-				}
-			}
+
+			fill_can_tx_buffer(source.u8, &decrement, sizeof(source));
+
 			//next step is to read the datas
 			state = PROCESS_DATAS;
 		}
@@ -448,13 +459,9 @@ void process_usbcan(void){
 	//case where we can directly send the datas because we have a small packet type
 	if(state == PROCESS_SEND_SMALL){
 		if(count >= length.u16){
-			for(i = 0 ; i < length.u16 ; i++){
-				data_buffer[i] = can_tx_buf[can_tx_out++];
-				decrement++;
-				if(can_tx_out >= ASEBA_MAX_INNER_PACKET_SIZE){
-					can_tx_out = 0;
-				}
-			}
+
+			fill_can_tx_buffer(data_buffer, &decrement, length.u16);
+
 			aseba_can_transmit(data_buffer, length.u16, source.u16, TYPE_SMALL_PACKET);
 			//we return to the beginning of the state machine because we finished the current message
 			state = PROCESS_LENGTH;
@@ -464,13 +471,9 @@ void process_usbcan(void){
 	//the first datas has to be sent with a TYPE_PACKET_START id
 	if(state == PROCESS_SEND_START){
 		if(count >= ASEBA_CAN_PAYLOAD_SIZE){
-			for(i = 0 ; i < ASEBA_CAN_PAYLOAD_SIZE ; i++){
-				data_buffer[i] = can_tx_buf[can_tx_out++];
-				decrement++;
-				if(can_tx_out >= ASEBA_MAX_INNER_PACKET_SIZE){
-					can_tx_out = 0;
-				}
-			}
+
+			fill_can_tx_buffer(data_buffer, &decrement, ASEBA_CAN_PAYLOAD_SIZE);
+
 			data_sent = ASEBA_CAN_PAYLOAD_SIZE;
 			aseba_can_transmit(data_buffer, ASEBA_CAN_PAYLOAD_SIZE, source.u16, TYPE_PACKET_START);
 			//next step is either the last packet of the message (must contain TYPE_PACKET_STOP id)
@@ -486,13 +489,9 @@ void process_usbcan(void){
 	//the datas has to be sent with a TYPE_PACKET_NORMAL id
 	if(state == PROCESS_SEND_NORMAL){
 		if(count >= ASEBA_CAN_PAYLOAD_SIZE){
-			for(i = 0 ; i < ASEBA_CAN_PAYLOAD_SIZE ; i++){
-				data_buffer[i] = can_tx_buf[can_tx_out++];
-				decrement++;
-				if(can_tx_out >= ASEBA_MAX_INNER_PACKET_SIZE){
-					can_tx_out = 0;
-				}
-			}
+
+			fill_can_tx_buffer(data_buffer, &decrement, ASEBA_CAN_PAYLOAD_SIZE);
+
 			data_sent += ASEBA_CAN_PAYLOAD_SIZE;
 			aseba_can_transmit(data_buffer, ASEBA_CAN_PAYLOAD_SIZE, source.u16, TYPE_PACKET_NORMAL);
 			//next step is either another 8 bytes packet
@@ -506,13 +505,9 @@ void process_usbcan(void){
 	//the datas has to be sent with a TYPE_PACKET_STOP id
 	if(state == PROCESS_SEND_STOP){
 		if(count >= (length.u16 - data_sent)){
-			for(i = 0 ; i < (length.u16 - data_sent) ; i++){
-				data_buffer[i] = can_tx_buf[can_tx_out++];
-				decrement++;
-				if(can_tx_out >= ASEBA_MAX_INNER_PACKET_SIZE){
-					can_tx_out = 0;
-				}
-			}
+
+			fill_can_tx_buffer(data_buffer, &decrement, (length.u16 - data_sent));
+
 			data_sent += ASEBA_CAN_PAYLOAD_SIZE;
 			aseba_can_transmit(data_buffer, (length.u16 - data_sent), source.u16, TYPE_PACKET_STOP);
 			//we return to the beginning of the state machine because we finished the current message
@@ -541,7 +536,7 @@ void USBUSART_TIM_ISR(void)
 }
 
 /* 
- * Function called to transmit a the frame contained in the can_rx_buf to USB
+ * Blocking function called to transmit a the frame contained in the can_rx_buf to USB
 */
 void aseba_usb_transmit(void){
 
@@ -582,6 +577,9 @@ void aseba_usb_transmit(void){
 */
 void CAN_RX_ISR(void)
 {
+
+	static bool message_complete = false;
+
 	int8_t i = 0;
 	uint32_t id;
 	bool ext, rtr;
@@ -593,40 +591,31 @@ void CAN_RX_ISR(void)
 
 	source.u16 = CANID_TO_ID(id);
 
+	//fill the buffer with the new datas
+	for(i = 0 ; i < len ; i++){
+		can_rx_buf[i + ASEBA_HEADER_SIZE + can_rx_pos] = data[i];
+	}
+	can_rx_pos += len;
+
 	//case where we have a small packet
 	//it means the message is already complete, thus we can contruct the UART message and send it
 	if(CANID_TO_TYPE(id) == TYPE_SMALL_PACKET){
 
-		for(i = 0 ; i < len ; i++){
-			can_rx_buf[i + ASEBA_HEADER_SIZE + can_rx_pos] = data[i];
-		}
-		can_rx_pos += len;
-
 		length.u16 = len - 2;  // Aseba transmits length minus the type. 
 
-		//write the source and the length at the beginning of the message
-		can_rx_buf[0] = length.u8[0];
-		can_rx_buf[1] = length.u8[1];	
-		can_rx_buf[2] = source.u8[0];
-		can_rx_buf[3] = source.u8[1];
-
-		//updates the position to include the header in the size of the message
-		can_rx_pos += ASEBA_HEADER_SIZE;
-
-		//send the message
-		aseba_usb_transmit();
-
+		message_complete = true;
 	}
 	//case where we have a stop packet
 	//it means it is the last packet of the message, thus we can contruct the UART message and send it
 	else if(CANID_TO_TYPE(id) == TYPE_PACKET_STOP){
 
-		for(i = 0 ; i < len ; i++){
-			can_rx_buf[i + ASEBA_HEADER_SIZE + can_rx_pos] = data[i];
-		}
-		can_rx_pos += len;
-
 		length.u16 = can_rx_pos - 2; //Aseba transmits length minus the type.
+
+		message_complete = true;
+	}
+
+	if(message_complete){
+		message_complete = false;
 
 		//write the source and the length at the beginning of the message
 		can_rx_buf[0] = length.u8[0];
@@ -639,22 +628,7 @@ void CAN_RX_ISR(void)
 
 		//send the message
 		aseba_usb_transmit();
-
 	}
-	//case where we have a start or normal packet
-	//it means we just fill the buffer and wait for others datas before contructing the UART message
-	else{
-
-		for(i = 0 ; i < len ; i++){
-			can_rx_buf[i + ASEBA_HEADER_SIZE + can_rx_pos] = data[i];
-		}
-
-		can_rx_pos += len;
-
-	}
-
-	
-
 }
 
 /*
@@ -707,7 +681,7 @@ void usbcan_init(void)
 	/* Enable CAN RX interrupt. */
 	can_enable_irq(CAN_USED, CAN_IER_FMPIE0);
 
-	/* enable the state machine to process and send Aseba datas to USB */
+	//enable the timer used to call periodically the state machine
 	timer_enable_irq(USBUSART_TIM, TIM_DIER_UIE);
 }
 
