@@ -26,6 +26,7 @@
 #include <libopencm3/cm3/scs.h>
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/usb/cdc.h>
+#include <libopencm3/stm32/can.h>
 
 #include "general.h"
 #include "cdcacm.h"
@@ -36,11 +37,58 @@
 #define FIFO_SIZE 128
 
 #ifdef EPUCK2
-extern uint32_t uartUsed;
-#else
-uint32_t uartUsed = USBUSART;
-#endif /* EPUCK2 */
 
+#define TYPE_SMALL_PACKET 	0x3
+#define TYPE_PACKET_NORMAL 	0x0
+#define TYPE_PACKET_START 	0x1
+#define TYPE_PACKET_STOP 	0x2
+
+#define ASEBA_HEADER_SIZE		(2 * sizeof(uint16_8_t))
+#define ASEBA_CAN_PAYLOAD_SIZE	8 //8 bytes
+
+#define PROCESS_LENGTH		1
+#define PROCESS_SOURCE		2
+#define PROCESS_DATAS		3
+#define PROCESS_SEND_START	4
+#define PROCESS_SEND_NORMAL	5
+#define PROCESS_SEND_STOP	6
+#define PROCESS_SEND_SMALL	7
+
+#define CANID_TO_TYPE(canid) ((canid) >> 8)
+#define CANID_TO_ID(canid) ((canid) & 0xff)
+#define TO_CANID(type, id) (((type) << 8) | (id))
+
+#define ASEBA_MAX_INNER_PACKET_SIZE 1048
+
+//struct used to separate a uint16_t variable into uint8_t independently of the 
+//endianness of the uC
+typedef union {
+    uint8_t u8[2];
+    uint16_t u16;
+} uint16_8_t;
+
+//simple buffer to contain one message at a time
+//we need to receive all the Aseba CAN packet to know how the size of the message
+//when a message is complete, it is sent over USB and the buffer is free to receive another message
+static uint8_t can_rx_buf[ASEBA_MAX_INNER_PACKET_SIZE];
+static uint32_t can_rx_pos = 0;
+
+//circular buffer used to store the datas received over USB
+//when we have datas in it, a state machine processes them to send them 
+//by packets over CAN
+//As we know the size of the message to send, we can send the datas of the message
+//directly when we receive them, thus in this case a circular buffer is useful
+static uint8_t can_tx_buf[ASEBA_MAX_INNER_PACKET_SIZE];
+static uint32_t can_tx_in = 0;
+static uint32_t can_tx_out = 0; 
+static uint32_t can_tx_count = 0;
+
+extern uint32_t uartUsed;
+extern bool canUsed;
+#else /* EPUCK2 */
+uint32_t uartUsed = USBUSART;
+bool canUsed = false;
+#endif /* EPUCK2 */
 
 /* RX Fifo buffer */
 static uint8_t buf_rx[FIFO_SIZE];
@@ -51,6 +99,9 @@ static uint8_t buf_rx_out;
 
 static void usbuart_run(void);
 
+/*
+ * Init the UART ports to be used
+ */
 void usbuart_init(void)
 {
 	UART_PIN_SETUP();
@@ -83,15 +134,17 @@ void usbuart_init(void)
 	USBUSART_407_CR1 |= USART_CR1_RXNEIE;
 	nvic_set_priority(USBUSART_407_IRQ, IRQ_PRI_USBUSART);
 
-	if(uartUsed == USBUSART_ESP){
-		/* Finally enable the USART. */
-		usart_enable(USBUSART_ESP);
-		nvic_enable_irq(USBUSART_ESP_IRQ);
+	if(!canUsed){
+		if(uartUsed == USBUSART_ESP){
+			/* Finally enable the USART. */
+			usart_enable(USBUSART_ESP);
+			nvic_enable_irq(USBUSART_ESP_IRQ);
 
-	}else if(uartUsed == USBUSART_407){
-		/* Finally enable the USART. */
-		usart_enable(USBUSART_407);
-		nvic_enable_irq(USBUSART_407_IRQ);
+		}else if(uartUsed == USBUSART_407){
+			/* Finally enable the USART. */
+			usart_enable(USBUSART_407);
+			nvic_enable_irq(USBUSART_407_IRQ);
+		}
 	}
 #else //setup standard UART for other platforms
 	rcc_periph_clock_enable(USBUSART_CLK);
@@ -127,6 +180,9 @@ void usbuart_init(void)
 
 	/* turn the timer on */
 	timer_enable_counter(USBUSART_TIM);
+
+	timer_enable_irq(USBUSART_TIM, TIM_DIER_UIE);
+
 }
 
 /*
@@ -208,6 +264,11 @@ void usbuart_set_line_coding(struct usb_cdc_line_coding *coding)
 	}
 }
 
+/* 
+ * Callback called when an USB frame has been received
+ * Either send it directly over UART, or send it to a buffer for further 
+ * processing in order to send it over CAN 
+*/
 void usbuart_usb_out_cb(usbd_device *dev, uint8_t ep)
 {
 	(void)ep;
@@ -223,11 +284,38 @@ void usbuart_usb_out_cb(usbd_device *dev, uint8_t ep)
 	if(!(RCC_APB2ENR & RCC_APB2ENR_USART1EN))
 		return;
 #endif
-
 	gpio_set(LED_PORT_UART, LED_UART);
+
+#ifdef EPUCK2
+	//we work with CAN
+	if(canUsed){
+
+		if(len && ((len + can_tx_count) <= ASEBA_MAX_INNER_PACKET_SIZE)){
+			uint8_t i = 0;
+			for(i = 0 ; i < len ; i++){
+				can_tx_buf[can_tx_in++] = buf[i];
+				//circular buffer
+				if(can_tx_in >= ASEBA_MAX_INNER_PACKET_SIZE){
+					can_tx_in = 0;
+				}
+			}
+			can_tx_count += len;
+		}
+
+		//enable the timer used to call periodically the state machine
+		timer_enable_irq(USBUSART_TIM, TIM_DIER_UIE);
+	}
+	//we work with UART
+	else{
+		for(int i = 0; i < len; i++)
+			usart_send_blocking(uartUsed, buf[i]);
+	}
+#else
 	for(int i = 0; i < len; i++)
 		usart_send_blocking(uartUsed, buf[i]);
+#endif /* EPUCK2 */
 	gpio_clear(LED_PORT_UART, LED_UART);
+	
 }
 
 #ifdef USBUART_DEBUG
@@ -286,29 +374,343 @@ void usbuart_isr(void){
 	}
 }
 
+/* 
+ * Callback called when an UART character from the ESP has been received
+*/
 void USBUSART_ESP_ISR(void)
 {
 	usbuart_isr();
 }
 
-/*
- * Read a character from the UART RX and stuff it in a software FIFO.
- * Allowed to read from FIFO out pointer, but not write to it.
- * Allowed to write to FIFO in pointer.
- */
+/* 
+ * Callback called when an UART character from the 407 has been received
+*/
 void USBUSART_407_ISR(void)
 {
 	usbuart_isr();
 }
 
+#ifdef EPUCK2
+/* 
+ * Function to fill the can_tx_buf in a circular manner with the source_buf provided
+ * Also updates the variable decrement (needed in process_usbcan())
+*/
+void fill_can_tx_buffer(uint8_t* source_buf,uint32_t* decrement, uint32_t size){
+	uint32_t i = 0;
+
+	for(i = 0 ; i < size ; i++){
+		source_buf[i] = can_tx_buf[can_tx_out++];
+		(*decrement)++;
+		if(can_tx_out >= ASEBA_MAX_INNER_PACKET_SIZE){
+			can_tx_out = 0;
+		}
+	}
+}
+
+/* 
+ * Blocking function used to send Aseba packets over CAN
+*/
+void aseba_can_transmit(uint8_t* data, uint16_t length, uint16_t source, uint32_t type){
+
+	//blocking transmission
+	while(can_transmit(CAN_USED,
+		 TO_CANID(type, source),     /* (EX/ST)ID: CAN ID */
+		 false, /* IDE: CAN ID extended? */
+		 false, /* RTR: Request transmit? */
+		 length,     /* DLC: Data length */
+		 data) == -1);
+}
+
+/* 
+ * State machine used to process the datas present in the buffer in order
+ * to convert them to the Aseba CAN format and to send them over CAN
+*/
+void process_usbcan(void){
+
+	static uint8_t state = PROCESS_LENGTH;
+	static uint16_8_t length, source; 
+	static uint8_t data_buffer[8];
+	static uint32_t data_sent = 0;
+
+	static uint32_t count = 0;
+	static uint32_t decrement = 0 ;
+
+	//we copy the value of the buffer counter at the begining of the state machine
+	//and modify it only at the end to avoid collision with the other interruption
+	//that can change it too.
+	count = can_tx_count;
+	decrement = 0;
+
+	//the following states are done sequentially if enough datas are present in the buffer
+	//otherwise it will continue at the next call
+
+	//case where we must read the length field
+	if(state == PROCESS_LENGTH){
+		if(count >= sizeof(length)){
+
+			fill_can_tx_buffer(length.u8, &decrement, sizeof(length));
+
+			length.u16 += 2; // Aseba transmits length minus the type. 
+			//next step is to read the source field
+			state = PROCESS_SOURCE;
+		}
+	}
+	//case where we must read the source field
+	if(state == PROCESS_SOURCE){
+		if(count >= sizeof(source)){
+
+			fill_can_tx_buffer(source.u8, &decrement, sizeof(source));
+
+			//next step is to read the datas
+			state = PROCESS_DATAS;
+		}
+	}
+	//case where we must read the datas
+	//either we have a small packet type, or a normal packet type
+	if(state == PROCESS_DATAS){
+		if(length.u16 <= ASEBA_CAN_PAYLOAD_SIZE){
+			state = PROCESS_SEND_SMALL;
+		}else{
+			state = PROCESS_SEND_START;
+		}
+	}
+	//case where we can directly send the datas because we have a small packet type
+	if(state == PROCESS_SEND_SMALL){
+		if(count >= length.u16){
+
+			fill_can_tx_buffer(data_buffer, &decrement, length.u16);
+
+			aseba_can_transmit(data_buffer, length.u16, source.u16, TYPE_SMALL_PACKET);
+			//we return to the beginning of the state machine because we finished the current message
+			state = PROCESS_LENGTH;
+		}
+	}
+	//case where we must separate the datas into multiple packet
+	//the first datas has to be sent with a TYPE_PACKET_START id
+	if(state == PROCESS_SEND_START){
+		if(count >= ASEBA_CAN_PAYLOAD_SIZE){
+
+			fill_can_tx_buffer(data_buffer, &decrement, ASEBA_CAN_PAYLOAD_SIZE);
+
+			data_sent = ASEBA_CAN_PAYLOAD_SIZE;
+			aseba_can_transmit(data_buffer, ASEBA_CAN_PAYLOAD_SIZE, source.u16, TYPE_PACKET_START);
+			//next step is either the last packet of the message (must contain TYPE_PACKET_STOP id)
+			//or the next 8 bytes of the message (must contain TYPE_PACKET_NORMAL id)
+			if((length.u16 - data_sent) <= ASEBA_CAN_PAYLOAD_SIZE){
+				state = PROCESS_SEND_STOP;
+			}else{
+				state = PROCESS_SEND_NORMAL;
+			}
+		}
+	}
+	//case where we must send the next 8 bytes of the message
+	//the datas has to be sent with a TYPE_PACKET_NORMAL id
+	if(state == PROCESS_SEND_NORMAL){
+		if(count >= ASEBA_CAN_PAYLOAD_SIZE){
+
+			fill_can_tx_buffer(data_buffer, &decrement, ASEBA_CAN_PAYLOAD_SIZE);
+
+			data_sent += ASEBA_CAN_PAYLOAD_SIZE;
+			aseba_can_transmit(data_buffer, ASEBA_CAN_PAYLOAD_SIZE, source.u16, TYPE_PACKET_NORMAL);
+			//next step is either another 8 bytes packet
+			//or the last packet of the message
+			if((length.u16 - data_sent) <= ASEBA_CAN_PAYLOAD_SIZE){
+				state = PROCESS_SEND_STOP;
+			}
+		}
+	}
+	//case where we must send the last packet of the message
+	//the datas has to be sent with a TYPE_PACKET_STOP id
+	if(state == PROCESS_SEND_STOP){
+		if(count >= (length.u16 - data_sent)){
+
+			fill_can_tx_buffer(data_buffer, &decrement, (length.u16 - data_sent));
+
+			data_sent += ASEBA_CAN_PAYLOAD_SIZE;
+			aseba_can_transmit(data_buffer, (length.u16 - data_sent), source.u16, TYPE_PACKET_STOP);
+			//we return to the beginning of the state machine because we finished the current message
+			state = PROCESS_LENGTH;
+		}
+	}
+	//update of the buffer counter at the end in order to avoid multiple changes of this shared variable
+	//during the execution of the state machine.
+	can_tx_count -= decrement;
+}
+
+/* 
+ * Blocking function called to transmit a the frame contained in the can_rx_buf to USB
+*/
+void aseba_usb_transmit(void){
+
+	/* send nothing if no USB endpoint */
+	if (cdcacm_get_config() != 1)
+	{
+		return;
+	}
+
+	if(can_rx_pos > CDCACM_PACKET_SIZE){
+		//computes how many USB frames we have to send
+		uint16_t times_to_send = can_rx_pos / CDCACM_PACKET_SIZE;
+		uint16_t rest_to_send = can_rx_pos % CDCACM_PACKET_SIZE;
+		uint16_t i = 0;
+
+		while(i < times_to_send){
+			while(usbd_ep_write_packet(usbdev,CDCACM_UART_ENDPOINT,
+			 &can_rx_buf[i * CDCACM_PACKET_SIZE], CDCACM_PACKET_SIZE) <= 0);
+			i++;
+		}
+		if( can_rx_pos > CDCACM_PACKET_SIZE){
+			while(usbd_ep_write_packet(usbdev,CDCACM_UART_ENDPOINT,
+			 &can_rx_buf[i * CDCACM_PACKET_SIZE], rest_to_send) <= 0);
+		}
+	}else{
+		while(usbd_ep_write_packet(usbdev,CDCACM_UART_ENDPOINT,
+		 can_rx_buf, can_rx_pos) <= 0);
+	}
+
+	can_rx_pos = 0;
+	
+}
+
+/* 
+ * Callback called when a CAN packet has been received
+ * store the packets in the can_rx_buffer, convert it to an Aseba UART message
+ * and send it over USB
+*/
+void CAN_RX_ISR(void)
+{
+
+	static bool message_complete = false;
+
+	int8_t i = 0;
+	uint32_t id;
+	bool ext, rtr;
+	uint8_t fmi, len, data[ASEBA_CAN_PAYLOAD_SIZE];
+
+	can_receive(CAN_USED, 0, true, &id, &ext, &rtr, &fmi, &len, data, NULL);
+
+	uint16_8_t source, length;
+
+	source.u16 = CANID_TO_ID(id);
+
+	//fill the buffer with the new datas
+	for(i = 0 ; i < len ; i++){
+		can_rx_buf[i + ASEBA_HEADER_SIZE + can_rx_pos] = data[i];
+	}
+	can_rx_pos += len;
+
+	//case where we have a small packet
+	//it means the message is already complete, thus we can contruct the UART message and send it
+	if(CANID_TO_TYPE(id) == TYPE_SMALL_PACKET){
+
+		length.u16 = len - 2;  // Aseba transmits length minus the type. 
+
+		message_complete = true;
+	}
+	//case where we have a stop packet
+	//it means it is the last packet of the message, thus we can contruct the UART message and send it
+	else if(CANID_TO_TYPE(id) == TYPE_PACKET_STOP){
+
+		length.u16 = can_rx_pos - 2; //Aseba transmits length minus the type.
+
+		message_complete = true;
+	}
+
+	if(message_complete){
+		message_complete = false;
+
+		//write the source and the length at the beginning of the message
+		can_rx_buf[0] = length.u8[0];
+		can_rx_buf[1] = length.u8[1];	
+		can_rx_buf[2] = source.u8[0];
+		can_rx_buf[3] = source.u8[1];
+
+		//updates the position to include the header in the size of the message
+		can_rx_pos += ASEBA_HEADER_SIZE;
+
+		//send the message
+		aseba_usb_transmit();
+	}
+}
+
+/*
+ * Init the CAN port to be used
+ */
+void usbcan_init(void)
+{
+	/* Enable peripheral clocks. */
+	rcc_periph_clock_enable(CAN_CLK);
+
+	CAN_PIN_SETUP();
+
+	/* NVIC setup. */
+	nvic_enable_irq(CAN_RX_IRQ);
+	nvic_set_priority(CAN_RX_IRQ, IRQ_PRI_CAN_RX);
+
+	/* Reset CAN. */
+	can_reset(CAN_USED);
+
+	/* CAN cell init.
+     * Setting the bitrate to 1MBit. APB1 = 48MHz,
+     * prescaler = 3 -> 16MHz time quanta frequency.
+     * 1tq sync + 9tq bit segment1 (TS1) + 6tq bit segment2 (TS2) =
+     * 16time quanta per bit period, therefor 16MHz/16 = 1MHz
+     */
+    if (can_init(CAN_USED,          // Interface
+             false,             // Time triggered communication mode.
+             true,              // Automatic bus-off management.
+             false,             // Automatic wakeup mode.
+             false,             // No automatic retransmission.
+             false,             // Receive FIFO locked mode.
+             false,             // Transmit FIFO priority.
+             CAN_BTR_SJW_1TQ,   // Resynchronization time quanta jump width
+             CAN_BTR_TS1_9TQ,  	// Time segment 1 time quanta width
+             CAN_BTR_TS2_6TQ,   // Time segment 2 time quanta width
+             3,                 // Prescaler
+             false,             // Loopback
+             false)) {          // Silent
+    }
+
+    can_filter_id_mask_32bit_init(
+        CAN_USED,
+        0,      // nr
+        0,      // id
+        0,      // mask
+        0,      // fifo
+        true    // enable
+    ); // match any id
+
+    if(canUsed){
+    	/* Enable CAN RX interrupt. */
+		can_enable_irq(CAN_USED, CAN_IER_FMPIE0);
+    }
+}
+#endif /* EPUCK2 */
+
+/* 
+ * Timer interruption.
+ * It either launches usbuart_run() or process_usbcan()
+*/
 void USBUSART_TIM_ISR(void)
 {
 	/* need to clear timer update event */
 	timer_clear_flag(USBUSART_TIM, TIM_SR_UIF);
 
+#ifdef EPUCK2
+	//we work with CAN
+	if(canUsed){
+		process_usbcan();
+	}
+	//we work with UART
+	else{
+		usbuart_run();
+	}
+#else
 	/* process FIFO */
 	usbuart_run();
+#endif /* EPUCK2 */
 }
+
 
 #ifdef ENABLE_DEBUG
 enum {
