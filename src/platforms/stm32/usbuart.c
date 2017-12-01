@@ -84,8 +84,10 @@ static uint32_t can_tx_out = 0;
 static uint32_t can_tx_count = 0;
 
 extern uint32_t uartUsed;
+extern bool canUsed;
 #else /* EPUCK2 */
 uint32_t uartUsed = USBUSART;
+bool canUsed = false;
 #endif /* EPUCK2 */
 
 /* RX Fifo buffer */
@@ -132,16 +134,18 @@ void usbuart_init(void)
 	USBUSART_407_CR1 |= USART_CR1_RXNEIE;
 	nvic_set_priority(USBUSART_407_IRQ, IRQ_PRI_USBUSART);
 
-	// if(uartUsed == USBUSART_ESP){
-	// 	/* Finally enable the USART. */
-	// 	usart_enable(USBUSART_ESP);
-	// 	nvic_enable_irq(USBUSART_ESP_IRQ);
+	if(!canUsed){
+		if(uartUsed == USBUSART_ESP){
+			/* Finally enable the USART. */
+			usart_enable(USBUSART_ESP);
+			nvic_enable_irq(USBUSART_ESP_IRQ);
 
-	// }else if(uartUsed == USBUSART_407){
-	// 	/* Finally enable the USART. */
-	// 	usart_enable(USBUSART_407);
-	// 	nvic_enable_irq(USBUSART_407_IRQ);
-	// }
+		}else if(uartUsed == USBUSART_407){
+			/* Finally enable the USART. */
+			usart_enable(USBUSART_407);
+			nvic_enable_irq(USBUSART_407_IRQ);
+		}
+	}
 #else //setup standard UART for other platforms
 	rcc_periph_clock_enable(USBUSART_CLK);
 
@@ -261,20 +265,6 @@ void usbuart_set_line_coding(struct usb_cdc_line_coding *coding)
 }
 
 /* 
- * Blocking function used to send Aseba packets over CAN
-*/
-void aseba_can_transmit(uint8_t* data, uint16_t length, uint16_t source, uint32_t type){
-
-	//blocking transmission
-	while(can_transmit(CAN_USED,
-		 TO_CANID(type, source),     /* (EX/ST)ID: CAN ID */
-		 false, /* IDE: CAN ID extended? */
-		 false, /* RTR: Request transmit? */
-		 length,     /* DLC: Data length */
-		 data) == -1);
-}
-
-/* 
  * Callback called when an USB frame has been received
  * Either send it directly over UART, or send it to a buffer for further 
  * processing in order to send it over CAN 
@@ -294,25 +284,38 @@ void usbuart_usb_out_cb(usbd_device *dev, uint8_t ep)
 	if(!(RCC_APB2ENR & RCC_APB2ENR_USART1EN))
 		return;
 #endif
-
 	gpio_set(LED_PORT_UART, LED_UART);
-	// for(int i = 0; i < len; i++)
-	// 	usart_send_blocking(uartUsed, buf[i]);
-	// gpio_clear(LED_PORT_UART, LED_UART);
 
-	if(len && ((len + can_tx_count) <= ASEBA_MAX_INNER_PACKET_SIZE)){
-		uint8_t i = 0;
-		for(i = 0 ; i < len ; i++){
-			can_tx_buf[can_tx_in++] = buf[i];
-			//circular buffer
-			if(can_tx_in >= ASEBA_MAX_INNER_PACKET_SIZE){
-				can_tx_in = 0;
+#ifdef EPUCK2
+	//we work with CAN
+	if(canUsed){
+
+		if(len && ((len + can_tx_count) <= ASEBA_MAX_INNER_PACKET_SIZE)){
+			uint8_t i = 0;
+			for(i = 0 ; i < len ; i++){
+				can_tx_buf[can_tx_in++] = buf[i];
+				//circular buffer
+				if(can_tx_in >= ASEBA_MAX_INNER_PACKET_SIZE){
+					can_tx_in = 0;
+				}
 			}
+			can_tx_count += len;
 		}
-		can_tx_count += len;
-	}
-	
 
+		//enable the timer used to call periodically the state machine
+		timer_enable_irq(USBUSART_TIM, TIM_DIER_UIE);
+	}
+	//we work with UART
+	else{
+		for(int i = 0; i < len; i++)
+			usart_send_blocking(uartUsed, buf[i]);
+	}
+#else
+	for(int i = 0; i < len; i++)
+		usart_send_blocking(uartUsed, buf[i]);
+#endif /* EPUCK2 */
+	gpio_clear(LED_PORT_UART, LED_UART);
+	
 }
 
 #ifdef USBUART_DEBUG
@@ -387,6 +390,7 @@ void USBUSART_407_ISR(void)
 	usbuart_isr();
 }
 
+#ifdef EPUCK2
 /* 
  * Function to fill the can_tx_buf in a circular manner with the source_buf provided
  * Also updates the variable decrement (needed in process_usbcan())
@@ -401,6 +405,20 @@ void fill_can_tx_buffer(uint8_t* source_buf,uint32_t* decrement, uint32_t size){
 			can_tx_out = 0;
 		}
 	}
+}
+
+/* 
+ * Blocking function used to send Aseba packets over CAN
+*/
+void aseba_can_transmit(uint8_t* data, uint16_t length, uint16_t source, uint32_t type){
+
+	//blocking transmission
+	while(can_transmit(CAN_USED,
+		 TO_CANID(type, source),     /* (EX/ST)ID: CAN ID */
+		 false, /* IDE: CAN ID extended? */
+		 false, /* RTR: Request transmit? */
+		 length,     /* DLC: Data length */
+		 data) == -1);
 }
 
 /* 
@@ -517,22 +535,6 @@ void process_usbcan(void){
 	//update of the buffer counter at the end in order to avoid multiple changes of this shared variable
 	//during the execution of the state machine.
 	can_tx_count -= decrement;
-}
-
-/* 
- * Timer interruption.
- * It either launches usbuart_run() or process_usbcan()
-*/
-void USBUSART_TIM_ISR(void)
-{
-	/* need to clear timer update event */
-	timer_clear_flag(USBUSART_TIM, TIM_SR_UIF);
-
-	/* process FIFO */
-	if(0){
-		usbuart_run();
-	}
-	process_usbcan();
 }
 
 /* 
@@ -678,12 +680,37 @@ void usbcan_init(void)
         true    // enable
     ); // match any id
 
-	/* Enable CAN RX interrupt. */
-	can_enable_irq(CAN_USED, CAN_IER_FMPIE0);
-
-	//enable the timer used to call periodically the state machine
-	timer_enable_irq(USBUSART_TIM, TIM_DIER_UIE);
+    if(canUsed){
+    	/* Enable CAN RX interrupt. */
+		can_enable_irq(CAN_USED, CAN_IER_FMPIE0);
+    }
 }
+#endif /* EPUCK2 */
+
+/* 
+ * Timer interruption.
+ * It either launches usbuart_run() or process_usbcan()
+*/
+void USBUSART_TIM_ISR(void)
+{
+	/* need to clear timer update event */
+	timer_clear_flag(USBUSART_TIM, TIM_SR_UIF);
+
+#ifdef EPUCK2
+	//we work with CAN
+	if(canUsed){
+		process_usbcan();
+	}
+	//we work with UART
+	else{
+		usbuart_run();
+	}
+#else
+	/* process FIFO */
+	usbuart_run();
+#endif /* EPUCK2 */
+}
+
 
 #ifdef ENABLE_DEBUG
 enum {

@@ -294,7 +294,7 @@ static inline int platform_hwversion(void)
 #define FLASH_ACR_DCE_COPY				(1 << 10)
 #define FLASH_ACR_LATENCY_3WS_COPY		0x03
 
-void platform_switch_uart_to(uint8_t choice);
+void platform_switch_monitor_to(uint8_t choice);
 
 void platform_set_en_esp32(bool assert);
 bool platform_get_en_esp32(void);
