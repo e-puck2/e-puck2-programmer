@@ -175,8 +175,11 @@
 #define CAN_TX_PORT		GPIOB	
 #define CAN_TX_PIN		GPIO9
 
+#define CAN_USED		CAN1
+#define CAN_CLK			RCC_CAN1
 #define IRQ_PRI_CAN_RX	(1 << 4)
 #define CAN_RX_ISR		can1_rx0_isr
+#define CAN_RX_IRQ		NVIC_CAN1_RX0_IRQ
 
 #define CAN_PIN_SETUP() do { \
 	gpio_set_output_options(CAN_TX_PORT,GPIO_OTYPE_PP,GPIO_OSPEED_100MHZ,CAN_TX_PIN);\
