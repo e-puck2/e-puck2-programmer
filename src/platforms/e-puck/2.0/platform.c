@@ -256,6 +256,7 @@ void platform_init(void)
 	gpio_mode_setup(GPIO0_ESP32_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO0_ESP32_PIN);
 
 	platform_timing_init();
+	platform_delay(5000);
 #ifndef PLATFORM_HAS_NO_SERIAL
 	usbuart_init();
 #endif

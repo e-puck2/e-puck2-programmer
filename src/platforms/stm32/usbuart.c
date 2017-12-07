@@ -99,6 +99,8 @@ static uint8_t buf_rx_out;
 
 static void usbuart_run(void);
 
+extern void uart_out_cb(void);
+
 /*
  * Init the UART ports to be used
  */
@@ -110,7 +112,7 @@ void usbuart_init(void)
 	rcc_periph_clock_enable(USBUSART_ESP_CLK);
 
 	/* Setup UART ESP parameters. */
-	usart_set_baudrate(USBUSART_ESP, 38400);
+	usart_set_baudrate(USBUSART_ESP, 115200);
 	usart_set_databits(USBUSART_ESP, 8);
 	usart_set_stopbits(USBUSART_ESP, USART_STOPBITS_1);
 	usart_set_mode(USBUSART_ESP, USART_MODE_TX_RX);
@@ -123,7 +125,7 @@ void usbuart_init(void)
 	rcc_periph_clock_enable(USBUSART_407_CLK);
 
 	/* Setup UART 407 parameters. */
-	usart_set_baudrate(USBUSART_407, 38400);
+	usart_set_baudrate(USBUSART_407, 115200);
 	usart_set_databits(USBUSART_407, 8);
 	usart_set_stopbits(USBUSART_407, USART_STOPBITS_1);
 	usart_set_mode(USBUSART_407, USART_MODE_TX_RX);
@@ -379,7 +381,11 @@ void usbuart_isr(void){
 */
 void USBUSART_ESP_ISR(void)
 {
-	usbuart_isr();
+	//usbuart_isr();
+
+	//function located in gdb_if.c
+	//used to debug over uart
+	uart_out_cb();
 }
 
 /* 
