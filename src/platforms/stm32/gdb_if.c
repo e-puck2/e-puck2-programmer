@@ -38,7 +38,12 @@ static volatile uint32_t count_new;
 static uint8_t double_buffer_out[CDCACM_PACKET_SIZE];
 #endif
 
-void uart_out_cb(void);
+#ifdef EPUCK2
+extern uint32_t uartUsed;
+#endif /* EPUCK2 */
+
+
+void gdb_uart_out_cb(void);
 
 void gdb_if_putchar(unsigned char c, int flush)
 {
@@ -54,8 +59,11 @@ void gdb_if_putchar(unsigned char c, int flush)
 			buffer_in, count_in) <= 0);
 
 #ifdef EPUCK2
-		for(uint32_t i = 0; i < count_in; i++)
-			usart_send_blocking(UART_GDB, buffer_in[i]);
+		//we can use the uart port if it is not used by the serial monitor
+		if(uartUsed == USBUSART_407){
+			for(uint32_t i = 0; i < count_in; i++)
+				usart_send_blocking(UART_GDB, buffer_in[i]);
+		}
 #endif /* EPUCK2 */
 
 		if (flush && (count_in == CDCACM_PACKET_SIZE)) {
@@ -87,7 +95,7 @@ void gdb_usb_out_cb(usbd_device *dev, uint8_t ep)
 
 }
 //called from uart_isr in usbuart.c
-void uart_out_cb(void){
+void gdb_uart_out_cb(void){
 	uint32_t err = USART_SR(UART_GDB);
 	char c = usart_recv(UART_GDB);
 	if (err & (USART_SR_ORE | USART_SR_FE))

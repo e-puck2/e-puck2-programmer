@@ -256,7 +256,6 @@ void platform_init(void)
 	gpio_mode_setup(GPIO0_ESP32_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO0_ESP32_PIN);
 
 	platform_timing_init();
-	platform_delay(5000);
 #ifndef PLATFORM_HAS_NO_SERIAL
 	usbuart_init();
 #endif
@@ -282,26 +281,7 @@ void platform_init(void)
 }
 
 void platform_switch_monitor_to(uint8_t choice){
-	if(choice == 0){//case ESP
-		//disable UART 407
-		usart_disable(USBUSART_407);
-		nvic_disable_irq(USBUSART_407_IRQ);
-
-		//disable CAN ASEBA
-		can_disable_irq(CAN_USED, CAN_IER_FMPIE0);
-
-		canUsed = false;
-		uartUsed = USBUSART_ESP;
-
-		//enable UART ESP
-		usart_enable(USBUSART_ESP);
-		nvic_enable_irq(USBUSART_ESP_IRQ);
-
-	}else if(choice == 1){//case MAIN
-		//disable UART ESP
-		usart_disable(USBUSART_ESP);
-		nvic_disable_irq(USBUSART_ESP_IRQ);
-
+	if(choice == 1){//mode 1 : serial monitor with 407 and gdb over bluetooth
 		//disable CAN ASEBA
 		can_disable_irq(CAN_USED, CAN_IER_FMPIE0);
 	
@@ -312,16 +292,24 @@ void platform_switch_monitor_to(uint8_t choice){
 		usart_enable(USBUSART_407);
 		nvic_enable_irq(USBUSART_407_IRQ);
 
-	}else if(choice == 2){//case ASEBA
+	}else if(choice == 2){//mode 1 : serial monitor with ESP
 		//disable UART 407
 		usart_disable(USBUSART_407);
 		nvic_disable_irq(USBUSART_407_IRQ);
 
-		//disable UART ESP
-		usart_disable(USBUSART_ESP);
-		nvic_disable_irq(USBUSART_ESP_IRQ);
+		//disable CAN ASEBA
+		can_disable_irq(CAN_USED, CAN_IER_FMPIE0);
+
+		canUsed = false;
+		uartUsed = USBUSART_ESP;
+
+	}else if(choice == 3){//mode 1 : ASEBA USB-CAN translator and gdb over bluetooth
+		//disable UART 407
+		usart_disable(USBUSART_407);
+		nvic_disable_irq(USBUSART_407_IRQ);
 
 		canUsed = true;
+		uartUsed = USBUSART_407;
 
 		//enable CAN ASEBA
 		can_enable_irq(CAN_USED, CAN_IER_FMPIE0);

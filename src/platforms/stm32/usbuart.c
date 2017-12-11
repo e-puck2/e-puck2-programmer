@@ -85,6 +85,7 @@ static uint32_t can_tx_count = 0;
 
 extern uint32_t uartUsed;
 extern bool canUsed;
+extern void gdb_uart_out_cb(void);
 #else /* EPUCK2 */
 uint32_t uartUsed = USBUSART;
 bool canUsed = false;
@@ -98,8 +99,6 @@ static uint8_t buf_rx_in;
 static uint8_t buf_rx_out;
 
 static void usbuart_run(void);
-
-extern void uart_out_cb(void);
 
 /*
  * Init the UART ports to be used
@@ -136,13 +135,11 @@ void usbuart_init(void)
 	USBUSART_407_CR1 |= USART_CR1_RXNEIE;
 	nvic_set_priority(USBUSART_407_IRQ, IRQ_PRI_USBUSART);
 
+	//always enable USBUART_ESP because used either for USBUART or GDB over UART
+	usart_enable(USBUSART_ESP);
+	nvic_enable_irq(USBUSART_ESP_IRQ);
 	if(!canUsed){
-		if(uartUsed == USBUSART_ESP){
-			/* Finally enable the USART. */
-			usart_enable(USBUSART_ESP);
-			nvic_enable_irq(USBUSART_ESP_IRQ);
-
-		}else if(uartUsed == USBUSART_407){
+		if(uartUsed == USBUSART_407){
 			/* Finally enable the USART. */
 			usart_enable(USBUSART_407);
 			nvic_enable_irq(USBUSART_407_IRQ);
@@ -381,11 +378,14 @@ void usbuart_isr(void){
 */
 void USBUSART_ESP_ISR(void)
 {
-	//usbuart_isr();
-
-	//function located in gdb_if.c
-	//used to debug over uart
-	uart_out_cb();
+	if(uartUsed == USBUSART_ESP){
+		usbuart_isr();
+	}else{
+		//function located in gdb_if.c
+		//used to debug over uart
+		gdb_uart_out_cb();
+	}
+	
 }
 
 /* 

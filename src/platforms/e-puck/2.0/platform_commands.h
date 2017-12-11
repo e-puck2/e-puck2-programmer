@@ -11,7 +11,7 @@ static bool cmd_usb_charge(target *t, int argc, const char **argv);
 static bool cmd_usb_500(target *t, int argc, const char **argv);
 static bool cmd_reset_F407(target *t, int argc, const char **argv);
 static bool cmd_esp32(target *t, int argc, const char **argv);
-static bool cmd_choose_monitor(target *t, int argc, const char **argv);
+static bool cmd_select_mode(target *t, int argc, const char **argv);
 
 /***************************************/
 /* End of platform dedicated commands. */
@@ -33,7 +33,7 @@ static bool cmd_choose_monitor(target *t, int argc, const char **argv);
 	{"usb_charge", (cmd_handler)cmd_usb_charge, "(ON|OFF|) Set the USB_CHARGE pin or return the state of this one" }, \
 	{"usb_500", (cmd_handler)cmd_usb_500, "(ON|OFF|) Set the USB_500 pin or return the state of this one" }, \
 	{"reset_F407", (cmd_handler)cmd_reset_F407, "(ON|OFF|) Force the reset of F407" }, \
-	{"choose_monitor", (cmd_handler)cmd_choose_monitor, "(ESP|MAIN|ASEBA|) Choose to use the serial monitor with the ESP, the MAIN uC or the Aseba CAN bus" }, \
+	{"select_mode", (cmd_handler)cmd_select_mode, "(1|2|3) Select the use of the second virtual com port over USB :\n1 = Serial monitor of the main processor and GDB over USB and Bluetooth,\n2 = Serial monitor of the ESP and GDB over USB,\n3 = ASEBA CAN-USB translator and GDB over USB and Bluetooth"}, \
 
 /***********************************************/
 /* End of List of platform dedicated commands. */
@@ -136,19 +136,22 @@ static bool cmd_reset_F407(target *t, int argc, const char **argv)
 	return true;
 }
 
-static bool cmd_choose_monitor(target *t, int argc, const char **argv){
+static bool cmd_select_mode(target *t, int argc, const char **argv){
 	(void)t;
+	char error_message[] = "You must choose between mode 1, 2 or 3\n";
 	if (argc == 1)
-		gdb_outf("You must choose between ESP, MAIN or ASEBA\n");
-	else if (strcmp(argv[1], "ESP") == 0){
-		platform_switch_monitor_to(0);
-		gdb_outf("Switched to ESP\n");
-	}else if (strcmp(argv[1], "MAIN") == 0){
- 		platform_switch_monitor_to(1);
-		gdb_outf("Switched to MAIN\n");
- 	}else if (strcmp(argv[1], "ASEBA") == 0){
+		gdb_outf("%s",error_message);
+	else if (strcmp(argv[1], "1") == 0){
+		platform_switch_monitor_to(1);
+		gdb_outf("Switched to mode 1\n");
+	}else if (strcmp(argv[1], "2") == 0){
  		platform_switch_monitor_to(2);
-		gdb_outf("Switched to ASEBA\n");
+		gdb_outf("Switched to mode 2\n");
+ 	}else if (strcmp(argv[1], "3") == 0){
+ 		platform_switch_monitor_to(3);
+		gdb_outf("Switched to mode 3\n");
+ 	}else{
+ 		gdb_outf("%s",error_message);
  	}
  	return true;
 }
