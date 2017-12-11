@@ -51,12 +51,21 @@ void gdb_if_putchar(unsigned char c, int flush)
 	if(flush || (count_in == CDCACM_PACKET_SIZE)) {
 		/* Refuse to send if USB isn't configured, and
 		 * don't bother if nobody's listening */
-		if((cdcacm_get_config() != 1)){ //|| !cdcacm_get_dtr()) {
-			count_in = 0;
-			return;
+		if((cdcacm_get_config() == 1)){ //|| !cdcacm_get_dtr()) {
+			while(usbd_ep_write_packet(usbdev, CDCACM_GDB_ENDPOINT,
+				buffer_in, count_in) <= 0);
+
+			if (flush && (count_in == CDCACM_PACKET_SIZE)) {
+				/* We need to send an empty packet for some hosts
+				 * to accept this as a complete transfer. */
+				/* libopencm3 needs a change for us to confirm when
+				 * that transfer is complete, so we just send a packet
+				 * containing a null byte for now.
+				 */
+				while (usbd_ep_write_packet(usbdev, CDCACM_GDB_ENDPOINT,
+					"\0", 1) <= 0);
+			}
 		}
-		while(usbd_ep_write_packet(usbdev, CDCACM_GDB_ENDPOINT,
-			buffer_in, count_in) <= 0);
 
 #ifdef EPUCK2
 		//we can use the uart port if it is not used by the serial monitor
@@ -65,17 +74,6 @@ void gdb_if_putchar(unsigned char c, int flush)
 				usart_send_blocking(UART_GDB, buffer_in[i]);
 		}
 #endif /* EPUCK2 */
-
-		if (flush && (count_in == CDCACM_PACKET_SIZE)) {
-			/* We need to send an empty packet for some hosts
-			 * to accept this as a complete transfer. */
-			/* libopencm3 needs a change for us to confirm when
-			 * that transfer is complete, so we just send a packet
-			 * containing a null byte for now.
-			 */
-			while (usbd_ep_write_packet(usbdev, CDCACM_GDB_ENDPOINT,
-				"\0", 1) <= 0);
-		}
 
 		count_in = 0;
 	}

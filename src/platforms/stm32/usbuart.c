@@ -380,7 +380,7 @@ void USBUSART_ESP_ISR(void)
 {
 	if(uartUsed == USBUSART_ESP){
 		usbuart_isr();
-	}else{
+	}else if (uartUsed == USBUSART_407){
 		//function located in gdb_if.c
 		//used to debug over uart
 		gdb_uart_out_cb();
