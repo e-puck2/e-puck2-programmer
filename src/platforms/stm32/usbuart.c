@@ -111,7 +111,7 @@ void usbuart_init(void)
 	rcc_periph_clock_enable(USBUSART_ESP_CLK);
 
 	/* Setup UART ESP parameters. */
-	usart_set_baudrate(USBUSART_ESP, 115200);
+	usart_set_baudrate(USBUSART_ESP, 921600);
 	usart_set_databits(USBUSART_ESP, 8);
 	usart_set_stopbits(USBUSART_ESP, USART_STOPBITS_1);
 	usart_set_mode(USBUSART_ESP, USART_MODE_TX_RX);
