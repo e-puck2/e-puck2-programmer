@@ -111,7 +111,7 @@ void usbuart_init(void)
 	rcc_periph_clock_enable(USBUSART_ESP_CLK);
 
 	/* Setup UART ESP parameters. */
-	usart_set_baudrate(USBUSART_ESP, 921600);
+	usart_set_baudrate(USBUSART_ESP, 230400);
 	usart_set_databits(USBUSART_ESP, 8);
 	usart_set_stopbits(USBUSART_ESP, USART_STOPBITS_1);
 	usart_set_mode(USBUSART_ESP, USART_MODE_TX_RX);
@@ -231,6 +231,7 @@ static void usbuart_run(void)
 
 void usbuart_set_line_coding(struct usb_cdc_line_coding *coding)
 {
+#ifndef DISABLE_SET_LINE_CODING_UART
 	usart_set_baudrate(uartUsed, coding->dwDTERate);
 
 	if (coding->bParityType)
@@ -261,6 +262,9 @@ void usbuart_set_line_coding(struct usb_cdc_line_coding *coding)
 		usart_set_parity(uartUsed, USART_PARITY_EVEN);
 		break;
 	}
+#else
+	(void)coding;
+#endif /* DISABLE_SET_LINE_CODING_UART */
 }
 
 /* 

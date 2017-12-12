@@ -31,6 +31,8 @@
 
 #include <setjmp.h>
 
+#define DISABLE_SET_LINE_CODING_UART
+
 #if defined(PLATFORM_HAS_COMMANDS)
 #define COMMANDS_OPTION "C"
 #else
