@@ -31,6 +31,8 @@
 
 #include <setjmp.h>
 
+#define DISABLE_SET_LINE_CODING_UART
+
 #if defined(PLATFORM_HAS_COMMANDS)
 #define COMMANDS_OPTION "C"
 #else
@@ -222,6 +224,8 @@
 #define IRQ_PRI_TRACE		(0 << 4)
 
 #ifndef PLATFORM_HAS_NO_SERIAL
+
+#define UART_GDB USART2
 
 #define USBUSART_ESP USART2
 #define USBUSART_ESP_CR1 USART2_CR1

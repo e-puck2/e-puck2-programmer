@@ -85,6 +85,7 @@ static uint32_t can_tx_count = 0;
 
 extern uint32_t uartUsed;
 extern bool canUsed;
+extern void gdb_uart_out_cb(void);
 #else /* EPUCK2 */
 uint32_t uartUsed = USBUSART;
 bool canUsed = false;
@@ -110,7 +111,7 @@ void usbuart_init(void)
 	rcc_periph_clock_enable(USBUSART_ESP_CLK);
 
 	/* Setup UART ESP parameters. */
-	usart_set_baudrate(USBUSART_ESP, 38400);
+	usart_set_baudrate(USBUSART_ESP, 230400);
 	usart_set_databits(USBUSART_ESP, 8);
 	usart_set_stopbits(USBUSART_ESP, USART_STOPBITS_1);
 	usart_set_mode(USBUSART_ESP, USART_MODE_TX_RX);
@@ -123,7 +124,7 @@ void usbuart_init(void)
 	rcc_periph_clock_enable(USBUSART_407_CLK);
 
 	/* Setup UART 407 parameters. */
-	usart_set_baudrate(USBUSART_407, 38400);
+	usart_set_baudrate(USBUSART_407, 115200);
 	usart_set_databits(USBUSART_407, 8);
 	usart_set_stopbits(USBUSART_407, USART_STOPBITS_1);
 	usart_set_mode(USBUSART_407, USART_MODE_TX_RX);
@@ -134,13 +135,11 @@ void usbuart_init(void)
 	USBUSART_407_CR1 |= USART_CR1_RXNEIE;
 	nvic_set_priority(USBUSART_407_IRQ, IRQ_PRI_USBUSART);
 
+	//always enable USBUART_ESP because used either for USBUART or GDB over UART
+	usart_enable(USBUSART_ESP);
+	nvic_enable_irq(USBUSART_ESP_IRQ);
 	if(!canUsed){
-		if(uartUsed == USBUSART_ESP){
-			/* Finally enable the USART. */
-			usart_enable(USBUSART_ESP);
-			nvic_enable_irq(USBUSART_ESP_IRQ);
-
-		}else if(uartUsed == USBUSART_407){
+		if(uartUsed == USBUSART_407){
 			/* Finally enable the USART. */
 			usart_enable(USBUSART_407);
 			nvic_enable_irq(USBUSART_407_IRQ);
@@ -232,6 +231,7 @@ static void usbuart_run(void)
 
 void usbuart_set_line_coding(struct usb_cdc_line_coding *coding)
 {
+#ifndef DISABLE_SET_LINE_CODING_UART
 	usart_set_baudrate(uartUsed, coding->dwDTERate);
 
 	if (coding->bParityType)
@@ -262,6 +262,9 @@ void usbuart_set_line_coding(struct usb_cdc_line_coding *coding)
 		usart_set_parity(uartUsed, USART_PARITY_EVEN);
 		break;
 	}
+#else
+	(void)coding;
+#endif /* DISABLE_SET_LINE_CODING_UART */
 }
 
 /* 
@@ -374,12 +377,21 @@ void usbuart_isr(void){
 	}
 }
 
+#ifdef EPUCK2
+
 /* 
  * Callback called when an UART character from the ESP has been received
 */
 void USBUSART_ESP_ISR(void)
 {
-	usbuart_isr();
+	if(uartUsed == USBUSART_ESP){
+		usbuart_isr();
+	}else if (uartUsed == USBUSART_407){
+		//function located in gdb_if.c
+		//used to debug over uart
+		gdb_uart_out_cb();
+	}
+	
 }
 
 /* 
@@ -390,7 +402,6 @@ void USBUSART_407_ISR(void)
 	usbuart_isr();
 }
 
-#ifdef EPUCK2
 /* 
  * Function to fill the can_tx_buf in a circular manner with the source_buf provided
  * Also updates the variable decrement (needed in process_usbcan())
