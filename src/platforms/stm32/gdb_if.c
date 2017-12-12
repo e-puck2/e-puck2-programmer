@@ -40,6 +40,8 @@ static uint8_t double_buffer_out[CDCACM_PACKET_SIZE];
 
 #ifdef EPUCK2
 extern uint32_t uartUsed;
+#else
+#define platform_get_gpio0_esp32(x) (1)
 #endif /* EPUCK2 */
 
 
@@ -68,6 +70,7 @@ void gdb_if_putchar(unsigned char c, int flush)
 		}
 
 #ifdef EPUCK2
+#ifndef PLATFORM_HAS_NO_SERIAL
 		//refuse to send if uart is not conencted (GPIO0 controlled by the ESP32)
 		//GPIO0 = 0 if bluetooth channel 1 is connected on the ESP32
 		if(platform_get_gpio0_esp32() == 0){
@@ -77,6 +80,7 @@ void gdb_if_putchar(unsigned char c, int flush)
 					usart_send_blocking(UART_GDB, buffer_in[i]);
 			}
 		}
+#endif /* PLATFORM_HAS_NO_SERIAL */
 #endif /* EPUCK2 */
 
 		count_in = 0;
@@ -96,6 +100,8 @@ void gdb_usb_out_cb(usbd_device *dev, uint8_t ep)
 	}
 
 }
+#ifdef EPUCK2
+#ifndef PLATFORM_HAS_NO_SERIAL
 //called from uart_isr in usbuart.c
 void gdb_uart_out_cb(void){
 	uint32_t err = USART_SR(UART_GDB);
@@ -107,6 +113,8 @@ void gdb_uart_out_cb(void){
 		double_buffer_out[count_new++] = c;
 	}
 }
+#endif /* PLATFORM_HAS_NO_SERIAL */
+#endif /* EPUCK2 */
 #endif
 
 static void gdb_if_update_buf(void)

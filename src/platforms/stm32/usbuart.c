@@ -377,6 +377,8 @@ void usbuart_isr(void){
 	}
 }
 
+#ifdef EPUCK2
+
 /* 
  * Callback called when an UART character from the ESP has been received
 */
@@ -400,7 +402,6 @@ void USBUSART_407_ISR(void)
 	usbuart_isr();
 }
 
-#ifdef EPUCK2
 /* 
  * Function to fill the can_tx_buf in a circular manner with the source_buf provided
  * Also updates the variable decrement (needed in process_usbcan())
