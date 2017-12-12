@@ -39,6 +39,7 @@
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/cm3/cortex.h>
 #include <libopencm3/stm32/otg_fs.h>
+#include "gdb_packet.h"
 
 #include <../USB251XB/USB251XB.h>
 #include <../USB251XB/SMBus.h>
@@ -292,7 +293,7 @@ void platform_switch_monitor_to(uint8_t choice){
 		usart_enable(USBUSART_407);
 		nvic_enable_irq(USBUSART_407_IRQ);
 
-	}else if(choice == 2){//mode 1 : serial monitor with ESP
+	}else if(choice == 2){//mode 2 : serial monitor with ESP
 		//disable UART 407
 		usart_disable(USBUSART_407);
 		nvic_disable_irq(USBUSART_407_IRQ);
@@ -303,7 +304,7 @@ void platform_switch_monitor_to(uint8_t choice){
 		canUsed = false;
 		uartUsed = USBUSART_ESP;
 
-	}else if(choice == 3){//mode 1 : ASEBA USB-CAN translator and gdb over bluetooth
+	}else if(choice == 3){//mode 3 : ASEBA USB-CAN translator and gdb over bluetooth
 		//disable UART 407
 		usart_disable(USBUSART_407);
 		nvic_disable_irq(USBUSART_407_IRQ);
@@ -334,10 +335,14 @@ bool platform_srst_get_val(void)
 
 void platform_set_en_esp32(bool assert)
 {
-	if (assert)
-		gpio_set(EN_ESP32_PORT, EN_ESP32_PIN);
-	else
-		gpio_clear(EN_ESP32_PORT, EN_ESP32_PIN);
+	if(uartUsed == USBUSART_ESP){
+		if (assert)
+			gpio_set(EN_ESP32_PORT, EN_ESP32_PIN);
+		else
+			gpio_clear(EN_ESP32_PORT, EN_ESP32_PIN);
+	}else{
+		gdb_out("Must be in mode 2 to perform this action\n");
+	}
 }
 
 bool platform_get_en_esp32(void)
@@ -347,10 +352,15 @@ bool platform_get_en_esp32(void)
 
 void platform_set_gpio0_esp32(bool assert)
 {
-	if (assert)
-		gpio_set(GPIO0_ESP32_PORT, GPIO0_ESP32_PIN);
-	else
-		gpio_clear(GPIO0_ESP32_PORT, GPIO0_ESP32_PIN);
+	if(uartUsed == USBUSART_ESP){
+		if (assert)
+			gpio_set(GPIO0_ESP32_PORT, GPIO0_ESP32_PIN);
+		else
+			gpio_clear(GPIO0_ESP32_PORT, GPIO0_ESP32_PIN);
+	}else{
+		gdb_out("Must be in mode 2 to perform this action\n");
+	}
+	
 }
 
 bool platform_get_gpio0_esp32(void)

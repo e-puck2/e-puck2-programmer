@@ -51,7 +51,7 @@ void gdb_if_putchar(unsigned char c, int flush)
 	if(flush || (count_in == CDCACM_PACKET_SIZE)) {
 		/* Refuse to send if USB isn't configured, and
 		 * don't bother if nobody's listening */
-		if((cdcacm_get_config() == 1)){ //|| !cdcacm_get_dtr()) {
+		if((cdcacm_get_config() == 1)|| !cdcacm_get_dtr()) {
 			while(usbd_ep_write_packet(usbdev, CDCACM_GDB_ENDPOINT,
 				buffer_in, count_in) <= 0);
 
@@ -68,10 +68,14 @@ void gdb_if_putchar(unsigned char c, int flush)
 		}
 
 #ifdef EPUCK2
-		//we can use the uart port if it is not used by the serial monitor
-		if(uartUsed == USBUSART_407){
-			for(uint32_t i = 0; i < count_in; i++)
-				usart_send_blocking(UART_GDB, buffer_in[i]);
+		//refuse to send if uart is not conencted (GPIO0 controlled by the ESP32)
+		//GPIO0 = 0 if bluetooth channel 1 is connected on the ESP32
+		if(platform_get_gpio0_esp32() == 0){
+			//we can use the uart port if it is not used by the serial monitor
+			if(uartUsed == USBUSART_407){
+				for(uint32_t i = 0; i < count_in; i++)
+					usart_send_blocking(UART_GDB, buffer_in[i]);
+			}
 		}
 #endif /* EPUCK2 */
 
@@ -107,7 +111,7 @@ void gdb_uart_out_cb(void){
 
 static void gdb_if_update_buf(void)
 {
-	//while (cdcacm_get_config() != 1);
+	while ((cdcacm_get_config() != 1) && (platform_get_gpio0_esp32() == 1));
 #ifdef STM32F4
 	asm volatile ("cpsid i; isb");
 	if (count_new) {
@@ -130,8 +134,8 @@ unsigned char gdb_if_getchar(void)
 
 	while (!(out_ptr < count_out)) {
 		/* Detach if port closed */
-		// if (!cdcacm_get_dtr())
-		// 	return 0x04;
+		if (!cdcacm_get_dtr() && (platform_get_gpio0_esp32() == 1))
+			return 0x04;
 
 		gdb_if_update_buf();
 	}
@@ -146,8 +150,8 @@ unsigned char gdb_if_getchar_to(int timeout)
 
 	if (!(out_ptr < count_out)) do {
 		/* Detach if port closed */
-		// if (!cdcacm_get_dtr())
-		// 	return 0x04;
+		if (!cdcacm_get_dtr() && (platform_get_gpio0_esp32() == 1))
+		 	return 0x04;
 
 		gdb_if_update_buf();
 	} while (!platform_timeout_is_expired(&t) && !(out_ptr < count_out));
