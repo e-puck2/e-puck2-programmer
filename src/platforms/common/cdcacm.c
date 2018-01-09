@@ -430,8 +430,8 @@ static const char *usb_strings[] = {
 	"Black Sphere Technologies",
 	BOARD_IDENT,
 	serial_no,
-	"Black Magic GDB Server",
-	"Black Magic UART Port",
+	"e-puck2 GDB Server",
+	"e-puck2 Serial Monitor",
 #ifndef PLATFORM_HAS_NO_DFU_BOOTLOADER
 	DFU_IDENT,
 #else
