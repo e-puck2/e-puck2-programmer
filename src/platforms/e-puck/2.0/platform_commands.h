@@ -33,7 +33,7 @@ static bool cmd_select_mode(target *t, int argc, const char **argv);
 	{"usb_charge", (cmd_handler)cmd_usb_charge, "(ON|OFF|) Set the USB_CHARGE pin or return the state of this one" }, \
 	{"usb_500", (cmd_handler)cmd_usb_500, "(ON|OFF|) Set the USB_500 pin or return the state of this one" }, \
 	{"reset_F407", (cmd_handler)cmd_reset_F407, "(ON|OFF|) Force the reset of F407" }, \
-	{"select_mode", (cmd_handler)cmd_select_mode, "(1|2|3) Select the use of the second virtual com port over USB :\n1 = Serial monitor of the main processor and GDB over USB and Bluetooth,\n2 = Serial monitor of the ESP and GDB over USB,\n3 = ASEBA CAN-USB translator and GDB over USB and Bluetooth"}, \
+	{"select_mode", (cmd_handler)cmd_select_mode, "(1|2|3) Select the use of the second virtual com port over USB :\n\t\t1 = Serial monitor of the main processor and GDB over USB and Bluetooth,\n\t\t2 = Programming/serial monitor of the ESP and GDB over USB,\n\t\t3 = ASEBA CAN-USB translator and GDB over USB and Bluetooth"}, \
 
 /***********************************************/
 /* End of List of platform dedicated commands. */
