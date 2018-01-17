@@ -70,23 +70,30 @@ const struct rcc_clock_scale hse_24mhz_to_96mhz_413_epuck = {
 
 jmp_buf fatal_error_jmpbuf;
 extern uint32_t _ebss;
-
 //from .ld file
 extern uint32_t _config_start; //sector 15
 extern uint32_t _config_end;
-uint32_t config_start = (uint32_t)&_config_start;
-uint32_t config_end = (uint32_t)&_config_end;
-uint8_t config_sector = 15;
-uint32_t config_addr;
-uint32_t pattern_flash = 0xABCDEC;
-uint8_t monitor_mode;
-uint8_t default_mode = 1;
-uint16_t pwrBtnCounter = 0;
-uint8_t pwrBtnState = ROBOT_OFF;
-uint8_t hub_state = NOT_CONFIGURED;
+
+//flash variables
+static uint32_t config_start = (uint32_t)&_config_start;
+static uint32_t config_end = (uint32_t)&_config_end;
+static uint8_t config_sector = 15;
+static uint32_t config_addr;
+static uint32_t pattern_flash = 0xABCDEC;
+
+//second serial over USB port variables
+static uint8_t monitor_mode;
+static uint8_t default_mode = 1;
 //CAN has priority over uart. So if canUsed is set to true, the usbuart is disabled
-uint32_t uartUsed = USBUSART_ESP;
+uint32_t uartUsed = 0;
 bool canUsed = false; 
+
+//Button variables
+static uint16_t pwrBtnCounter = 0;
+static uint8_t pwrBtnState = ROBOT_OFF;
+
+//USB Hub variable
+static uint8_t hub_state = NOT_CONFIGURED;
 
 void PWR_ON_BTN_TIM_ISR(void) {
 	/* need to clear timer update event */

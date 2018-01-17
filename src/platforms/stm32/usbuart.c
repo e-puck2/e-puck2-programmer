@@ -138,13 +138,6 @@ void usbuart_init(void)
 	//always enable USBUART_ESP because used either for USBUART or GDB over UART
 	usart_enable(USBUSART_ESP);
 	nvic_enable_irq(USBUSART_ESP_IRQ);
-	if(!canUsed){
-		if(uartUsed == USBUSART_407){
-			/* Finally enable the USART. */
-			usart_enable(USBUSART_407);
-			nvic_enable_irq(USBUSART_407_IRQ);
-		}
-	}
 #else //setup standard UART for other platforms
 	rcc_periph_clock_enable(USBUSART_CLK);
 
@@ -690,11 +683,6 @@ void usbcan_init(void)
         0,      // fifo
         true    // enable
     ); // match any id
-
-    if(canUsed){
-    	/* Enable CAN RX interrupt. */
-		can_enable_irq(CAN_USED, CAN_IER_FMPIE0);
-    }
 }
 #endif /* EPUCK2 */
 
