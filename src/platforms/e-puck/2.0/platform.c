@@ -328,21 +328,6 @@ void platform_init(void)
 	
 	setup_vbus_detection();
 
-	/* To correct the Pull-UP on D+ management
-	Done in the cdcacm_init code by call of stm32f107_usbd_init :
-	// Enable VBUS sensing in device mode and power down the PHY.
-	OTG_FS_GCCFG |= OTG_FS_GCCFG_VBUSBSEN | OTG_FS_GCCFG_PWRDWN;
-	But for the STM32F413, FS_GCCFG is not exactly the same as the F103 one.
-	Then we correct the bad OTG_FS_GCCFG_VBUSBSEN bit
-	*/
-	OTG_FS_GCCFG &= ~OTG_GCCFG_VBUSBSEN;
-	/* and use the right one */
-	OTG_FS_GCCFG |= (1<<21);
-	/* Disconnect/Reconnect the USB device with a delay in order to respect the bigger delay of 1,025 ms (see Table 217 of F413 Ref. Man.) */
-	OTG_FS_DCTL |= OTG_DCTL_SDIS;
-	platform_delay(2);
-	OTG_FS_DCTL &= ~OTG_DCTL_SDIS;
-
 	//load the selected mode for the second serial over USB port
 	monitor_mode = find_last_monitor_choice_flash();
 	platform_switch_monitor_to(monitor_mode);
