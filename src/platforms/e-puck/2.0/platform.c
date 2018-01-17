@@ -77,9 +77,7 @@ extern uint32_t _config_end;
 //flash variables
 static uint32_t config_start = (uint32_t)&_config_start;
 static uint32_t config_end = (uint32_t)&_config_end;
-static uint8_t config_sector = 15;
 static uint32_t config_addr;
-static uint32_t pattern_flash = 0xABCDEC;
 
 //second serial over USB port variables
 static uint8_t monitor_mode;
@@ -224,7 +222,7 @@ uint8_t find_last_monitor_choice_flash(void){
 
 	//checks the the flash to find variables with the pattern.
 	//continues until it founds the last pattern written.
-	while(((uint32_t)(block + i) < config_end) && ((*(block + i) & 0xFFFFFFFC) == pattern_flash)){
+	while(((uint32_t)(block + i) < config_end) && ((*(block + i) & 0xFFFFFFFC) == PATTERN_FLASH)){
 		last = block + i;
 		//we take only the 2 last bits
 		choice = (*(block + i) & 0x03);
@@ -246,12 +244,12 @@ void write_monitor_choice_to_flash(uint8_t choice){
 
 	//erases the flash if we are at the end or if we found nothing on it
 	if((config_addr == 0) || (config_addr >= config_end)){
-		flash_erase_sector(config_sector, FLASH_CR_PROGRAM_X32);
+		flash_erase_sector(CONFIG_SECTOR, FLASH_CR_PROGRAM_X32);
 		config_addr = config_start;
 	}
 
 	//writes the choice and the pattern on the flash 
-	flash_program_word(config_addr, pattern_flash | (uint32_t)choice);
+	flash_program_word(config_addr, PATTERN_FLASH | (uint32_t)choice);
 
 	//increment for the next write
 	config_addr += sizeof(uint32_t);
