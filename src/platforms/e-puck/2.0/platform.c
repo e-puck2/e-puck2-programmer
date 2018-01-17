@@ -83,7 +83,7 @@ static uint32_t config_addr;
 static uint8_t monitor_mode;
 static uint8_t default_mode = 1;
 //CAN has priority over uart. So if canUsed is set to true, the usbuart is disabled
-uint32_t uartUsed = 0;
+uint32_t uartUsed = USBUSART_407;
 bool canUsed = false; 
 
 //Button variables
