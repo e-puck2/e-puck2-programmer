@@ -20,9 +20,13 @@
 /* Define memory regions. */
 MEMORY
 {
-	rom (rx) : ORIGIN = 0x08000000, LENGTH = 1024K
+	rom (rx) : ORIGIN = 0x08000000, LENGTH = 896K
+	config (rwx): ORIGIN = 0x08160000, LENGTH = 128k
 	ram (rwx) : ORIGIN = 0x20000000, LENGTH = 256K
 }
+
+_config_start = ORIGIN(config);
+_config_end = ORIGIN(config) + LENGTH(config);
 
 /* Include the common ld script from libopenstm32. */
 INCLUDE libopencm3_stm32f4.ld

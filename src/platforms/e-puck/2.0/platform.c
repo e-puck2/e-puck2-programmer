@@ -39,6 +39,7 @@
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/cm3/cortex.h>
 #include <libopencm3/stm32/otg_fs.h>
+#include <libopencm3/stm32/flash.h>
 #include "gdb_packet.h"
 
 #include <../USB251XB/USB251XB.h>
@@ -69,6 +70,17 @@ const struct rcc_clock_scale hse_24mhz_to_96mhz_413_epuck = {
 
 jmp_buf fatal_error_jmpbuf;
 extern uint32_t _ebss;
+
+//from .ld file
+extern uint32_t _config_start; //sector 15
+extern uint32_t _config_end;
+uint32_t config_start = (uint32_t)&_config_start;
+uint32_t config_end = (uint32_t)&_config_end;
+uint8_t config_sector = 15;
+uint32_t config_addr;
+uint32_t pattern_flash = 0xABCDEC;
+uint8_t monitor_mode;
+uint8_t default_mode = 1;
 uint16_t pwrBtnCounter = 0;
 uint8_t pwrBtnState = ROBOT_OFF;
 uint8_t hub_state = NOT_CONFIGURED;
@@ -196,6 +208,50 @@ void setup_pwr_button() {
 
 }
 
+uint8_t find_last_monitor_choice_flash(void){
+	uint32_t* block = (uint32_t*)config_start;
+	uint32_t* last = NULL;
+	uint8_t choice = default_mode; //if nothing found on the flash, then the default choice is used
+
+	uint32_t i = 0;
+
+	//checks the the flash to find variables with the pattern.
+	//continues until it founds the last pattern written.
+	while(((uint32_t)(block + i) < config_end) && ((*(block + i) & 0xFFFFFFFC) == pattern_flash)){
+		last = block + i;
+		//we take only the 2 last bits
+		choice = (*(block + i) & 0x03);
+		i++; //32bits increment
+	}
+
+	if(last == NULL){
+		config_addr = 0;
+	}else{
+		//sets the config_addr to the next writtable address
+		config_addr = (uint32_t)last + sizeof(uint32_t);
+	}
+
+	return choice;
+}
+
+void write_monitor_choice_to_flash(uint8_t choice){
+	flash_unlock();
+
+	//erases the flash if we are at the end or if we found nothing on it
+	if((config_addr == 0) || (config_addr >= config_end)){
+		flash_erase_sector(config_sector, FLASH_CR_PROGRAM_X32);
+		config_addr = config_start;
+	}
+
+	//writes the choice and the pattern on the flash 
+	flash_program_word(config_addr, pattern_flash | (uint32_t)choice);
+
+	//increment for the next write
+	config_addr += sizeof(uint32_t);
+
+	flash_lock();
+}
+
 void platform_init(void)
 {
 	rcc_osc_bypass_enable(RCC_HSE);
@@ -279,6 +335,10 @@ void platform_init(void)
 	OTG_FS_DCTL |= OTG_DCTL_SDIS;
 	platform_delay(2);
 	OTG_FS_DCTL &= ~OTG_DCTL_SDIS;
+
+	//load the selected mode for the second serial over USB port
+	monitor_mode = find_last_monitor_choice_flash();
+	platform_switch_monitor_to(monitor_mode);
 }
 
 void platform_switch_monitor_to(uint8_t choice){
@@ -288,6 +348,9 @@ void platform_switch_monitor_to(uint8_t choice){
 	
 		canUsed = false;
 		uartUsed = USBUSART_407;
+		monitor_mode = choice;
+
+		write_monitor_choice_to_flash(choice);
 
 		//enable UART 407
 		usart_enable(USBUSART_407);
@@ -303,6 +366,9 @@ void platform_switch_monitor_to(uint8_t choice){
 
 		canUsed = false;
 		uartUsed = USBUSART_ESP;
+		monitor_mode = choice;
+
+		write_monitor_choice_to_flash(choice);
 
 	}else if(choice == 3){//mode 3 : ASEBA USB-CAN translator and gdb over bluetooth
 		//disable UART 407
@@ -311,10 +377,16 @@ void platform_switch_monitor_to(uint8_t choice){
 
 		canUsed = true;
 		uartUsed = USBUSART_407;
+		monitor_mode = choice;
+		write_monitor_choice_to_flash(choice);
 
 		//enable CAN ASEBA
 		can_enable_irq(CAN_USED, CAN_IER_FMPIE0);
 	}
+}
+
+uint8_t platform_get_monitor_mode(void){
+	return monitor_mode;
 }
 
 void platform_srst_set_val(bool assert)

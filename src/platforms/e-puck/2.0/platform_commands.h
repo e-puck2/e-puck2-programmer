@@ -12,6 +12,7 @@ static bool cmd_usb_500(target *t, int argc, const char **argv);
 static bool cmd_reset_F407(target *t, int argc, const char **argv);
 static bool cmd_esp32(target *t, int argc, const char **argv);
 static bool cmd_select_mode(target *t, int argc, const char **argv);
+static bool cmd_get_mode(target *t, int argc, const char **argv);
 
 /***************************************/
 /* End of platform dedicated commands. */
@@ -34,6 +35,7 @@ static bool cmd_select_mode(target *t, int argc, const char **argv);
 	{"usb_500", (cmd_handler)cmd_usb_500, "(ON|OFF|) Set the USB_500 pin or return the state of this one" }, \
 	{"reset_F407", (cmd_handler)cmd_reset_F407, "(ON|OFF|) Force the reset of F407" }, \
 	{"select_mode", (cmd_handler)cmd_select_mode, "(1|2|3) Select the use of the second virtual com port over USB :\n\t\t1 = Serial monitor of the main processor and GDB over USB and Bluetooth,\n\t\t2 = Programming/serial monitor of the ESP and GDB over USB,\n\t\t3 = ASEBA CAN-USB translator and GDB over USB and Bluetooth"}, \
+	{"get_mode", (cmd_handler)cmd_get_mode, "Return the selected mode for the second virtual com port over USB"},\
 
 /***********************************************/
 /* End of List of platform dedicated commands. */
@@ -155,6 +157,18 @@ static bool cmd_select_mode(target *t, int argc, const char **argv){
  	}
  	return true;
 }
+
+static bool cmd_get_mode(target *t, int argc, const char **argv)
+{
+	(void)t;
+	(void)argc;
+	(void)argv;
+	uint8_t mode = platform_get_monitor_mode();
+	gdb_outf("Current mode : %d\n", mode);
+
+	return true;
+}
+
 
 /***********************************************/
 /* End of Code of platform dedicated commands. */
