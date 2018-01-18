@@ -81,7 +81,7 @@ static uint32_t config_addr;
 
 //second serial over USB port variables
 static uint8_t monitor_mode;
-static uint8_t default_mode = 1;
+static uint8_t default_mode = 2;
 //CAN has priority over uart. So if canUsed is set to true, the usbuart is disabled
 uint32_t uartUsed = USBUSART_407;
 bool canUsed = false; 
