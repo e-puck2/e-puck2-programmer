@@ -69,7 +69,7 @@ enum {
 
 usbd_device * usbdev;
 
-static int configured;
+static int configured = 0;
 static int cdcacm_gdb_dtr = 1;
 #if !defined(PLATFORM_HAS_NO_SERIAL) && (defined(EPUCK2) || defined(F4DISCO_TEST))
 static bool cdcacm_uart_dtr = true;

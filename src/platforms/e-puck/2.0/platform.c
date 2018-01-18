@@ -101,11 +101,13 @@ void PWR_ON_BTN_TIM_ISR(void) {
 		pwrBtnState = ROBOT_ON;
 		timer_disable_counter(PWR_ON_BTN_TIM);
 		platform_pwr_on(true);
+		gpio_clear(LED_PORT, LED_IDLE_RUN);
 	}
 	if((pwrBtnState==ROBOT_ON) && (pwrBtnCounter>=TURN_OFF_TIME)) {
 		pwrBtnState = ROBOT_OFF;
 		timer_disable_counter(PWR_ON_BTN_TIM);
 		platform_pwr_on(false);
+		gpio_set(LED_PORT, LED_IDLE_RUN);
 	}
 //	gpio_toggle(LED_PORT_ERROR, LED_ERROR);
 }
@@ -315,7 +317,7 @@ void platform_init(void)
 
 	gpio_set(GPIO0_ESP32_PORT, GPIO0_ESP32_PIN);
 	gpio_set_output_options(GPIO0_ESP32_PORT,GPIO_OTYPE_OD,GPIO_OSPEED_2MHZ,GPIO0_ESP32_PIN);
-	gpio_mode_setup(GPIO0_ESP32_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO0_ESP32_PIN);
+	gpio_mode_setup(GPIO0_ESP32_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, GPIO0_ESP32_PIN);
 
 	platform_timing_init();
 #ifndef PLATFORM_HAS_NO_SERIAL
@@ -329,6 +331,11 @@ void platform_init(void)
 	//load the selected mode for the second serial over USB port
 	monitor_mode = find_last_monitor_choice_flash();
 	platform_switch_monitor_to(monitor_mode);
+
+}
+
+void platform_set_idle_state(uint8_t state){
+	gpio_set_val(LED_PORT, LED_IDLE_RUN, !(state==1 && (pwrBtnState==ROBOT_ON)));
 }
 
 void platform_switch_monitor_to(uint8_t choice){

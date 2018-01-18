@@ -118,9 +118,9 @@
 #define LED_PORT			GPIOA  //IDLE_RUN
 
 
-#define LED_ERROR		GPIO13
-#define LED_UART		GPIO15
-#define LED_IDLE_RUN	GPIO15
+#define LED_ERROR		GPIO13	//Red
+#define LED_UART		GPIO15	//Blue
+#define LED_IDLE_RUN	GPIO15	//green
 #define LED_BOOTLOADER	NOT_USED
 
 #define PWR_ON_PORT		GPIOA
@@ -288,7 +288,7 @@
 } while(0)
 
 #define SET_RUN_STATE(state)	{running_status = (state);}
-#define SET_IDLE_STATE(state)	{gpio_set_val(LED_PORT, LED_IDLE_RUN, !(state==1));}
+#define SET_IDLE_STATE(state)	{platform_set_idle_state(state);}
 #define SET_ERROR_STATE(state)	{gpio_set_val(LED_PORT_ERROR, LED_ERROR, !(state==1));}
 
 static inline int platform_hwversion(void)
@@ -300,6 +300,8 @@ static inline int platform_hwversion(void)
 #define FLASH_ACR_ICE_COPY				(1 << 9)
 #define FLASH_ACR_DCE_COPY				(1 << 10)
 #define FLASH_ACR_LATENCY_3WS_COPY		0x03
+
+void platform_set_idle_state(uint8_t state);
 
 void platform_switch_monitor_to(uint8_t choice);
 uint8_t platform_get_monitor_mode(void);
