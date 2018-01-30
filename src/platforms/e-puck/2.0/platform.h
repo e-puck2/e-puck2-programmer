@@ -175,6 +175,31 @@
 #define I2C_SCL_AF		GPIO_AF4
 
 
+/* BATTERY---[ R1 ]--*--- measure
+                     |
+                     |
+                   [ R2 ]
+                     |
+                    GND
+*/
+
+#define RESISTOR_R1             220 //kohm
+#define RESISTOR_R2             330 //kohm
+
+#define MAX_VOLTAGE				4.2f	//volt
+#define GOOD_VOLTAGE			3.9f	//volt
+#define LOW_VOLTAGE				3.6f	//volt
+#define VERY_LOW_VOLTAGE		3.4f	//volt
+#define MIN_VOLTAGE				3.25f	//volt
+
+#define VOLTAGE_DIVIDER         (1.0f * RESISTOR_R2 / (RESISTOR_R1 + RESISTOR_R2))
+
+#define VREF                    3.0f //volt correspond to the voltage on the VREF+ pin
+#define ADC_RESOLUTION          4096
+
+#define COEFF_ADC_TO_VOLT       ((1.0f * ADC_RESOLUTION * VOLTAGE_DIVIDER) / VREF) //conversion from adc value to voltage
+
+
 #define CAN_RX_PORT		GPIOB
 #define CAN_RX_PIN		GPIO8
 #define CAN_TX_PORT		GPIOB	
@@ -290,8 +315,8 @@
 } while(0)
 
 #define SET_RUN_STATE(state)	{running_status = (state);}
-#define SET_IDLE_STATE(state)	{platform_set_idle_state(state);}
-#define SET_ERROR_STATE(state)	{gpio_set_val(LED_PORT_ERROR, LED_ERROR, !(state==1));}
+#define SET_IDLE_STATE(state)	{}//platform_set_idle_state(state);}
+#define SET_ERROR_STATE(state)	{}//gpio_set_val(LED_PORT_ERROR, LED_ERROR, !(state==1));}
 
 static inline int platform_hwversion(void)
 {
