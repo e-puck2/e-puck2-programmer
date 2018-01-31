@@ -189,7 +189,7 @@
 #define MAX_VOLTAGE				4.2f	//volt GREEN
 #define GOOD_VOLTAGE			3.95f	//volt ORANGE
 #define LOW_VOLTAGE				3.7f	//volt RED
-#define VERY_LOW_VOLTAGE		3.45f	//volt RED BLINKING
+#define VERY_LOW_VOLTAGE		3.50f	//volt RED BLINKING
 
 #define VOLTAGE_DIVIDER         (1.0f * RESISTOR_R2 / (RESISTOR_R1 + RESISTOR_R2))
 

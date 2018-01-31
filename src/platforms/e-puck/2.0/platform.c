@@ -98,22 +98,23 @@ static uint8_t hub_state = NOT_CONFIGURED;
 //Battery variables
 static uint16_t battery_value = MAX_VOLTAGE * COEFF_ADC_TO_VOLT;
 static float battery_voltage = MAX_VOLTAGE;
+static uint16_t adc_values[DMA_SIZE_ADC];
 static uint16_t battery_low = 0;
 static uint16_t battery_high = 0;
-static uint16_t adc_values[DMA_SIZE_ADC];
+
+void adc_battery_level_stop(void);
+void adc_battery_level_init(void);
 
 void PWR_ON_BTN_TIM_ISR(void) {
 	/* need to clear timer update event */
 	timer_clear_flag(PWR_ON_BTN_TIM, TIM_SR_UIF);
 	pwrBtnCounter++;
 	if((pwrBtnState==ROBOT_OFF) && (pwrBtnCounter>=TURN_ON_TIME)) {
-		pwrBtnState = ROBOT_ON;
 		timer_disable_counter(PWR_ON_BTN_TIM);
 		platform_pwr_on(true);
 		gpio_clear(LED_PORT, LED_IDLE_RUN);
 	}
 	if((pwrBtnState==ROBOT_ON) && (pwrBtnCounter>=TURN_OFF_TIME)) {
-		pwrBtnState = ROBOT_OFF;
 		timer_disable_counter(PWR_ON_BTN_TIM);
 		platform_pwr_on(false);
 		gpio_set(LED_PORT, LED_IDLE_RUN);
@@ -184,12 +185,23 @@ void DMA_ADC_ISR(void){
 		if(battery_value){
 			battery_voltage = battery_value / COEFF_ADC_TO_VOLT;
 		}
+
+		/*DEBUG
+		* print the adc value and the calculated voltage to Bluetooth and USB
+		* the programmer mode must be 1 to be able to receive the debug info
+		*/
 		char msg[20] = {0};
-		sprintf(msg,"batt = %d, %d\n",battery_value, (uint16_t)(battery_voltage*100));
-		// while (usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT,
-		// 				msg, 20) <= 0);
+		uint16_t val = (uint16_t)(battery_voltage);
+		uint16_t dec = (uint16_t)((battery_voltage - val)*100);
+		sprintf(msg,"batt = %d, %d.%d\n",battery_value, val, dec);
+		//to USB UART port
+		usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, msg, 20);
+
+		//to bluetooth GDB port
 		for(int i = 0; i < 20; i++)
 			usart_send_blocking(USBUSART_ESP, msg[i]);
+
+		/*END DEBUG*/
 
 		//RED led toggle
 		if(battery_voltage <= VERY_LOW_VOLTAGE){
@@ -233,14 +245,8 @@ void DMA_ADC_ISR(void){
 		//we have this interrupt every 0.5sec => we need to count to 1200
 		//and then turn OFF the robot
 		if(battery_low >= TICK_BATTERY_LOW){
-			pwrBtnState = ROBOT_OFF;
 			platform_pwr_on(false);
-			battery_low = 0;
-			battery_high = 0;
 
-			//assign the default values for the battery levels
-			battery_value = MAX_VOLTAGE * COEFF_ADC_TO_VOLT;
-			battery_voltage = MAX_VOLTAGE;
 		}
 	}
 }
@@ -415,6 +421,12 @@ void adc_battery_level_init(void){
 
 }
 
+void adc_battery_level_stop(void){
+	timer_disable_counter(TIM_ADC);
+	adc_power_off(ADC_USED);
+	dma_disable_stream(DMA_ADC, DMA_ADC_STREAM);
+}
+
 uint8_t find_last_monitor_choice_flash(void){
 	uint32_t* block = (uint32_t*)config_start;
 	uint32_t* last = NULL;
@@ -530,8 +542,6 @@ void platform_init(void)
 	cdcacm_init();
 	
 	setup_vbus_detection();
-	platform_delay(5000);
-	adc_battery_level_init();
 
 	//load the selected mode for the second serial over USB port
 	monitor_mode = find_last_monitor_choice_flash();
@@ -644,10 +654,25 @@ bool platform_get_gpio0_esp32(void)
 
 void platform_pwr_on(bool on_state)
 {
-	if (on_state)
+	if (on_state){
+
+		pwrBtnState = ROBOT_ON;
+		adc_battery_level_init();
 		gpio_set(PWR_ON_PORT, PWR_ON_PIN);
-	else
+
+	}else{
+
+		pwrBtnState = ROBOT_OFF;
+		adc_battery_level_stop();
+
+		battery_low = 0;
+		battery_high = 0;
+
+		//assign the default values for the battery levels
+		battery_value = MAX_VOLTAGE * COEFF_ADC_TO_VOLT;
+		battery_voltage = MAX_VOLTAGE;
 		gpio_clear(PWR_ON_PORT, PWR_ON_PIN);
+	}
 }
 
 bool platform_pwr_on_btn_pressed(void)
