@@ -186,11 +186,10 @@
 #define RESISTOR_R1             220 //kohm
 #define RESISTOR_R2             330 //kohm
 
-#define MAX_VOLTAGE				4.2f	//volt
-#define GOOD_VOLTAGE			3.9f	//volt
-#define LOW_VOLTAGE				3.6f	//volt
-#define VERY_LOW_VOLTAGE		3.4f	//volt
-#define MIN_VOLTAGE				3.25f	//volt
+#define MAX_VOLTAGE				4.2f	//volt GREEN
+#define GOOD_VOLTAGE			3.95f	//volt ORANGE
+#define LOW_VOLTAGE				3.7f	//volt RED
+#define VERY_LOW_VOLTAGE		3.45f	//volt RED BLINKING
 
 #define VOLTAGE_DIVIDER         (1.0f * RESISTOR_R2 / (RESISTOR_R1 + RESISTOR_R2))
 
@@ -198,6 +197,33 @@
 #define ADC_RESOLUTION          4096
 
 #define COEFF_ADC_TO_VOLT       ((1.0f * ADC_RESOLUTION * VOLTAGE_DIVIDER) / VREF) //conversion from adc value to voltage
+
+#define TICK_BATTERY_LOW		1200 //1200 times the 0.5s interrupt => 10min
+#define TICK_BATTERY_HIGH		20	//20 times the 0.5s interrupt => 10 sec 
+
+#define DMA_SIZE_ADC		32
+#define RCC_DMA_ADC     	RCC_DMA2
+#define RST_DMA_ADC 		RST_DMA2
+#define DMA_ADC 			DMA2
+#define DMA_ADC_STREAM 		DMA_STREAM0
+#define DMA_ADC_CHANNEL 	DMA_SxCR_CHSEL_0
+#define NVIC_DMA_ADC_IRQ 	NVIC_DMA2_STREAM0_IRQ
+#define IRQ_DMA_ADC_PRI 	(15 << 4)
+#define DMA_ADC_ISR 		dma2_stream0_isr
+
+#define RCC_ADC_USED   		RCC_ADC1
+#define RST_ADC_USED 		RST_ADC
+#define ADC_USED 			ADC1
+#define ADC_CHANNEL_USED 	ADC_CHANNEL8
+
+#define ADC_PORT			GPIOB
+#define ADC_PIN				GPIO0
+
+#define RCC_TIM_ADC 		RCC_TIM5
+#define TIM_ADC 			TIM5
+#define NVIC_TIM_ADC_IRQ 	NVIC_TIM5_IRQ
+#define IRQ_TIM_ADC_PRI 	(15 << 4)
+#define TIM_ADC_ISR 		tim5_isr
 
 
 #define CAN_RX_PORT		GPIOB

@@ -98,8 +98,9 @@ static uint8_t hub_state = NOT_CONFIGURED;
 //Battery variables
 static uint16_t battery_value = MAX_VOLTAGE * COEFF_ADC_TO_VOLT;
 static float battery_voltage = MAX_VOLTAGE;
-static bool battery_low = false;
-static uint16_t adc_values[32];
+static uint16_t battery_low = 0;
+static uint16_t battery_high = 0;
+static uint16_t adc_values[DMA_SIZE_ADC];
 
 void PWR_ON_BTN_TIM_ISR(void) {
 	/* need to clear timer update event */
@@ -156,15 +157,15 @@ void VBUS_EXTI_ISR(void) {
 }
 
 //reads the battery voltage and manages the LED to indicates the battery level
-void dma2_stream0_isr(void){
+void DMA_ADC_ISR(void){
 
-	dma_clear_interrupt_flags(DMA2, DMA_STREAM0, DMA_TCIF | DMA_HTIF | DMA_TEIF | DMA_DMEIF);
+	dma_clear_interrupt_flags(DMA_ADC, DMA_ADC_STREAM, DMA_TCIF | DMA_HTIF | DMA_TEIF | DMA_DMEIF);
 
 	//stops the sampling of the ADC
-	adc_set_single_conversion_mode(ADC1);
+	adc_set_single_conversion_mode(ADC_USED);
 
-	static uint8_t count_min_voltage = 0;
 	static uint32_t temp_adc = 0;
+	static uint16_t i = 0;
 
 	//we only update the battery values if the robot is turned ON
 	//otherwise we would measure 0V...
@@ -172,12 +173,14 @@ void dma2_stream0_isr(void){
 
 		//average of the measures
 		temp_adc = 0;;
-	    for (size_t i = 0; i < 32; i++) {
+	    for (i = 0 ; i < DMA_SIZE_ADC ; i++) {
 	    	temp_adc += adc_values[i];
 	    }
-	    temp_adc /= 32;
+	    if(temp_adc){
+	    	temp_adc /= DMA_SIZE_ADC;
+	    }
 
-		battery_value = temp_adc;// 0.8 * battery_value + 0.2 *;
+		battery_value = 0.8 * battery_value + 0.2 * temp_adc;
 		if(battery_value){
 			battery_voltage = battery_value / COEFF_ADC_TO_VOLT;
 		}
@@ -189,56 +192,66 @@ void dma2_stream0_isr(void){
 			usart_send_blocking(USBUSART_ESP, msg[i]);
 
 		//RED led toggle
-		if(battery_voltage <= MIN_VOLTAGE){
-			count_min_voltage++;
-			gpio_toggle(LED_PORT_ERROR,LED_ERROR);
-			gpio_set(LED_PORT,LED_IDLE_RUN);
-
-		//RED led toggle
-		}else if(battery_voltage < VERY_LOW_VOLTAGE){
-
+		if(battery_voltage <= VERY_LOW_VOLTAGE){
+			//we count the battery_low only when we are sure 
+			//that we are not in a oscillation state between 
+			//VERY_LOW_VOLTAGE and LOW_VOLTAGE
+			if(battery_high == 0){
+				battery_low++;
+			}
+			battery_high = 0;
 			gpio_toggle(LED_PORT_ERROR,LED_ERROR);
 			gpio_set(LED_PORT,LED_IDLE_RUN);
 
 		//RED turned ON
-		}else if(battery_voltage < LOW_VOLTAGE){
-
+		}else if(battery_voltage <= LOW_VOLTAGE){
+			battery_high++;
 			gpio_clear(LED_PORT_ERROR,LED_ERROR);
 			gpio_set(LED_PORT,LED_IDLE_RUN);
 
 		//RED and GREEN turned ON
-		}else if(battery_voltage < GOOD_VOLTAGE){
-
+		}else if(battery_voltage <= GOOD_VOLTAGE){
+			battery_high++;
 			gpio_clear(LED_PORT_ERROR,LED_ERROR);
 			gpio_clear(LED_PORT,LED_IDLE_RUN);
 
 		//GREEN turned ON
 		}else{
+			battery_high++;
 			gpio_set(LED_PORT_ERROR,LED_ERROR);
 			gpio_clear(LED_PORT,LED_IDLE_RUN);
 		}
-		//if the battery voltage is too low for about 5 sec
-		//turn OFF the robot
-		if(count_min_voltage >= 10){
+
+		//if the battery voltage is more than VERY_LOW_VOLTAGE
+		//during at least 10 sec, the battery_low counter is reset
+		//avoid a false count 
+		if(battery_high >= TICK_BATTERY_HIGH){
+			battery_low = 0;
+		}
+
+		//if the battery voltage is too low for about 10 min
+		//we have this interrupt every 0.5sec => we need to count to 1200
+		//and then turn OFF the robot
+		if(battery_low >= TICK_BATTERY_LOW){
 			pwrBtnState = ROBOT_OFF;
 			platform_pwr_on(false);
-			count_min_voltage = 0;
+			battery_low = 0;
+			battery_high = 0;
 
 			//assign the default values for the battery levels
 			battery_value = MAX_VOLTAGE * COEFF_ADC_TO_VOLT;
 			battery_voltage = MAX_VOLTAGE;
-			battery_low = false;
 		}
 	}
 }
 
 //used to perform an ADC measure at a certain frequency
-void tim5_isr(void){
-	timer_clear_flag(TIM5, TIM_SR_UIF);
+void TIM_ADC_ISR(void){
+	timer_clear_flag(TIM_ADC, TIM_SR_UIF);
 
 	//start the ADC sampling
-	adc_set_continuous_conversion_mode(ADC1);
-	adc_start_conversion_regular(ADC1);
+	adc_set_continuous_conversion_mode(ADC_USED);
+	adc_start_conversion_regular(ADC_USED);
 
 }
 
@@ -314,91 +327,91 @@ void adc_battery_level_init(void){
 
 /////////////////////////////DMA/////////////////////////////////
 	 /* Allocate DMA stream. */
-	rcc_periph_clock_enable(RCC_DMA2);
-	rcc_periph_reset_pulse(RST_DMA2);
+	rcc_periph_clock_enable(RCC_DMA_ADC);
+	rcc_periph_reset_pulse(RST_DMA_ADC);
 
-	dma_stream_reset(DMA2, DMA_STREAM0);
-	dma_disable_stream(DMA2, DMA_STREAM0);
-	dma_set_priority(DMA2, DMA_STREAM0, DMA_SxCR_PL_VERY_HIGH);
+	dma_stream_reset(DMA_ADC, DMA_ADC_STREAM);
+	dma_disable_stream(DMA_ADC, DMA_ADC_STREAM);
+	dma_set_priority(DMA_ADC, DMA_ADC_STREAM, DMA_SxCR_PL_VERY_HIGH);
 
 	/* Configure DMA stream. */
-	dma_set_peripheral_address(DMA2, DMA_STREAM0, (uint32_t)&ADC_DR(ADC1));
-	dma_set_memory_address(DMA2, DMA_STREAM0, (uint32_t)adc_values);
-	dma_set_number_of_data(DMA2, DMA_STREAM0, 32);
+	dma_set_peripheral_address(DMA_ADC, DMA_ADC_STREAM, (uint32_t)&ADC_DR(ADC_USED));
+	dma_set_memory_address(DMA_ADC, DMA_ADC_STREAM, (uint32_t)adc_values);
+	dma_set_number_of_data(DMA_ADC, DMA_ADC_STREAM, DMA_SIZE_ADC);
 
 	/* set mode */
-	dma_set_transfer_mode(DMA2, DMA_STREAM0, DMA_SxCR_DIR_PERIPHERAL_TO_MEM);
-	dma_set_memory_size(DMA2, DMA_STREAM0, DMA_SxCR_MSIZE_16BIT);
-	dma_set_peripheral_size(DMA2, DMA_STREAM0, 
+	dma_set_transfer_mode(DMA_ADC, DMA_ADC_STREAM, DMA_SxCR_DIR_PERIPHERAL_TO_MEM);
+	dma_set_memory_size(DMA_ADC, DMA_ADC_STREAM, DMA_SxCR_MSIZE_16BIT);
+	dma_set_peripheral_size(DMA_ADC, DMA_ADC_STREAM, 
 	                        DMA_SxCR_PSIZE_16BIT);
-	dma_enable_memory_increment_mode(DMA2, DMA_STREAM0);
-	dma_enable_circular_mode(DMA2, DMA_STREAM0);
-	dma_clear_interrupt_flags(DMA2, DMA_STREAM0, DMA_TCIF | DMA_HTIF | DMA_TEIF | DMA_DMEIF);
-	dma_enable_half_transfer_interrupt(DMA2, DMA_STREAM0);
-	dma_enable_transfer_complete_interrupt(DMA2, DMA_STREAM0);
-	dma_enable_direct_mode_error_interrupt(DMA2, DMA_STREAM0);
-	dma_enable_transfer_error_interrupt(DMA2, DMA_STREAM0);
-	dma_channel_select(DMA2, DMA_STREAM0, DMA_SxCR_CHSEL_0);
+	dma_enable_memory_increment_mode(DMA_ADC, DMA_ADC_STREAM);
+	dma_enable_circular_mode(DMA_ADC, DMA_ADC_STREAM);
+	dma_clear_interrupt_flags(DMA_ADC, DMA_ADC_STREAM, DMA_TCIF | DMA_HTIF | DMA_TEIF | DMA_DMEIF);
+	dma_enable_half_transfer_interrupt(DMA_ADC, DMA_ADC_STREAM);
+	dma_enable_transfer_complete_interrupt(DMA_ADC, DMA_ADC_STREAM);
+	dma_enable_direct_mode_error_interrupt(DMA_ADC, DMA_ADC_STREAM);
+	dma_enable_transfer_error_interrupt(DMA_ADC, DMA_ADC_STREAM);
+	dma_channel_select(DMA_ADC, DMA_ADC_STREAM, DMA_ADC_CHANNEL);
 
 
-	nvic_set_priority(NVIC_DMA2_STREAM0_IRQ, (15 << 4));
-	nvic_enable_irq(NVIC_DMA2_STREAM0_IRQ);
-	dma_enable_stream(DMA2, DMA_STREAM0);
+	nvic_set_priority(NVIC_DMA_ADC_IRQ, IRQ_DMA_ADC_PRI);
+	nvic_enable_irq(NVIC_DMA_ADC_IRQ);
+	dma_enable_stream(DMA_ADC, DMA_ADC_STREAM);
 
 ///////////////////////////////ADC///////////////////////////////
-	rcc_periph_clock_enable(RCC_ADC1);
-	rcc_periph_reset_pulse(RST_ADC);
-    adc_power_off(ADC1);
+	rcc_periph_clock_enable(RCC_ADC_USED);
+	rcc_periph_reset_pulse(RST_ADC_USED);
+    adc_power_off(ADC_USED);
 
     adc_set_clk_prescale(ADC_CCR_ADCPRE_BY8);
     adc_set_multi_mode(ADC_CCR_MULTI_INDEPENDENT);
-    adc_enable_scan_mode(ADC1);
-    adc_set_sample_time(ADC1, ADC_CHANNEL8, ADC_SMPR_SMP_480CYC);
-    adc_disable_external_trigger_regular(ADC1);
-    adc_set_right_aligned(ADC1);
-    adc_set_resolution(ADC1, ADC_CR1_RES_12BIT);
+    adc_enable_scan_mode(ADC_USED);
+    adc_set_sample_time(ADC_USED, ADC_CHANNEL_USED, ADC_SMPR_SMP_480CYC);
+    adc_disable_external_trigger_regular(ADC_USED);
+    adc_set_right_aligned(ADC_USED);
+    adc_set_resolution(ADC_USED, ADC_CR1_RES_12BIT);
 
-    adc_clear_overrun_flag(ADC1);
+    adc_clear_overrun_flag(ADC_USED);
 
-   	adc_set_continuous_conversion_mode(ADC1);
+   	adc_set_continuous_conversion_mode(ADC_USED);
 
-   	uint8_t channel[1] = {ADC_CHANNEL8};
-   	adc_set_regular_sequence(ADC1, 1, channel);
+   	uint8_t channel[1] = {ADC_CHANNEL_USED};
+   	adc_set_regular_sequence(ADC_USED, 1, channel);
 
-   	adc_enable_dma(ADC1);
-   	adc_set_dma_continue(ADC1);
+   	adc_enable_dma(ADC_USED);
+   	adc_set_dma_continue(ADC_USED);
 
-    adc_power_on(ADC1);
+    adc_power_on(ADC_USED);
 
 
 ////////////////////////////TIMER////////////////////////////////
     // Configure the timer to count how much time the button is pressed.
-	// Enable TIM5 clock.
-	rcc_periph_clock_enable(RCC_TIM5);
+	// Enable TIM_ADC clock.
+	rcc_periph_clock_enable(RCC_TIM_ADC);
 
-	// Reset TIM5 peripheral to defaults.
-	timer_reset(TIM5);
+	// Reset TIM_ADC peripheral to defaults.
+	timer_reset(TIM_ADC);
 
 	// Timer mode: internal clock source, no divider, alignment edge, direction up.
-	timer_set_mode(TIM5, TIM_CR1_CKD_CK_INT, TIM_CR1_CMS_EDGE, TIM_CR1_DIR_UP);
+	timer_set_mode(TIM_ADC, TIM_CR1_CKD_CK_INT, TIM_CR1_CMS_EDGE, TIM_CR1_DIR_UP);
 
 	//the timer run continuously
-	timer_continuous_mode(TIM5);
+	timer_continuous_mode(TIM_ADC);
 
 	// Timer5 clock source is APB1 x 2. Set the prescaler to have the timer run at 2 KHz.
-	timer_set_prescaler(TIM5, ((rcc_apb1_frequency * 2) / 2000)-1);
+	timer_set_prescaler(TIM_ADC, ((rcc_apb1_frequency * 2) / 2000)-1);
 
 	// An interrupt every 500 ms.
-	timer_set_period(TIM5, 1000);
+	timer_set_period(TIM_ADC, 1000);
 
-	// Enable TIM5 interrupt.
-	timer_enable_irq(TIM5, TIM_DIER_UIE);
+	// Enable TIM_ADC interrupt.
+	timer_enable_irq(TIM_ADC, TIM_DIER_UIE);
 
-	nvic_set_priority(NVIC_TIM5_IRQ, (15 << 4));
-	nvic_enable_irq(NVIC_TIM5_IRQ);
+	nvic_set_priority(NVIC_TIM_ADC_IRQ, IRQ_TIM_ADC_PRI);
+	nvic_enable_irq(NVIC_TIM_ADC_IRQ);
 	
 	//start the timer
-	timer_enable_counter(TIM5);
+	timer_enable_counter(TIM_ADC);
 
 }
 
@@ -506,7 +519,8 @@ void platform_init(void)
 	gpio_set_output_options(GPIO0_ESP32_PORT,GPIO_OTYPE_OD,GPIO_OSPEED_2MHZ,GPIO0_ESP32_PIN);
 	gpio_mode_setup(GPIO0_ESP32_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, GPIO0_ESP32_PIN);
 
-	gpio_mode_setup(GPIOB, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO0);
+	//ADC
+	gpio_mode_setup(ADC_PORT, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, ADC_PIN);
 
 	platform_timing_init();
 #ifndef PLATFORM_HAS_NO_SERIAL
