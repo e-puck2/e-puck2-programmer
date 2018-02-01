@@ -99,6 +99,7 @@ static uint8_t hub_state = NOT_CONFIGURED;
 static uint16_t battery_value = MAX_VOLTAGE * COEFF_ADC_TO_VOLT;
 static float battery_voltage = MAX_VOLTAGE;
 static uint16_t adc_values[DMA_SIZE_ADC];
+static uint16_t nb_adc_values = 0;
 static uint16_t battery_low = 0;
 static uint16_t battery_high = 0;
 
@@ -158,12 +159,18 @@ void VBUS_EXTI_ISR(void) {
 }
 
 //reads the battery voltage and manages the LED to indicates the battery level
+//when the dma buffer is full
 void DMA_ADC_ISR(void){
 
+	bool teif = dma_get_interrupt_flag(DMA_ADC, DMA_ADC_STREAM, DMA_TEIF);
+	bool dmeif = dma_get_interrupt_flag(DMA_ADC, DMA_ADC_STREAM, DMA_DMEIF);
 	dma_clear_interrupt_flags(DMA_ADC, DMA_ADC_STREAM, DMA_TCIF | DMA_HTIF | DMA_TEIF | DMA_DMEIF);
-
-	//stops the sampling of the ADC
-	adc_set_single_conversion_mode(ADC_USED);
+	//handles error
+	if( teif || dmeif){
+		adc_battery_level_stop();
+		adc_battery_level_init();
+		return;
+	}
 
 	static uint32_t temp_adc = 0;
 	static uint16_t i = 0;
@@ -251,14 +258,27 @@ void DMA_ADC_ISR(void){
 	}
 }
 
-//used to perform an ADC measure at a certain frequency
+//restart the ADC aquisition processus at a certain interval
 void TIM_ADC_ISR(void){
 	timer_clear_flag(TIM_ADC, TIM_SR_UIF);
 
-	//start the ADC sampling
-	adc_set_continuous_conversion_mode(ADC_USED);
-	adc_start_conversion_regular(ADC_USED);
+	nb_adc_values = 0;
 
+	// //start the ADC sampling
+	nb_adc_values++;
+	adc_start_conversion_regular(ADC_USED);
+}
+
+//after each conversion of the ADC, redo one aquisition
+//if the dma buffer isn't full
+void ADC_USED_ISR(void){
+
+	//apparently taking several single shots is more accurate 
+	//than the continuous mode with the ADC
+	if(nb_adc_values < DMA_SIZE_ADC){
+		nb_adc_values++;
+		adc_start_conversion_regular(ADC_USED);
+	}
 }
 
 void setup_vbus_detection(void){
@@ -353,7 +373,6 @@ void adc_battery_level_init(void){
 	dma_enable_memory_increment_mode(DMA_ADC, DMA_ADC_STREAM);
 	dma_enable_circular_mode(DMA_ADC, DMA_ADC_STREAM);
 	dma_clear_interrupt_flags(DMA_ADC, DMA_ADC_STREAM, DMA_TCIF | DMA_HTIF | DMA_TEIF | DMA_DMEIF);
-	dma_enable_half_transfer_interrupt(DMA_ADC, DMA_ADC_STREAM);
 	dma_enable_transfer_complete_interrupt(DMA_ADC, DMA_ADC_STREAM);
 	dma_enable_direct_mode_error_interrupt(DMA_ADC, DMA_ADC_STREAM);
 	dma_enable_transfer_error_interrupt(DMA_ADC, DMA_ADC_STREAM);
@@ -377,15 +396,19 @@ void adc_battery_level_init(void){
     adc_set_right_aligned(ADC_USED);
     adc_set_resolution(ADC_USED, ADC_CR1_RES_12BIT);
 
+    adc_enable_eoc_interrupt(ADC_USED);
     adc_clear_overrun_flag(ADC_USED);
 
-   	adc_set_continuous_conversion_mode(ADC_USED);
+    adc_set_single_conversion_mode(ADC_USED);
 
    	uint8_t channel[1] = {ADC_CHANNEL_USED};
    	adc_set_regular_sequence(ADC_USED, 1, channel);
 
    	adc_enable_dma(ADC_USED);
    	adc_set_dma_continue(ADC_USED);
+
+   	nvic_set_priority(NVIC_ADC_USED_IRQ, IRQ_ADC_USED_PRI);
+	nvic_enable_irq(NVIC_ADC_USED_IRQ);
 
     adc_power_on(ADC_USED);
 

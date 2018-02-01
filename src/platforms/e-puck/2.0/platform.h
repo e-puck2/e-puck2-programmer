@@ -215,6 +215,9 @@
 #define RST_ADC_USED 		RST_ADC
 #define ADC_USED 			ADC1
 #define ADC_CHANNEL_USED 	ADC_CHANNEL8
+#define NVIC_ADC_USED_IRQ 	NVIC_ADC_IRQ
+#define IRQ_ADC_USED_PRI 	(15 << 4)
+#define ADC_USED_ISR 		adc_isr
 
 #define ADC_PORT			GPIOB
 #define ADC_PIN				GPIO0
