@@ -187,9 +187,9 @@
 #define RESISTOR_R2             330 //kohm
 
 #define MAX_VOLTAGE				4.2f	//volt GREEN
-#define GOOD_VOLTAGE			3.95f	//volt ORANGE
-#define LOW_VOLTAGE				3.7f	//volt RED
-#define VERY_LOW_VOLTAGE		3.50f	//volt RED BLINKING
+#define GOOD_VOLTAGE			3.60f	//volt ORANGE
+#define LOW_VOLTAGE				3.52f	//volt RED
+#define VERY_LOW_VOLTAGE		3.47f	//volt RED BLINKING
 
 #define VOLTAGE_DIVIDER         (1.0f * RESISTOR_R2 / (RESISTOR_R1 + RESISTOR_R2))
 
