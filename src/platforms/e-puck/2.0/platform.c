@@ -215,17 +215,17 @@ void DMA_ADC_ISR(void){
 		* print the adc value and the calculated voltage to Bluetooth and USB
 		* the programmer mode must be 1 to be able to receive the debug info
 		*/
-		char msg[20] = {0};
-		uint16_t val = (uint16_t)(battery_voltage);
-		uint16_t dec = (uint16_t)((battery_voltage - val)*100);
-		//sprintf(msg,"batt = %d, %d.%d\n",battery_value, val, dec);
-		sprintf(msg,"%d.%d;\n",val, dec);
-		//to USB UART port
-		usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, msg, 20);
+		// char msg[20] = {0};
+		// uint16_t val = (uint16_t)(battery_voltage);
+		// uint16_t dec = (uint16_t)((battery_voltage - val)*100);
+		// //sprintf(msg,"batt = %d, %d.%d\n",battery_value, val, dec);
+		// sprintf(msg,"%d.%d;\n",val, dec);
+		// //to USB UART port
+		// usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, msg, 20);
 
-		//to bluetooth GDB port
-		for(int i = 0; i < 20; i++)
-			usart_send_blocking(USBUSART_ESP, msg[i]);
+		// //to bluetooth GDB port
+		// for(int i = 0; i < 20; i++)
+		// 	usart_send_blocking(USBUSART_ESP, msg[i]);
 
 		/*END DEBUG*/
 
