@@ -187,9 +187,10 @@
 #define RESISTOR_R2             330 //kohm
 
 #define MAX_VOLTAGE				4.2f	//volt GREEN
-#define GOOD_VOLTAGE			3.60f	//volt ORANGE
-#define LOW_VOLTAGE				3.52f	//volt RED
-#define VERY_LOW_VOLTAGE		3.47f	//volt RED BLINKING
+#define GOOD_VOLTAGE			3.50f	//volt ORANGE
+#define LOW_VOLTAGE				3.40f	//volt RED
+#define VERY_LOW_VOLTAGE		3.25f	//volt RED BLINKING
+#define MIN_VOLTAGE				3.20f	//volt RED BLINKING + QUICK TURNOFF
 
 #define VOLTAGE_DIVIDER         (1.0f * RESISTOR_R2 / (RESISTOR_R1 + RESISTOR_R2))
 
@@ -198,10 +199,21 @@
 
 #define COEFF_ADC_TO_VOLT       ((1.0f * ADC_RESOLUTION * VOLTAGE_DIVIDER) / VREF) //conversion from adc value to voltage
 
-#define TICK_BATTERY_LOW		1200 //1200 times the 0.5s interrupt => 10min
-#define TICK_BATTERY_HIGH		20	//20 times the 0.5s interrupt => 10 sec 
+#define LOW_PASS_COEFF_A		0.8f
+#define LOW_PASS_COEFF_B		0.2f
 
-#define DMA_SIZE_ADC		32
+#define TICK_BATTERY_LOW		20 	//20 times the 0.5s interrupt => 10 sec
+#define TICK_CHANGE_STATE		6	//6 times the 0.5s interrupt => 3 sec 
+
+#define MAX_VOLTAGE_STATE		0
+#define GOOD_VOLTAGE_STATE		1
+#define LOW_VOLTAGE_STATE		2
+#define VERY_LOW_VOLTAGE_STATE	3
+#define MIN_VOLTAGE_STATE		4
+
+#define ADC_VALUE_VREFINT		1645	//value of the Vrefint (1.2V) measure when the uC is powered with 3V
+
+#define DMA_SIZE_ADC		64 //32 measurements of the battery and 32 measurements of Vrefint in an alternate manner
 #define RCC_DMA_ADC     	RCC_DMA2
 #define RST_DMA_ADC 		RST_DMA2
 #define DMA_ADC 			DMA2
@@ -211,13 +223,15 @@
 #define IRQ_DMA_ADC_PRI 	(15 << 4)
 #define DMA_ADC_ISR 		dma2_stream0_isr
 
-#define RCC_ADC_USED   		RCC_ADC1
-#define RST_ADC_USED 		RST_ADC
-#define ADC_USED 			ADC1
-#define ADC_CHANNEL_USED 	ADC_CHANNEL8
-#define NVIC_ADC_USED_IRQ 	NVIC_ADC_IRQ
-#define IRQ_ADC_USED_PRI 	(15 << 4)
-#define ADC_USED_ISR 		adc_isr
+#define RCC_ADC_USED   			RCC_ADC1
+#define RST_ADC_USED 			RST_ADC
+#define ADC_USED 				ADC1
+#define ADC_CHANNEL_BATT 		ADC_CHANNEL8
+#define ADC_CHANNEL_VREFINT		ADC_CHANNEL17
+#define NB_ADC_CHANNEL			2
+#define NVIC_ADC_USED_IRQ 		NVIC_ADC_IRQ
+#define IRQ_ADC_USED_PRI 		(15 << 4)
+#define ADC_USED_ISR 			adc_isr
 
 #define ADC_PORT			GPIOB
 #define ADC_PIN				GPIO0

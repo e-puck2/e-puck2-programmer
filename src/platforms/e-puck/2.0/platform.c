@@ -96,12 +96,12 @@ static uint8_t pwrBtnState = ROBOT_OFF;
 static uint8_t hub_state = NOT_CONFIGURED;
 
 //Battery variables
+static float vref_gain_correction = 1;
 static uint16_t battery_value = MAX_VOLTAGE * COEFF_ADC_TO_VOLT;
 static float battery_voltage = MAX_VOLTAGE;
 static uint16_t adc_values[DMA_SIZE_ADC];
 static uint16_t nb_adc_values = 0;
 static uint16_t battery_low = 0;
-static uint16_t battery_high = 0;
 
 void adc_battery_level_stop(void);
 void adc_battery_level_init(void);
@@ -174,21 +174,39 @@ void DMA_ADC_ISR(void){
 
 	static uint32_t temp_adc = 0;
 	static uint16_t i = 0;
+	static uint8_t future_state = MAX_VOLTAGE_STATE;
+	static uint8_t actual_state = MAX_VOLTAGE_STATE;
+	static uint16_t change_state = 0;
 
 	//we only update the battery values if the robot is turned ON
 	//otherwise we would measure 0V...
 	if(pwrBtnState == ROBOT_ON){
 
-		//average of the measures
-		temp_adc = 0;;
-	    for (i = 0 ; i < DMA_SIZE_ADC ; i++) {
+		//average of the Vrefint measurements
+		//index 0,2,4,...
+		temp_adc = 0;
+	    for (i = 0 ; i < DMA_SIZE_ADC ; i += NB_ADC_CHANNEL) {
 	    	temp_adc += adc_values[i];
 	    }
 	    if(temp_adc){
-	    	temp_adc /= DMA_SIZE_ADC;
+	    	temp_adc /= (DMA_SIZE_ADC/NB_ADC_CHANNEL);
 	    }
 
-		battery_value = 0.8 * battery_value + 0.2 * temp_adc;
+	    vref_gain_correction = (float)ADC_VALUE_VREFINT/temp_adc;
+
+		//average of the battery measurements
+		//index 1,3,5,...
+		temp_adc = 0;
+	    for (i = 1 ; i < DMA_SIZE_ADC ; i += NB_ADC_CHANNEL) {
+	    	temp_adc += adc_values[i];
+	    }
+	    if(temp_adc){
+	    	temp_adc /= (DMA_SIZE_ADC/NB_ADC_CHANNEL);
+	    }
+
+	    //low-pass filter
+		battery_value = LOW_PASS_COEFF_A * battery_value 
+						+ LOW_PASS_COEFF_B * temp_adc * vref_gain_correction;
 		if(battery_value){
 			battery_voltage = battery_value / COEFF_ADC_TO_VOLT;
 		}
@@ -200,7 +218,8 @@ void DMA_ADC_ISR(void){
 		char msg[20] = {0};
 		uint16_t val = (uint16_t)(battery_voltage);
 		uint16_t dec = (uint16_t)((battery_voltage - val)*100);
-		sprintf(msg,"batt = %d, %d.%d\n",battery_value, val, dec);
+		//sprintf(msg,"batt = %d, %d.%d\n",battery_value, val, dec);
+		sprintf(msg,"%d.%d;\n",val, dec);
 		//to USB UART port
 		usbd_ep_write_packet(usbdev, CDCACM_UART_ENDPOINT, msg, 20);
 
@@ -210,42 +229,58 @@ void DMA_ADC_ISR(void){
 
 		/*END DEBUG*/
 
-		//RED led toggle
-		if(battery_voltage <= VERY_LOW_VOLTAGE){
+		//check if we are in the new state for at least TICK_CHANGE_STATE time
+		if(actual_state != future_state){
+			change_state++;
+			if(change_state >= TICK_CHANGE_STATE){
+				actual_state = future_state;
+				change_state = 0;
+			}
+		}else{
+			change_state = 0;
+		}
+
+		//RED led toggle + shutdown after TICK_BATTERY_LOW time
+		if(battery_voltage <= MIN_VOLTAGE){
+			future_state = MIN_VOLTAGE_STATE;
+
 			//we count the battery_low only when we are sure 
 			//that we are not in a oscillation state between 
 			//VERY_LOW_VOLTAGE and LOW_VOLTAGE
-			if(battery_high == 0){
+			if(actual_state == MIN_VOLTAGE_STATE){
 				battery_low++;
-			}
-			battery_high = 0;
-			gpio_toggle(LED_PORT_ERROR,LED_ERROR);
-			gpio_set(LED_PORT,LED_IDLE_RUN);
 
+				gpio_toggle(LED_PORT_ERROR,LED_ERROR);
+				gpio_set(LED_PORT,LED_IDLE_RUN);
+			}
+		//RED led toggle
+		}else if(battery_voltage <= VERY_LOW_VOLTAGE){
+			future_state = VERY_LOW_VOLTAGE_STATE;
+			if(actual_state == VERY_LOW_VOLTAGE_STATE){
+				gpio_toggle(LED_PORT_ERROR,LED_ERROR);
+				gpio_set(LED_PORT,LED_IDLE_RUN);
+			}
 		//RED turned ON
 		}else if(battery_voltage <= LOW_VOLTAGE){
-			battery_high++;
-			gpio_clear(LED_PORT_ERROR,LED_ERROR);
-			gpio_set(LED_PORT,LED_IDLE_RUN);
-
+			future_state = LOW_VOLTAGE_STATE;
+			if(actual_state == LOW_VOLTAGE_STATE){
+				gpio_clear(LED_PORT_ERROR,LED_ERROR);
+				gpio_set(LED_PORT,LED_IDLE_RUN);
+			}
 		//RED and GREEN turned ON
 		}else if(battery_voltage <= GOOD_VOLTAGE){
-			battery_high++;
-			gpio_clear(LED_PORT_ERROR,LED_ERROR);
-			gpio_clear(LED_PORT,LED_IDLE_RUN);
-
+			future_state = GOOD_VOLTAGE_STATE;
+			if(actual_state == GOOD_VOLTAGE_STATE){
+				gpio_clear(LED_PORT_ERROR,LED_ERROR);
+				gpio_clear(LED_PORT,LED_IDLE_RUN);
+			}
 		//GREEN turned ON
 		}else{
-			battery_high++;
-			gpio_set(LED_PORT_ERROR,LED_ERROR);
-			gpio_clear(LED_PORT,LED_IDLE_RUN);
-		}
-
-		//if the battery voltage is more than VERY_LOW_VOLTAGE
-		//during at least 10 sec, the battery_low counter is reset
-		//avoid a false count 
-		if(battery_high >= TICK_BATTERY_HIGH){
-			battery_low = 0;
+			future_state = MAX_VOLTAGE_STATE;
+			if(actual_state == MAX_VOLTAGE_STATE){
+				gpio_set(LED_PORT_ERROR,LED_ERROR);
+				gpio_clear(LED_PORT,LED_IDLE_RUN);
+			}
 		}
 
 		//if the battery voltage is too low for about 10 min
@@ -253,7 +288,6 @@ void DMA_ADC_ISR(void){
 		//and then turn OFF the robot
 		if(battery_low >= TICK_BATTERY_LOW){
 			platform_pwr_on(false);
-
 		}
 	}
 }
@@ -265,7 +299,7 @@ void TIM_ADC_ISR(void){
 	nb_adc_values = 0;
 
 	// //start the ADC sampling
-	nb_adc_values++;
+	nb_adc_values += NB_ADC_CHANNEL;
 	adc_start_conversion_regular(ADC_USED);
 }
 
@@ -276,7 +310,7 @@ void ADC_USED_ISR(void){
 	//apparently taking several single shots is more accurate 
 	//than the continuous mode with the ADC
 	if(nb_adc_values < DMA_SIZE_ADC){
-		nb_adc_values++;
+		nb_adc_values += NB_ADC_CHANNEL;
 		adc_start_conversion_regular(ADC_USED);
 	}
 }
@@ -361,7 +395,7 @@ void adc_battery_level_init(void){
 	dma_set_priority(DMA_ADC, DMA_ADC_STREAM, DMA_SxCR_PL_VERY_HIGH);
 
 	/* Configure DMA stream. */
-	dma_set_peripheral_address(DMA_ADC, DMA_ADC_STREAM, (uint32_t)&ADC_DR(ADC_USED));
+	dma_set_peripheral_address(DMA_ADC, DMA_ADC_STREAM, (uint32_t)&ADC_DR(ADC_USED)); 
 	dma_set_memory_address(DMA_ADC, DMA_ADC_STREAM, (uint32_t)adc_values);
 	dma_set_number_of_data(DMA_ADC, DMA_ADC_STREAM, DMA_SIZE_ADC);
 
@@ -384,6 +418,19 @@ void adc_battery_level_init(void){
 	dma_enable_stream(DMA_ADC, DMA_ADC_STREAM);
 
 ///////////////////////////////ADC///////////////////////////////
+	/* Because of an error on the design of the alimentation
+	 * of the uC, there is a voltage drop of about 0.4V between
+	 * the battery and the alimentation of the uC.
+	 * => Below 3.4V (battery), the Vref of the ADC goes below 3V
+	 * => We can't know the real battery tension
+	 * 
+	 *  But we can measure the Vrefint (1.2V).
+	 *  => If this measure changes, it means the Vref has drifted and
+	 *  knowing the Vrefint stays at 1.2V, we can correct the measure of the battery :-)
+	 *  
+	 *  The sequence for the ADC measurements is Vrefint, then the battery.
+	 *  Everything is stocked in the same DMA buffer
+	 */ 
 	rcc_periph_clock_enable(RCC_ADC_USED);
 	rcc_periph_reset_pulse(RST_ADC_USED);
     adc_power_off(ADC_USED);
@@ -391,7 +438,9 @@ void adc_battery_level_init(void){
     adc_set_clk_prescale(ADC_CCR_ADCPRE_BY8);
     adc_set_multi_mode(ADC_CCR_MULTI_INDEPENDENT);
     adc_enable_scan_mode(ADC_USED);
-    adc_set_sample_time(ADC_USED, ADC_CHANNEL_USED, ADC_SMPR_SMP_480CYC);
+    adc_enable_temperature_sensor(); //enables the temperature sensor channel AND the Vrefint channel
+    adc_set_sample_time(ADC_USED, ADC_CHANNEL_BATT, ADC_SMPR_SMP_480CYC);
+    adc_set_sample_time(ADC_USED, ADC_CHANNEL_VREFINT, ADC_SMPR_SMP_480CYC);
     adc_disable_external_trigger_regular(ADC_USED);
     adc_set_right_aligned(ADC_USED);
     adc_set_resolution(ADC_USED, ADC_CR1_RES_12BIT);
@@ -401,8 +450,9 @@ void adc_battery_level_init(void){
 
     adc_set_single_conversion_mode(ADC_USED);
 
-   	uint8_t channel[1] = {ADC_CHANNEL_USED};
-   	adc_set_regular_sequence(ADC_USED, 1, channel);
+    //First we measure Vrefint, then the battery
+   	uint8_t channel[NB_ADC_CHANNEL] = {ADC_CHANNEL_VREFINT, ADC_CHANNEL_BATT};
+   	adc_set_regular_sequence(ADC_USED, NB_ADC_CHANNEL, channel);
 
    	adc_enable_dma(ADC_USED);
    	adc_set_dma_continue(ADC_USED);
@@ -689,7 +739,6 @@ void platform_pwr_on(bool on_state)
 		adc_battery_level_stop();
 
 		battery_low = 0;
-		battery_high = 0;
 
 		//assign the default values for the battery levels
 		battery_value = MAX_VOLTAGE * COEFF_ADC_TO_VOLT;
