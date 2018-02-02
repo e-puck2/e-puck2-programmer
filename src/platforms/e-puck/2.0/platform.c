@@ -257,6 +257,7 @@ void DMA_ADC_ISR(void){
 		}else if(battery_voltage <= VERY_LOW_VOLTAGE){
 			future_state = VERY_LOW_VOLTAGE_STATE;
 			if(actual_state == VERY_LOW_VOLTAGE_STATE){
+				battery_low = 0;
 				gpio_toggle(LED_PORT_ERROR,LED_ERROR);
 				gpio_set(LED_PORT,LED_IDLE_RUN);
 			}
@@ -264,6 +265,7 @@ void DMA_ADC_ISR(void){
 		}else if(battery_voltage <= LOW_VOLTAGE){
 			future_state = LOW_VOLTAGE_STATE;
 			if(actual_state == LOW_VOLTAGE_STATE){
+				battery_low = 0;
 				gpio_clear(LED_PORT_ERROR,LED_ERROR);
 				gpio_set(LED_PORT,LED_IDLE_RUN);
 			}
@@ -271,6 +273,7 @@ void DMA_ADC_ISR(void){
 		}else if(battery_voltage <= GOOD_VOLTAGE){
 			future_state = GOOD_VOLTAGE_STATE;
 			if(actual_state == GOOD_VOLTAGE_STATE){
+				battery_low = 0;
 				gpio_clear(LED_PORT_ERROR,LED_ERROR);
 				gpio_clear(LED_PORT,LED_IDLE_RUN);
 			}
@@ -278,14 +281,14 @@ void DMA_ADC_ISR(void){
 		}else{
 			future_state = MAX_VOLTAGE_STATE;
 			if(actual_state == MAX_VOLTAGE_STATE){
+				battery_low = 0;
 				gpio_set(LED_PORT_ERROR,LED_ERROR);
 				gpio_clear(LED_PORT,LED_IDLE_RUN);
 			}
 		}
 
-		//if the battery voltage is too low for about 10 min
-		//we have this interrupt every 0.5sec => we need to count to 1200
-		//and then turn OFF the robot
+		//if the battery voltage is too low for TICK_BATTERY_LOW time
+		//we turn OFF the robot
 		if(battery_low >= TICK_BATTERY_LOW){
 			platform_pwr_on(false);
 		}
