@@ -252,12 +252,22 @@ void DMA_ADC_ISR(void){
 
 				gpio_toggle(LED_PORT_ERROR,LED_ERROR);
 				gpio_set(LED_PORT,LED_IDLE_RUN);
+			}else if(actual_state == VERY_LOW_VOLTAGE_STATE){
+				//to continue to blink the led, even if we oscillate between
+				//the two states
+				gpio_toggle(LED_PORT_ERROR,LED_ERROR);
+				gpio_set(LED_PORT,LED_IDLE_RUN);
 			}
 		//RED led toggle
 		}else if(battery_voltage <= VERY_LOW_VOLTAGE){
 			future_state = VERY_LOW_VOLTAGE_STATE;
 			if(actual_state == VERY_LOW_VOLTAGE_STATE){
 				battery_low = 0;
+				gpio_toggle(LED_PORT_ERROR,LED_ERROR);
+				gpio_set(LED_PORT,LED_IDLE_RUN);
+			}else if(actual_state == MIN_VOLTAGE_STATE){
+				//to continue to blink the led, even if we oscillate between
+				//the two states
 				gpio_toggle(LED_PORT_ERROR,LED_ERROR);
 				gpio_set(LED_PORT,LED_IDLE_RUN);
 			}
