@@ -311,19 +311,35 @@ void TIM_ADC_ISR(void){
 
 	nb_adc_values = 0;
 
+	//The first channel to sample is the Vrefint
+	//Then we alternate the channel in the ADC interrupt
+	uint8_t channel[1] = {ADC_CHANNEL_VREFINT};
+	adc_set_regular_sequence(ADC_USED, 1, channel);
 	// //start the ADC sampling
-	nb_adc_values += NB_ADC_CHANNEL;
+	nb_adc_values++;
 	adc_start_conversion_regular(ADC_USED);
 }
 
-//after each conversion of the ADC, redo one aquisition
+//After each conversion of the ADC, redo one aquisition
 //if the dma buffer isn't full
 void ADC_USED_ISR(void){
+	static uint8_t channel[1];
 
-	//apparently taking several single shots is more accurate 
+	//Apparently taking several single shots is more accurate 
 	//than the continuous mode with the ADC
 	if(nb_adc_values < DMA_SIZE_ADC){
-		nb_adc_values += NB_ADC_CHANNEL;
+		//we need to reconfigure the sequence as doing a sequence of 2
+		//produces the same innaccuracy than the continuous mode
+		//if odd -> ADC_CHANNEL_BATT;
+		//if even -> ADC_CHANNEL_VREFINT
+	   	if(nb_adc_values % 2){
+	   		channel[0] = ADC_CHANNEL_BATT;
+	   	}else{
+	   		channel[0] = ADC_CHANNEL_VREFINT;
+	   	}
+	   	adc_set_regular_sequence(ADC_USED, 1, channel);
+
+		nb_adc_values++;
 		adc_start_conversion_regular(ADC_USED);
 	}
 }
@@ -443,6 +459,8 @@ void adc_battery_level_init(void){
 	 *  
 	 *  The sequence for the ADC measurements is Vrefint, then the battery.
 	 *  Everything is stocked in the same DMA buffer
+	 *  But instead of configuring a sequence of two measures,
+	 *  we alternate the channel to sample in the ADC interrupt and sample 1 channel at a time
 	 */ 
 	rcc_periph_clock_enable(RCC_ADC_USED);
 	rcc_periph_reset_pulse(RST_ADC_USED);
@@ -463,9 +481,8 @@ void adc_battery_level_init(void){
 
     adc_set_single_conversion_mode(ADC_USED);
 
-    //First we measure Vrefint, then the battery
-   	uint8_t channel[NB_ADC_CHANNEL] = {ADC_CHANNEL_VREFINT, ADC_CHANNEL_BATT};
-   	adc_set_regular_sequence(ADC_USED, NB_ADC_CHANNEL, channel);
+   	uint8_t channel[1] = {ADC_CHANNEL_VREFINT};
+   	adc_set_regular_sequence(ADC_USED, 1, channel);
 
    	adc_enable_dma(ADC_USED);
    	adc_set_dma_continue(ADC_USED);
