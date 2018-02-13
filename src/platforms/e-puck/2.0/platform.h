@@ -373,7 +373,7 @@ static inline int platform_hwversion(void)
 
 void platform_set_idle_state(uint8_t state);
 
-void platform_switch_monitor_to(uint8_t choice);
+void platform_switch_monitor_to(uint8_t choice, bool write);
 uint8_t platform_get_monitor_mode(void);
 
 void platform_set_en_esp32(bool assert);

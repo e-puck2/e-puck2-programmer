@@ -240,13 +240,9 @@ void DMA_ADC_ISR(void){
 			change_state = 0;
 		}
 
-		//RED led toggle + shutdown after TICK_BATTERY_LOW time
+		//RED toggle + shutdown after TICK_BATTERY_LOW time
 		if(battery_voltage <= MIN_VOLTAGE){
 			future_state = MIN_VOLTAGE_STATE;
-
-			//we count the battery_low only when we are sure 
-			//that we are not in a oscillation state between 
-			//VERY_LOW_VOLTAGE and LOW_VOLTAGE
 			if(actual_state == MIN_VOLTAGE_STATE){
 				battery_low++;
 
@@ -254,11 +250,11 @@ void DMA_ADC_ISR(void){
 				gpio_set(LED_PORT,LED_IDLE_RUN);
 			}else if(actual_state == VERY_LOW_VOLTAGE_STATE){
 				//to continue to blink the led, even if we oscillate between
-				//the two states
+				//MIN_VOLTAGE and VERY_LOW_VOLTAGE
 				gpio_toggle(LED_PORT_ERROR,LED_ERROR);
 				gpio_set(LED_PORT,LED_IDLE_RUN);
 			}
-		//RED led toggle
+		//RED toggle
 		}else if(battery_voltage <= VERY_LOW_VOLTAGE){
 			future_state = VERY_LOW_VOLTAGE_STATE;
 			if(actual_state == VERY_LOW_VOLTAGE_STATE){
@@ -267,7 +263,7 @@ void DMA_ADC_ISR(void){
 				gpio_set(LED_PORT,LED_IDLE_RUN);
 			}else if(actual_state == MIN_VOLTAGE_STATE){
 				//to continue to blink the led, even if we oscillate between
-				//the two states
+				//MIN_VOLTAGE and VERY_LOW_VOLTAGE
 				gpio_toggle(LED_PORT_ERROR,LED_ERROR);
 				gpio_set(LED_PORT,LED_IDLE_RUN);
 			}
@@ -537,7 +533,7 @@ uint8_t find_last_monitor_choice_flash(void){
 
 	uint32_t i = 0;
 
-	//checks the the flash to find variables with the pattern.
+	//checks the flash to find variables with the pattern.
 	//continues until it founds the last pattern written.
 	while(((uint32_t)(block + i) < config_end) && ((*(block + i) & 0xFFFFFFFC) == PATTERN_FLASH)){
 		last = block + i;
@@ -648,7 +644,7 @@ void platform_init(void)
 
 	//load the selected mode for the second serial over USB port
 	monitor_mode = find_last_monitor_choice_flash();
-	platform_switch_monitor_to(monitor_mode);
+	platform_switch_monitor_to(monitor_mode, false);
 
 }
 
@@ -656,7 +652,7 @@ void platform_set_idle_state(uint8_t state){
 	gpio_set_val(LED_PORT, LED_IDLE_RUN, !(state==1 && (pwrBtnState==ROBOT_ON)));
 }
 
-void platform_switch_monitor_to(uint8_t choice){
+void platform_switch_monitor_to(uint8_t choice, bool write){
 	if(choice == 1){//mode 1 : serial monitor with 407 and gdb over bluetooth
 		//disable CAN ASEBA
 		can_disable_irq(CAN_USED, CAN_IER_FMPIE0);
@@ -665,8 +661,9 @@ void platform_switch_monitor_to(uint8_t choice){
 		uartUsed = USBUSART_407;
 		monitor_mode = choice;
 
-		write_monitor_choice_to_flash(choice);
-
+		if(write){
+			write_monitor_choice_to_flash(choice);
+		}
 		//enable UART 407
 		usart_enable(USBUSART_407);
 		nvic_enable_irq(USBUSART_407_IRQ);
@@ -683,7 +680,9 @@ void platform_switch_monitor_to(uint8_t choice){
 		uartUsed = USBUSART_ESP;
 		monitor_mode = choice;
 
-		write_monitor_choice_to_flash(choice);
+		if(write){
+			write_monitor_choice_to_flash(choice);
+		}
 
 	}else if(choice == 3){//mode 3 : ASEBA USB-CAN translator and gdb over bluetooth
 		//disable UART 407
@@ -693,7 +692,9 @@ void platform_switch_monitor_to(uint8_t choice){
 		canUsed = true;
 		uartUsed = USBUSART_407;
 		monitor_mode = choice;
-		write_monitor_choice_to_flash(choice);
+		if(write){
+			write_monitor_choice_to_flash(choice);
+		}
 
 		//enable CAN ASEBA
 		can_enable_irq(CAN_USED, CAN_IER_FMPIE0);
@@ -757,13 +758,13 @@ bool platform_get_gpio0_esp32(void)
 
 void platform_pwr_on(bool on_state)
 {
-	if (on_state){
+	if (on_state && (pwrBtnState == ROBOT_OFF)){
 
 		pwrBtnState = ROBOT_ON;
 		adc_battery_level_init();
 		gpio_set(PWR_ON_PORT, PWR_ON_PIN);
 
-	}else{
+	}else if (!on_state && (pwrBtnState == ROBOT_ON)){
 
 		pwrBtnState = ROBOT_OFF;
 		adc_battery_level_stop();

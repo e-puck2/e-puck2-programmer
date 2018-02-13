@@ -144,13 +144,13 @@ static bool cmd_select_mode(target *t, int argc, const char **argv){
 	if (argc == 1)
 		gdb_outf("%s",error_message);
 	else if (strcmp(argv[1], "1") == 0){
-		platform_switch_monitor_to(1);
+		platform_switch_monitor_to(1, true);
 		gdb_outf("Switched to mode 1\n");
 	}else if (strcmp(argv[1], "2") == 0){
- 		platform_switch_monitor_to(2);
+ 		platform_switch_monitor_to(2, true);
 		gdb_outf("Switched to mode 2\n");
  	}else if (strcmp(argv[1], "3") == 0){
- 		platform_switch_monitor_to(3);
+ 		platform_switch_monitor_to(3, true);
 		gdb_outf("Switched to mode 3\n");
  	}else{
  		gdb_outf("%s",error_message);
