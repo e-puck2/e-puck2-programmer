@@ -421,7 +421,11 @@ static const struct usb_config_descriptor config = {
 };
 
 #if defined(STM32L0) || defined(STM32F3) || defined(STM32F4)
+#ifdef EPUCK2
+char serial_no[10] = "BADACCE55";
+#else
 char serial_no[13];
+#endif /* EPUCK2 */
 #else
 char serial_no[9];
 #endif
@@ -611,8 +615,9 @@ uint8_t usbd_control_buffer[256];
 void cdcacm_init(void)
 {
 	void exti15_10_isr(void);
-
+#ifndef EPUCK2
 	serialno_read(serial_no);
+#endif /* EPUCK2 */
 
 	usbdev = usbd_init(&USB_DRIVER, &dev, &config, usb_strings,
 			    sizeof(usb_strings)/sizeof(char *),
