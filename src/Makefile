@@ -4,6 +4,16 @@
 
 PROBE_HOST ?= native
 PLATFORM_DIR = platforms/$(PROBE_HOST)
+
+ifeq ($(PROBE_HOST),e-puck/2.0)
+#jumps to the makefile of the project instead of this one
+e-puck2:
+	cd $(PLATFORM_DIR) && make $(MAKEFLAGS)
+clean:
+	cd $(PLATFORM_DIR) && make $(MAKEFLAGS) clean
+else
+
+
 VPATH += $(PLATFORM_DIR) platforms/common target
 ENABLE_DEBUG ?=
 NO_JTAG ?= 0
@@ -106,6 +116,7 @@ clean:	host_clean
 	-$(Q)$(RM) -f *.o *.d *~ blackmagic $(HOSTFILES)
 	-$(Q)$(RM) -f platforms/*/*/*.o platforms/*/*/*.d	# e-puck platform's addition
 	-$(Q)$(RM) -f platforms/*/*.o platforms/*/*.d mapfile include/version.h
+	-$(Q)$(RM) -r platforms/*/*/.dep platforms/*/*/build
 
 all_platforms:
 	$(Q)set -e ;\
@@ -139,3 +150,5 @@ include/version.h: FORCE
 	fi; \
 
 -include *.d
+
+endif
