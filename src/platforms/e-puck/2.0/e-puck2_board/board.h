@@ -536,8 +536,8 @@
                                      PIN_ODR_HIGH(GPIOB_CHRG_USB_500) |     \
                                      PIN_ODR_HIGH(GPIOB_SWD_407_RESET) |    \
                                      PIN_ODR_HIGH(GPIOB_CHRG_USB_CHARGE) |  \
-                                     PIN_ODR_LOW(GPIOB_I2C1_SCL) |          \
-                                     PIN_ODR_LOW(GPIOB_I2C1_SDA) |          \
+                                     PIN_ODR_HIGH(GPIOB_I2C1_SCL) |          \
+                                     PIN_ODR_HIGH(GPIOB_I2C1_SDA) |          \
                                      PIN_ODR_HIGH(GPIOB_CAN1_RX) |          \
                                      PIN_ODR_HIGH(GPIOB_CAN1_TX) |          \
                                      PIN_ODR_HIGH(GPIOB_DFSDM_CLK) |        \

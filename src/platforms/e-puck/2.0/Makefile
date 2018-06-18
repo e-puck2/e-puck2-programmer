@@ -5,7 +5,12 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -O0 -ggdb -fomit-frame-pointer -falign-functions=16
+  USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16
+
+  USE_OPT += -fno-strict-aliasing
+
+  # Protection against stack overflows
+  # USE_OPT += -fstack-protector-all -L .
 endif
 
 # C specific options here (added to USE_OPT).
@@ -25,7 +30,7 @@ endif
 
 # Linker extra options here.
 ifeq ($(USE_LDOPT),)
-  USE_LDOPT = 
+  USE_LDOPT = -lm
 endif
 
 # Enable this if you want link time optimizations (LTO)
@@ -71,7 +76,7 @@ endif
 
 # Enables the use of FPU (no, softfp, hard).
 ifeq ($(USE_FPU),)
-  USE_FPU = no
+  USE_FPU = hard
 endif
 
 #
@@ -83,10 +88,10 @@ endif
 #
 
 # Define project name here
-PROJECT = ch
+PROJECT = e-puck2_programmer
 
 # Imported source files and paths
-CHIBIOS = ../../../..
+CHIBIOS = ../../../../ChibiOS
 
 # Licensing files.
 include $(CHIBIOS)/os/license/license.mk
@@ -95,7 +100,7 @@ include $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f4xx.m
 # HAL-OSAL files (optional).
 include $(CHIBIOS)/os/hal/hal.mk
 include $(CHIBIOS)/os/hal/ports/STM32/STM32F4xx/platform.mk
-include $(CHIBIOS)/os/hal/boards/OLIMEX_STM32_E407/board.mk
+include ./e-puck2_board/board.mk
 include $(CHIBIOS)/os/hal/osal/rt/osal.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
@@ -108,7 +113,7 @@ include $(CHIBIOS)/os/hal/lib/streams/streams.mk
 include $(CHIBIOS)/os/various/shell/shell.mk
 
 # Define linker script file here
-LDSCRIPT= $(STARTUPLD)/STM32F407xG.ld
+LDSCRIPT= ./STM32F413CGUx.ld
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.

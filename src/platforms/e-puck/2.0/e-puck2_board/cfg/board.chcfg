@@ -201,7 +201,7 @@
       <pin6
         ID="I2C1_SCL"
         Type="OpenDrain"
-        Level="Low"
+        Level="High"
         Speed="Maximum"
         Resistor="Floating"
         Mode="Alternate"
@@ -209,7 +209,7 @@
       <pin7
         ID="I2C1_SDA"
         Type="OpenDrain"
-        Level="Low"
+        Level="High"
         Speed="Maximum"
         Resistor="Floating"
         Mode="Alternate"

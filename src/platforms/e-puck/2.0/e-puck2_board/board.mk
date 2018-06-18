@@ -1,8 +1,8 @@
 # List of all the board related files.
-BOARDSRC = $(CHIBIOS)/test_usb_413/e-puck2_programmer/board.c
+BOARDSRC = ./e-puck2_board/board.c
 
 # Required include directories
-BOARDINC = $(CHIBIOS)/test_usb_413/e-puck2_programmer/
+BOARDINC = ./e-puck2_board/
 
 # Shared variables
 ALLCSRC += $(BOARDSRC)
