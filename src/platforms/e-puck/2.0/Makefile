@@ -119,7 +119,7 @@ LDSCRIPT= ./STM32F413CGUx.ld
 # setting.
 CSRC = $(ALLCSRC) \
        $(TESTSRC) \
-       usbcfg.c platform.c
+       usbcfg.c platform.c ../USB251XB/USB251XB.c i2c_bus.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -149,7 +149,7 @@ TCPPSRC =
 ASMSRC = $(ALLASMSRC)
 ASMXSRC = $(ALLXASMSRC)
 
-INCDIR = $(ALLINC) $(TESTINC)
+INCDIR = $(ALLINC) $(TESTINC) ../USB251XB
 
 #
 # Project, sources and paths
@@ -199,7 +199,7 @@ CPPWARN = -Wall -Wextra -Wundef
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS =
+UDEFS = -DEPUCK2_CHIBIOS
 
 # Define ASM defines here
 UADEFS =
