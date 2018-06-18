@@ -8,6 +8,8 @@
 #include "chprintf.h"
 
 #include "usbcfg.h"
+#include <i2c_bus.h>
+#include <USB251XB.h>
 
 void panic_handler(const char *reason)
 {
@@ -52,6 +54,9 @@ int main(void) {
    */
   halInit();
   chSysInit();
+
+  i2c_start();
+  USB251XB_init(USB2512B);
 
   /*
    * Initializes two serial-over-USB CDC drivers.
