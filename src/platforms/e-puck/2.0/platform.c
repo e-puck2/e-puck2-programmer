@@ -8,7 +8,7 @@
 #include "chprintf.h"
 
 #include "usbcfg.h"
-#include <i2c_bus.h>
+#include <i2c_smbus.h>
 #include <USB251XB.h>
 
 void panic_handler(const char *reason)
@@ -55,7 +55,7 @@ int main(void) {
   halInit();
   chSysInit();
 
-  i2c_start();
+  i2c_smbus_start();
   USB251XB_init(USB2512B);
 
   /*

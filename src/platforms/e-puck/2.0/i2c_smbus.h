@@ -7,18 +7,18 @@ extern "C" {
 
 #include <hal.h>
 
-#define I2C_MAX_SEQUENTIAL_WRITE	20
+#define I2C_MAX_SEQUENTIAL_WRITE	20	//bytes
 
 #define I2C_ERROR 					1
 /**
  * @brief Starts the I2C interface
  */
-void i2c_start(void);
+void i2c_smbus_start(void);
 
 /**
  * @brief Stops the I2C module	
  */
-void i2c_stop(void);
+void i2c_smbus_stop(void);
 
 /**
  * @brief 	Gets the last I2C error

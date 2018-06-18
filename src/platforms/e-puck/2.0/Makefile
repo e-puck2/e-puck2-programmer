@@ -119,7 +119,7 @@ LDSCRIPT= ./STM32F413CGUx.ld
 # setting.
 CSRC = $(ALLCSRC) \
        $(TESTSRC) \
-       usbcfg.c platform.c ../USB251XB/USB251XB.c i2c_bus.c
+       usbcfg.c platform.c ../USB251XB/USB251XB.c i2c_smbus.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.

@@ -9,7 +9,7 @@
 #include <../USB251XB/USB251XB.h>
 #ifdef EPUCK2_CHIBIOS
 	#include <hal.h>
-	#include <i2c_bus.h>
+	#include <i2c_smbus.h>
 #else
 	#include <../USB251XB/SMBus.h>
 #endif

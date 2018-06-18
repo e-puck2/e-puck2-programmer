@@ -1,6 +1,6 @@
 #include <hal.h>
 #include <ch.h>
-#include "i2c_bus.h"
+#include "i2c_smbus.h"
 
 static i2cflags_t errors = 0;
 static systime_t timeout = TIME_MS2I(4); // 4 ms
@@ -8,7 +8,7 @@ static systime_t timeout = TIME_MS2I(4); // 4 ms
 static uint8_t txbuf[I2C_MAX_SEQUENTIAL_WRITE+2];
 static uint8_t rxbuf[I2C_MAX_SEQUENTIAL_WRITE+1];
 
-void i2c_start(void) {
+void i2c_smbus_start(void) {
 
 	if(I2CD1.state != I2C_STOP) {
 		return;
@@ -39,7 +39,7 @@ void i2c_start(void) {
     i2cStart(&I2CD1, &i2c_cfg1);
 }
 
-void i2c_stop(void) {
+void i2c_smbus_stop(void) {
 	i2cStop(&I2CD1);
 }
 
@@ -66,8 +66,8 @@ int8_t write_reg_multi(uint8_t addr, uint8_t reg, uint8_t* buf, uint8_t len) {
 		if (status != MSG_OK){
 			errors = i2cGetErrors(&I2CD1);
 			if(I2CD1.state == I2C_LOCKED){
-				i2c_stop();
-				i2c_start();
+				i2c_smbus_stop();
+				i2c_smbus_start();
 			}
 			i2cReleaseBus(&I2CD1);
 			return status;
@@ -93,8 +93,8 @@ int8_t read_reg_multi(uint8_t addr, uint8_t reg, uint8_t *buf, uint8_t len) {
 		if (status != MSG_OK){
 			errors = i2cGetErrors(&I2CD1);
 			if(I2CD1.state == I2C_LOCKED){
-				i2c_stop();
-				i2c_start();
+				i2c_smbus_stop();
+				i2c_smbus_start();
 			}
 			i2cReleaseBus(&I2CD1);
 			return status;
