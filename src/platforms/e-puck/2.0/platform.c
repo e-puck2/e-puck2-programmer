@@ -4,6 +4,7 @@
 #include <platform.h>
 
 #include <usb_hub.h>
+#include <power_button.h>
 
 static THD_WORKING_AREA(test_thd_wa, 256);
 static THD_FUNCTION(test_thd, arg)
@@ -36,6 +37,11 @@ int main(void) {
 	*/
 	halInit();
 	chSysInit();
+
+	/*
+	* Starts the handling of the power button
+	*/
+	powerButtonStart();
 
 	/*
 	* Initializes two serial-over-USB CDC drivers and starts and connects the USB.
