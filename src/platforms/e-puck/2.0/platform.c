@@ -1,17 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <ch.h>
-#include <hal.h>
-
-#include <shell.h>
-#include <chprintf.h>
-
 #include <platform.h>
 
-#include <usbcfg.h>
-#include <i2c_smbus.h>
-#include <USB251XB.h>
+#include <usb_hub.h>
 
 void panic_handler(const char *reason)
 {
@@ -25,39 +17,6 @@ void panic_handler(const char *reason)
 
     }
 }
-
-static THD_WORKING_AREA(usb_hub_thd_wa, 128);
-static THD_FUNCTION(usb_hub_thd, arg)
-{
-  (void) arg;
-  bool hub_state = NOT_CONFIGURED;
-
-  /* Enabling events on both edges of the button line.*/
-  palEnableLineEvent(LINE_VBUS_DET, PAL_EVENT_MODE_BOTH_EDGES);
-  //init the first time the hub
-  USB251XB_init(USB2512B);
-  hub_state = CONFIGURED;
-
-  while(1){
-    //waiting until an event on the line is detected
-    palWaitLineTimeout(LINE_VBUS_DET, TIME_INFINITE);
-    //wait a few moments to be sure the interruption was not triggered
-    //by a glitch and then test the GPIO
-    //also wait for the USB HUB to be running
-    chThdSleepMilliseconds(DEBOUNCE_TIME_VBUS_DET_MS);
-
-    if(palReadLine(LINE_VBUS_DET)){
-      if(hub_state == NOT_CONFIGURED){
-        USB251XB_init(USB2512B);
-        hub_state = CONFIGURED;
-      }
-      
-    }else{
-      hub_state = NOT_CONFIGURED;
-    }
-  }
-}
-
 
 
 static THD_WORKING_AREA(test_thd_wa, 256);
@@ -92,12 +51,10 @@ int main(void) {
   halInit();
   chSysInit();
 
-  //SMBUS init
-  i2c_smbus_start();
-
-  //Vbus detection init. Used to configure the USB Hub when we detect an USB cable
-  chThdCreateStatic(usb_hub_thd_wa, sizeof(usb_hub_thd_wa), NORMALPRIO, usb_hub_thd, NULL);
-  
+  /*
+  * Starts the thread managing the USB hub
+  */
+  usb_hub_start();
   /*
    * Initializes two serial-over-USB CDC drivers.
    */

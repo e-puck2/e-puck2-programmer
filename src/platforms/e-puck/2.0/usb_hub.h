@@ -1,0 +1,14 @@
+#ifndef USB_HUB_H
+#define USB_HUB_H
+
+#include <platform.h>
+
+#define DEBOUNCE_TIME_VBUS_DET_MS	100
+
+/**
+ * @brief 	Starts the thread which configures the  
+ * 			USB Hub each time a cable connection is detected.
+ */	
+void usb_hub_start(void);
+
+#endif  /* USB_HUB_H */
