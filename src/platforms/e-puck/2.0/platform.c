@@ -5,20 +5,6 @@
 
 #include <usb_hub.h>
 
-void panic_handler(const char *reason)
-{
-    (void)reason;
-
-    palClearLine(LINE_LED_GREEN);
-    palClearLine(LINE_LED_RED);
-    palClearLine(LINE_LED_BLUE);
-  
-    while (true) {
-
-    }
-}
-
-
 static THD_WORKING_AREA(test_thd_wa, 256);
 static THD_FUNCTION(test_thd, arg)
 {
