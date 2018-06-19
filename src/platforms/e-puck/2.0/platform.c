@@ -52,26 +52,14 @@ int main(void) {
   chSysInit();
 
   /*
+  * Initializes two serial-over-USB CDC drivers and starts and connects the USB.
+  */
+  usb_serial_start();
+
+  /*
   * Starts the thread managing the USB hub
   */
   usb_hub_start();
-  /*
-   * Initializes two serial-over-USB CDC drivers.
-   */
-  sduObjectInit(&SDU1);
-  sduStart(&SDU1, &serusbcfg1);
-  sduObjectInit(&SDU2);
-  sduStart(&SDU2, &serusbcfg2);
-
-  /*
-   * Activates the USB driver and then the USB bus pull-up on D+.
-   * Note, a delay is inserted in order to not have to disconnect the cable
-   * after a reset.
-   */
-  usbDisconnectBus(serusbcfg1.usbp);
-  chThdSleepMilliseconds(1500);
-  usbStart(serusbcfg1.usbp, &usbcfg);
-  usbConnectBus(serusbcfg1.usbp);
 
   chThdCreateStatic(test_thd_wa, sizeof(test_thd_wa), NORMALPRIO, test_thd, NULL);
 

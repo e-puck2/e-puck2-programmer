@@ -511,3 +511,23 @@ const SerialUSBConfig serusbcfg2 = {
   USB_DATA_AVAILABLE_EP_B,
   USB_INTERRUPT_REQUEST_EP_B
 };
+
+void usb_serial_start(void){
+  /*
+   * Initializes two serial-over-USB CDC drivers.
+   */
+  sduObjectInit(&SDU1);
+  sduStart(&SDU1, &serusbcfg1);
+  sduObjectInit(&SDU2);
+  sduStart(&SDU2, &serusbcfg2);
+
+  /*
+   * Activates the USB driver and then the USB bus pull-up on D+.
+   * Note, a delay is inserted in order to not have to disconnect the cable
+   * after a reset.
+   */
+  usbDisconnectBus(serusbcfg1.usbp);
+  chThdSleepMilliseconds(1500);
+  usbStart(serusbcfg1.usbp, &usbcfg);
+  usbConnectBus(serusbcfg1.usbp);
+}
