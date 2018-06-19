@@ -28,4 +28,10 @@ uint8_t isPowerButtonPressed(void);
  */
 void powerButtonTurnOnOff(uint8_t state);
 
+/**
+ * @brief Turns ON or OFF the robot. To be called from an interrupt context
+ * @param state POWER_ON or POWER_OFF
+ */
+void powerButtonTurnOnOffI(uint8_t state);
+
 #endif  /* POWER_BUTTON_H */

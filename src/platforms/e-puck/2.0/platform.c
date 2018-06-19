@@ -5,6 +5,7 @@
 
 #include <usb_hub.h>
 #include <power_button.h>
+#include <leds.h>
 
 static THD_WORKING_AREA(test_thd_wa, 256);
 static THD_FUNCTION(test_thd, arg)
@@ -43,6 +44,8 @@ int main(void) {
 	*/
 	powerButtonStart();
 
+	ledInit();
+
 	/*
 	* Initializes two serial-over-USB CDC drivers and starts and connects the USB.
 	*/
@@ -56,13 +59,21 @@ int main(void) {
 	chThdCreateStatic(test_thd_wa, sizeof(test_thd_wa), NORMALPRIO, test_thd, NULL);
 
 	while (true) {
-		static systime_t time_before = 0;
-		static systime_t time = 0;
-		time_before = time;
-		time = chVTGetSystemTime();
+		// static systime_t time_before = 0;
+		// static systime_t time = 0;
+		// time_before = time;
+		// time = chVTGetSystemTime();
 
-		chprintf((BaseSequentialStream *) &SDU1,"hello 1 %d\n",time-time_before);
-		palToggleLine(LINE_LED_RED);
-		chThdSleepMilliseconds(1);
+		// chprintf((BaseSequentialStream *) &SDU1,"hello 1 %d\n",time-time_before);
+		chThdSleepMilliseconds(10);
+		static int16_t value = 0;
+		static int8_t coeff = 10;
+		setLed(RED_LED, (value)/2);
+		setLed(BLUE_LED, 1000-value);
+		value+=coeff;
+		if(value>1000 || value < 1){
+			coeff *=-1;
+			value+=2*coeff;
+		}
 	}
 }

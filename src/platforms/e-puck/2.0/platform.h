@@ -11,4 +11,6 @@
 #define CONFIGURED		1
 #define NOT_CONFIGURED	0
 
+#define PWM_LED			PWMD3
+
 #endif /* __PLATFORM_H */

@@ -125,7 +125,8 @@ CSRC = $(ALLCSRC) \
        ../USB251XB/USB251XB.c\
        i2c_smbus.c \
        usb_hub.c \
-       power_button.c
+       power_button.c \
+       leds.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.

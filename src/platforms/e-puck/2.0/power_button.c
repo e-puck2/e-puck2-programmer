@@ -1,6 +1,7 @@
 
 #include <platform.h>
 #include <power_button.h>
+#include <leds.h>
 
 static virtual_timer_t power_timer;
 static uint8_t power_state = POWER_OFF;
@@ -15,7 +16,9 @@ static uint8_t power_state = POWER_OFF;
 void powerButtonCb(void* par){
 	uint8_t choice = (uint32_t)par;
 
-	powerButtonTurnOnOff(choice);
+	chSysLockFromISR();
+	powerButtonTurnOnOffI(choice);
+	chSysUnlockFromISR();
 	
 }
 
@@ -65,13 +68,19 @@ uint8_t isPowerButtonPressed(void){
 }
 
 void powerButtonTurnOnOff(uint8_t state){
+	osalSysLock();
+	powerButtonTurnOnOffI(state);
+	osalSysUnlock();
+}
+
+void powerButtonTurnOnOffI(uint8_t state){
 	if(state == POWER_ON){
 		power_state = POWER_ON;
 		palSetLine(LINE_PWR_ON_OUT);
-		palClearLine(LINE_LED_GREEN);
+		setLedI(GREEN_LED, LED_MID_POWER);
 	}else{
 		power_state = POWER_OFF;
 		palClearLine(LINE_PWR_ON_OUT);
-		palSetLine(LINE_LED_GREEN);
+		setLedI(GREEN_LED, LED_OFF);
 	}
 }
