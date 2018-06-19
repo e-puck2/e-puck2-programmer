@@ -9,6 +9,6 @@
  * @brief 	Starts the thread which configures the  
  * 			USB Hub each time a cable connection is detected.
  */	
-void usb_hub_start(void);
+void usbHubStart(void);
 
 #endif  /* USB_HUB_H */

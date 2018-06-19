@@ -26,7 +26,7 @@ extern SerialUSBDriver SDU2;
 /*
 * Initializes two serial-over-USB CDC drivers and starts and connects the USB.
 */
-void usb_serial_start(void);
+void usbSerialStart(void);
 
 #endif  /* USBCFG_H */
 

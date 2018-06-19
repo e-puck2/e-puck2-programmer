@@ -512,7 +512,7 @@ const SerialUSBConfig serusbcfg2 = {
   USB_INTERRUPT_REQUEST_EP_B
 };
 
-void usb_serial_start(void){
+void usbSerialStart(void){
   /*
    * Initializes two serial-over-USB CDC drivers.
    */
