@@ -274,8 +274,8 @@ static const USBDescriptor vcom_strings[] = {
   {sizeof vcom_string1, vcom_string1},
   {sizeof vcom_string2, vcom_string2},
   {sizeof vcom_string3, vcom_string3},
-  {sizeof vcom_string3, vcom_string4},
-  {sizeof vcom_string3, vcom_string5}
+  {sizeof vcom_string4, vcom_string4},
+  {sizeof vcom_string5, vcom_string5}
 };
 
 /*
@@ -527,7 +527,7 @@ void usbSerialStart(void){
    * after a reset.
    */
   usbDisconnectBus(serusbcfg1.usbp);
-  chThdSleepMilliseconds(1500);
+  chThdSleepMilliseconds(100);
   usbStart(serusbcfg1.usbp, &usbcfg);
   usbConnectBus(serusbcfg1.usbp);
 }
