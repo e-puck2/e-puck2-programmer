@@ -17,16 +17,50 @@
 #ifndef USBCFG_H
 #define USBCFG_H
 
+#define USB_DATA_SIZE                   0x40
+
+typedef enum{
+    GDB_INTERFACE = 0,
+    SERIAL_INTERFACE,
+    NUM_INTERFACES,
+}interface_name_t;
+
+typedef enum{
+    CONTROL_LINE_RTS = 0,
+    CONTROL_LINE_DTR,
+    NUM_CONTROL_LINE,
+}control_line_t;
+
+
 extern const USBConfig usbcfg;
-extern SerialUSBConfig serusbcfg1;
-extern SerialUSBConfig serusbcfg2;
+extern const SerialUSBConfig serusbcfg1;
+extern const SerialUSBConfig serusbcfg2;
 extern SerialUSBDriver SDU1;
 extern SerialUSBDriver SDU2;
+
+#define GDB_COM         SDU1
+#define SERIAL_COM      SDU2
 
 /*
 * Initializes two serial-over-USB CDC drivers and starts and connects the USB.
 */
 void usbSerialStart(void);
+
+/**
+ * @brief Returns if the USB is configured or not
+ * @return 1 or 0
+ */
+uint8_t isUSBConfigured(void);
+
+/**
+ * @brief   Returns the state of the selected controle line of the selected interface
+ * 
+ * @param interface     See interface_name_t
+ * @param rts_dtr       See control_line_object_t
+ * 
+ * @return              The state desired
+ */
+uint8_t getControlLineState(interface_name_t interface, control_line_t rts_dtr);
 
 #endif  /* USBCFG_H */
 

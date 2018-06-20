@@ -15,6 +15,7 @@
 */
 
 #include "hal.h"
+#include "usbcfg.h"
 
 /*
  * Virtual serial ports over USB.
@@ -36,7 +37,6 @@ SerialUSBDriver SDU2;
 #define USB_INTERRUPT_REQUEST_EP_B      4
 
 #define USB_INTERRUPT_REQUEST_SIZE      0x10
-#define USB_DATA_SIZE                   0x40
 
 /*
  * Interfaces
@@ -50,6 +50,25 @@ SerialUSBDriver SDU2;
 #define USB_NUM_STRINGS                 6
 #define USB_INDEX_STRING_SERIAL_A       4
 #define USB_INDEX_STRING_SERIAL_B       5
+
+typedef struct{
+  uint8_t cdc_cif_num0_dtr;
+  uint8_t cdc_cif_num0_rts;
+  uint8_t cdc_cif_num1_dtr;
+  uint8_t cdc_cif_num1_rts;
+}control_line_states_t;
+
+static control_line_states_t control_line_states = {
+  0,0,0,0
+};
+
+/*
+ * Current Line Coding.
+ */
+static cdc_linecoding_t linecoding = {
+  {0x00, 0x96, 0x00, 0x00},             /* 38400.                           */
+  LC_STOP_1, LC_PARITY_NONE, 8
+};
 
 /*
  * USB Device Descriptor.
@@ -466,7 +485,36 @@ static bool requests_hook(USBDriver *usbp) {
     usbSetupTransfer(usbp, NULL, 0, NULL);
     return true;
   }
-  return sduRequestsHook(usbp);
+
+  if ((usbp->setup[0] & USB_RTYPE_TYPE_MASK) == USB_RTYPE_TYPE_CLASS) {
+    switch (usbp->setup[1]) {
+    case CDC_GET_LINE_CODING:
+      usbSetupTransfer(usbp, (uint8_t *)&linecoding, sizeof(linecoding), NULL);
+      return true;
+    case CDC_SET_LINE_CODING:
+      usbSetupTransfer(usbp, (uint8_t *)&linecoding, sizeof(linecoding), NULL);
+      return true;
+    case CDC_SET_CONTROL_LINE_STATE:
+        switch(usbp->setup[4]){
+          case USB_CDC_CIF_NUM0:
+            control_line_states.cdc_cif_num0_dtr = (usbp->setup[2] & 1) ? TRUE : FALSE;
+            control_line_states.cdc_cif_num0_rts = (usbp->setup[2] & 2) ? TRUE : FALSE;
+            return TRUE;
+          case USB_CDC_CIF_NUM1:
+            control_line_states.cdc_cif_num1_dtr = (usbp->setup[2] & 1) ? TRUE : FALSE;
+            control_line_states.cdc_cif_num1_rts = (usbp->setup[2] & 2) ? TRUE : FALSE;
+            uint8_t enable = (!control_line_states.cdc_cif_num1_rts || control_line_states.cdc_cif_num1_dtr) ? PAL_HIGH : PAL_LOW;
+            uint8_t gpio0 =  (control_line_states.cdc_cif_num1_rts || !control_line_states.cdc_cif_num1_dtr) ? PAL_HIGH : PAL_LOW;
+            palWriteLine(LINE_ESP32_EN, enable);
+            palWriteLine(LINE_ESP_GPIO0, gpio0);
+            return TRUE;
+        }
+    default:
+      return false;
+    }
+  }
+  //return sduRequestsHook(usbp);
+  return false;
 }
 
 /*
@@ -530,4 +578,25 @@ void usbSerialStart(void){
   chThdSleepMilliseconds(100);
   usbStart(serusbcfg1.usbp, &usbcfg);
   usbConnectBus(serusbcfg1.usbp);
+}
+
+uint8_t isUSBConfigured(void){
+  return (SDU1.config->usbp->state == USB_ACTIVE) ? 1 : 0;
+}
+
+uint8_t getControlLineState(interface_name_t interface, control_line_t rts_dtr){
+  if(interface == GDB_INTERFACE){
+    if(rts_dtr == CONTROL_LINE_RTS){
+      return control_line_states.cdc_cif_num0_rts;
+    }else if(rts_dtr == CONTROL_LINE_DTR){
+      return control_line_states.cdc_cif_num0_dtr;
+    }
+  }else if(interface == SERIAL_INTERFACE){
+    if(rts_dtr == CONTROL_LINE_RTS){
+      return control_line_states.cdc_cif_num1_rts;
+    }else if(rts_dtr == CONTROL_LINE_DTR){
+      return control_line_states.cdc_cif_num1_dtr;
+    }
+  }
+  return 0;
 }
