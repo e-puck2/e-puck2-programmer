@@ -28,6 +28,11 @@ static THD_FUNCTION(test_thd, arg)
 
 int main(void) {
 
+	/**
+	 * @brief 	Special function to handle the turn on if we pressed the button without
+	 * 			the usb cable plugged. Called before everything to catch the button pressed.
+	 */
+	powerButtonStartSequence();
 
 	/*
 	* System initializations.
@@ -44,6 +49,9 @@ int main(void) {
 	*/
 	powerButtonStart();
 
+	/*
+	*	Starts the PWM managing the leds
+	*/
 	ledInit();
 
 	/*

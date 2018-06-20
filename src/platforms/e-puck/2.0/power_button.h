@@ -10,6 +10,15 @@
 #define POWER_BUTTON_DURATION_MS_TO_TURN_OFF	500
 
 /**
+ * @brief 	Function used to turn ON the robot if the button is pressed
+ * 			and if the USB connexion is not plugged->when we want to turn on the robot, without the USB.
+ * 			
+ * 			Need to be called before everything in the main (even halInit) in order to catch 
+ * 			correctly the button pressed and not miss it because the system init took to much time.
+ */	
+void powerButtonStartSequence(void);
+
+/**
  * @brief 	Starts the thread managing the button to turn on and off
  * 			the robot.
  */	

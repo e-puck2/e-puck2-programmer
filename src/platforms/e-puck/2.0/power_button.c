@@ -28,11 +28,6 @@ static THD_FUNCTION(power_button_thd, arg)
 
 	(void) arg;
 
-	if(isPowerButtonPressed()){
-		//turn on the robot if we pressed the button and there is no USB connexion
-		powerButtonTurnOnOff(POWER_ON);
-	}
-
 	/* Enabling events on both edges of the button line.*/
 	palEnableLineEvent(LINE_PWR_ON_BTN, PAL_EVENT_MODE_BOTH_EDGES);
 
@@ -61,6 +56,19 @@ void powerButtonStart(void){
 	chVTObjectInit(&power_timer);
 
 	chThdCreateStatic(power_button_thd_wa, sizeof(power_button_thd_wa), NORMALPRIO, power_button_thd, NULL);
+}
+
+void powerButtonStartSequence(void){
+
+	/* 	we don't need to configure the GPIOs because it is done in _early_init which
+		is called before the main */
+
+	if(isPowerButtonPressed()){
+		//turn on the robot if we pressed the button and there is no USB connexion
+		//need to use the interrupt version because chibiOS isn't initialized yet so
+		//calls to chSysLock() won't work
+		powerButtonTurnOnOffI(POWER_ON);
+	}
 }
 
 uint8_t isPowerButtonPressed(void){
