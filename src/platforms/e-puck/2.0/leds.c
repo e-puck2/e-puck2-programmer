@@ -8,6 +8,8 @@
 
 static uint8_t pwm_status = NOT_CONFIGURED;
 
+static uint16_t leds_init_values[NUM_LEDS] = {0};
+
 ////////////////////////////////// PRIVATE FUNCTIONS ////////////////////////////////////
 
 /**
@@ -81,7 +83,8 @@ void ledInit(void){
 	pwmEnablePeriodicNotification(&PWM_LED);
 	
 	//enables and disables otherwise we have a kernel panic when trying to disable
-	//if it has never been enabled
+	//if it has never been enabled. This occurs if for example the first value we set with setLed() 
+	//is 0.
 	pwmEnableChannel(&PWM_LED, RED_LED, PWM_PERIOD);
 	pwmEnableChannelNotification(&PWM_LED, RED_LED);
 	pwmDisableChannelNotification(&PWM_LED, RED_LED);
@@ -93,7 +96,14 @@ void ledInit(void){
 	pwmEnableChannel(&PWM_LED, BLUE_LED, PWM_PERIOD);
 	pwmEnableChannelNotification(&PWM_LED, BLUE_LED);
 	pwmDisableChannelNotification(&PWM_LED, BLUE_LED);
+
 	pwm_status = CONFIGURED;
+
+	//sets the init values. 
+	//For example if someone tried to set a led before the pwm was configured
+	setLed(RED_LED, leds_init_values[RED_LED]);
+	setLed(GREEN_LED, leds_init_values[GREEN_LED]);
+	setLed(BLUE_LED, leds_init_values[BLUE_LED]);
 }
 
 void setLed(led_name_t led, uint16_t value){
@@ -128,5 +138,8 @@ void setLedI(led_name_t led, uint16_t value){
 
 		}
 		
+	}else{
+		//stored the value while the PWM is not running
+		leds_init_values[led] = value;
 	}
 }
