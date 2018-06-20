@@ -7,7 +7,7 @@ PLATFORM_DIR = platforms/$(PROBE_HOST)
 
 ifeq ($(PROBE_HOST),e-puck/2.0)
 #jumps to the makefile of the project instead of this one
-e-puck2:
+all:
 	cd $(PLATFORM_DIR) && make $(MAKEFLAGS)
 clean:
 	cd $(PLATFORM_DIR) && make $(MAKEFLAGS) clean
