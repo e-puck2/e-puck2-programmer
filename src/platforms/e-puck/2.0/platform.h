@@ -12,5 +12,6 @@
 #define NOT_CONFIGURED	0
 
 #define PWM_LED			PWMD3
+#define I2C_SMBUS		I2CD1
 
 #endif /* __PLATFORM_H */
