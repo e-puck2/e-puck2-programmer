@@ -22,6 +22,9 @@
 
 #include <stdio.h>
 
+#include "ch.h"
+#include "hal.h"
+
 #include "general.h"
 #include "jtagtap.h"
 #include "gdb_packet.h"
@@ -44,7 +47,7 @@ void jtagtap_reset(void)
 	if (platform_hwversion() == 0) {
 		volatile int i;
 		gpio_clear(TRST_PORT, TRST_PIN);
-		for(i = 0; i < 10000; i++) asm("nop");
+		chThdSleepMilliseconds(1);
 		gpio_set(TRST_PORT, TRST_PIN);
 	}
 #endif
