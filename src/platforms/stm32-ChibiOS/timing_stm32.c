@@ -19,38 +19,39 @@
 #include "general.h"
 #include "morse.h"
 
-#include <libopencm3/cm3/systick.h>
-#include <libopencm3/cm3/scb.h>
+#include "ch.h"
+#include "hal.h"
 
 uint8_t running_status;
-static volatile uint32_t time_ms;
+static volatile uint32_t time_ms = 0;;
+
+static THD_WORKING_AREA(sys_tick_thd_wa, 128);
+static THD_FUNCTION(sys_tick_thd, arg)
+{
+	(void) arg;
+
+	while(1){
+		chThdSleepMilliseconds(100);
+
+		if(running_status)
+			palTogglePad(LED_PORT, LED_IDLE_RUN);
+
+		time_ms += 100;
+
+		SET_ERROR_STATE(morse_update());
+	}
+}
 
 void platform_timing_init(void)
 {
 	/* Setup heartbeat timer */
-	systick_set_clocksource(STK_CSR_CLKSOURCE_AHB_DIV8);
-	systick_set_reload(900000);	/* Interrupt us at 10 Hz */
-	SCB_SHPR(11) &= ~((15 << 4) & 0xff);
-	SCB_SHPR(11) |= ((14 << 4) & 0xff);
-	systick_interrupt_enable();
-	systick_counter_enable();
+	chThdCreateStatic(sys_tick_thd_wa, sizeof(sys_tick_thd_wa), NORMALPRIO, sys_tick_thd, NULL);
+
 }
 
 void platform_delay(uint32_t ms)
 {
-	platform_timeout timeout;
-	platform_timeout_set(&timeout, ms);
-	while (!platform_timeout_is_expired(&timeout));
-}
-
-void sys_tick_handler(void)
-{
-	if(running_status)
-		gpio_toggle(LED_PORT, LED_IDLE_RUN);
-
-	time_ms += 100;
-
-	SET_ERROR_STATE(morse_update());
+	chThdSleepMilliseconds(ms);
 }
 
 uint32_t platform_time_ms(void)
