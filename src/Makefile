@@ -7,10 +7,22 @@ PLATFORM_DIR = platforms/$(PROBE_HOST)
 
 ifeq ($(PROBE_HOST),e-puck/2.0)
 #jumps to the makefile of the project instead of this one
-all:
+.PHONY : include/version.h
+
+all: include/version.h
 	cd $(PLATFORM_DIR) && make $(MAKEFLAGS)
 clean:
 	cd $(PLATFORM_DIR) && make $(MAKEFLAGS) clean
+
+include/version.h:
+	@echo "  GIT     include/version.h"
+	@echo "#define FIRMWARE_VERSION \"`git describe --always --dirty`\"" > $@.checked
+	@if ! diff "$@" "$@.checked" > /dev/null; then \
+	    mv $@.checked $@; \
+	else \
+			rm $@.checked; \
+	fi; 
+
 else
 
 
