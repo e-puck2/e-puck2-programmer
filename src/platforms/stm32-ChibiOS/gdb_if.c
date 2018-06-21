@@ -23,118 +23,80 @@
  * uses the USB CDC-ACM device bulk endpoints to implement the channel.
  */
 #include "general.h"
-#include "cdcacm.h"
 #include "gdb_if.h"
-#include <libopencm3/stm32/usart.h>
-#include "timing_stm32.h"
+#include "usbcfg.h"
 
 static uint32_t count_out;
 static uint32_t count_in;
 static uint32_t out_ptr;
-static uint8_t buffer_out[CDCACM_PACKET_SIZE];
-static uint8_t buffer_in[CDCACM_PACKET_SIZE];
+static uint8_t buffer_out[USB_DATA_SIZE];
+static uint8_t buffer_in[USB_DATA_SIZE];
 #ifdef STM32F4
-static volatile uint32_t count_new;
-static uint8_t double_buffer_out[CDCACM_PACKET_SIZE];
+//static volatile uint32_t count_new;
+//static uint8_t double_buffer_out[USB_DATA_SIZE];
 #endif
-
-#ifdef EPUCK2
-extern uint32_t uartUsed;
-#else
-#define platform_get_gpio0_esp32(x) (1)
-#endif /* EPUCK2 */
-
-
-void gdb_uart_out_cb(void);
 
 void gdb_if_putchar(unsigned char c, int flush)
 {
 	buffer_in[count_in++] = c;
-	if(flush || (count_in == CDCACM_PACKET_SIZE)) {
+	if(flush || (count_in == USB_DATA_SIZE)) {
 		/* Refuse to send if USB isn't configured, and
 		 * don't bother if nobody's listening */
-		if((cdcacm_get_config() == 1)|| !cdcacm_get_dtr()) {
-			while(usbd_ep_write_packet(usbdev, CDCACM_GDB_ENDPOINT,
-				buffer_in, count_in) <= 0);
-
-			if (flush && (count_in == CDCACM_PACKET_SIZE)) {
-				/* We need to send an empty packet for some hosts
-				 * to accept this as a complete transfer. */
-				/* libopencm3 needs a change for us to confirm when
-				 * that transfer is complete, so we just send a packet
-				 * containing a null byte for now.
-				 */
-				while (usbd_ep_write_packet(usbdev, CDCACM_GDB_ENDPOINT,
-					"\0", 1) <= 0);
-			}
+		if(!isUSBConfigured() || !getControlLineState(GDB_INTERFACE, CONTROL_LINE_DTR)) {
+			count_in = 0;
+			return;
 		}
 
-#ifdef EPUCK2
-#ifndef PLATFORM_HAS_NO_SERIAL
-		//refuse to send if uart is not conencted (GPIO0 controlled by the ESP32)
-		//GPIO0 = 0 if bluetooth channel 1 is connected on the ESP32
-		if(platform_get_gpio0_esp32() == 0){
-			//we can use the uart port if it is not used by the serial monitor
-			if(uartUsed == USBUSART_407){
-				for(uint32_t i = 0; i < count_in; i++)
-					usart_send_blocking(UART_GDB, buffer_in[i]);
-			}
-		}
-#endif /* PLATFORM_HAS_NO_SERIAL */
-#endif /* EPUCK2 */
+		chnWrite((BaseSequentialStream *) &GDB_COM, buffer_in, count_in);
+
+
+		//if (flush && (count_in == USB_DATA_SIZE)) {
+		//	/* We need to send an empty packet for some hosts
+		//	 * to accept this as a complete transfer. */
+		//	/* libopencm3 needs a change for us to confirm when
+		//	 * that transfer is complete, so we just send a packet
+		//	 * containing a null byte for now.
+		//	 */
+		//	while (usbd_ep_write_packet(usbdev, CDCACM_GDB_ENDPOINT,
+		//		"\0", 1) <= 0);
+		//}
 
 		count_in = 0;
 	}
 }
 
-#ifdef STM32F4
-void gdb_usb_out_cb(usbd_device *dev, uint8_t ep)
+// #ifdef STM32F4
+// void gdb_usb_out_cb(usbd_device *dev, uint8_t ep)
+// {
+// 	(void)ep;
+// 	usbd_ep_nak_set(dev, CDCACM_GDB_ENDPOINT, 1);
+// 	count_new = usbd_ep_read_packet(dev, CDCACM_GDB_ENDPOINT,
+// 	                                double_buffer_out, USB_DATA_SIZE);
+// 	if(!count_new) {
+// 		usbd_ep_nak_set(dev, CDCACM_GDB_ENDPOINT, 0);
+// 	}
+// }
+// #endif
+
+static void gdb_if_update_buf(uint32_t timeout)
 {
-	(void)ep;
-	(void)dev;
-	usbd_ep_nak_set(dev, CDCACM_GDB_ENDPOINT, 1);
-	count_new = usbd_ep_read_packet(dev, CDCACM_GDB_ENDPOINT,
-	                                double_buffer_out, CDCACM_PACKET_SIZE);
-	if(!count_new) {
-		usbd_ep_nak_set(dev, CDCACM_GDB_ENDPOINT, 0);
+	while (!isUSBConfigured()){
+		chThdSleepMilliseconds(10);
 	}
-
-}
-#ifdef EPUCK2
-#ifndef PLATFORM_HAS_NO_SERIAL
-//called from uart_isr in usbuart.c
-void gdb_uart_out_cb(void){
-	uint32_t err = USART_SR(UART_GDB);
-	char c = usart_recv(UART_GDB);
-	if (err & (USART_SR_ORE | USART_SR_FE))
-		return;
-
-	if((count_new + 1) < CDCACM_PACKET_SIZE){
-		double_buffer_out[count_new++] = c;
-	}
-}
-#endif /* PLATFORM_HAS_NO_SERIAL */
-#endif /* EPUCK2 */
-#endif
-
-static void gdb_if_update_buf(void)
-{
-	while ((cdcacm_get_config() != 1) && (platform_get_gpio0_esp32() == 1));
-#ifdef STM32F4
-	asm volatile ("cpsid i; isb");
-	if (count_new) {
-		memcpy(buffer_out, double_buffer_out, count_new);
-		count_out = count_new;
-		count_new = 0;
-		out_ptr = 0;
-		usbd_ep_nak_set(usbdev, CDCACM_GDB_ENDPOINT, 0);
-	}
-	asm volatile ("cpsie i; isb");
-#else
-	count_out = usbd_ep_read_packet(usbdev, CDCACM_GDB_ENDPOINT,
-	                                buffer_out, CDCACM_PACKET_SIZE);
+// #ifdef STM32F4
+// 	asm volatile ("cpsid i; isb");
+// 	if (count_new) {
+// 		memcpy(buffer_out, double_buffer_out, count_new);
+// 		count_out = count_new;
+// 		count_new = 0;
+// 		out_ptr = 0;
+// 		usbd_ep_nak_set(usbdev, CDCACM_GDB_ENDPOINT, 0);
+// 	}
+// 	asm volatile ("cpsie i; isb");
+// #else
+	count_out = chnReadTimeout((BaseSequentialStream *) &GDB_COM, buffer_out, USB_DATA_SIZE, timeout);
 	out_ptr = 0;
-#endif
+//#endif
 }
 
 unsigned char gdb_if_getchar(void)
@@ -142,27 +104,25 @@ unsigned char gdb_if_getchar(void)
 
 	while (!(out_ptr < count_out)) {
 		/* Detach if port closed */
-		if (!cdcacm_get_dtr() && (platform_get_gpio0_esp32() == 1))
+		if (!getControlLineState(GDB_INTERFACE, CONTROL_LINE_DTR))
 			return 0x04;
 
-		gdb_if_update_buf();
+		gdb_if_update_buf(TIME_MS2I(1));
 	}
 
 	return buffer_out[out_ptr++];
 }
 
 unsigned char gdb_if_getchar_to(int timeout)
-{
-	platform_timeout t;
-	platform_timeout_set(&t, timeout);
+{	
 
-	if (!(out_ptr < count_out)) do {
+	while (!(out_ptr < count_out)) {
 		/* Detach if port closed */
-		if (!cdcacm_get_dtr() && (platform_get_gpio0_esp32() == 1))
-		 	return 0x04;
+		if (!getControlLineState(GDB_INTERFACE, CONTROL_LINE_DTR))
+			return 0x04;
 
-		gdb_if_update_buf();
-	} while (!platform_timeout_is_expired(&t) && !(out_ptr < count_out));
+		gdb_if_update_buf(TIME_MS2I(timeout));
+	}
 
 	if(out_ptr < count_out)
 		return gdb_if_getchar();
