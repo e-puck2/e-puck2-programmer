@@ -7,7 +7,7 @@
 ifeq ($(USE_OPT),)
   USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16
 
-  USE_OPT += -fno-strict-aliasing
+  USE_OPT += -fno-strict-aliasing -lc -lnosys
 
   # Protection against stack overflows
   # USE_OPT += -fstack-protector-all -L .
@@ -126,7 +126,27 @@ CSRC = $(ALLCSRC) \
        i2c_smbus.c \
        usb_hub.c \
        power_button.c \
-       leds.c
+       leds.c \
+       ../../../target/adiv5.c    \
+       ../../../target/adiv5_swdp.c  \
+       ../../../command.c \
+       ../../../target/cortexa.c \
+       ../../../target/cortexm.c \
+       ../../../exception.c \
+       ../../../gdb_main.c  \
+       ../../../gdb_hostio.c  \
+       ../../../gdb_packet.c  \
+       ../../../hex_utils.c \
+       ../../../morse.c   \
+       ../../../target/swdptap_generic.c \
+       ../../../target/target.c  \
+       ../../../target/stm32f4.c \
+       ../../common/timing.c  \
+       ../../common/swdptap.c \
+       ../../stm32-ChibiOS/timing_stm32.c \
+       ../../stm32-ChibiOS/gdb_if.c  \
+       ../../stm32-ChibiOS/serialno.c \
+       ../../stm32-ChibiOS/crc32_chibios.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -156,7 +176,10 @@ TCPPSRC =
 ASMSRC = $(ALLASMSRC)
 ASMXSRC = $(ALLXASMSRC)
 
-INCDIR = $(ALLINC) $(TESTINC) ../USB251XB
+INCDIR = $(ALLINC) $(TESTINC) ../USB251XB \
+         ../../../target/ ../../../include/ \
+         ../../common/ ../../../ \
+         ../../stm32-ChibiOS/
 
 #
 # Project, sources and paths
@@ -206,7 +229,11 @@ CPPWARN = -Wall -Wextra -Wundef
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS = -DEPUCK2_CHIBIOS
+UDEFS = -DEPUCK2_CHIBIOS \
+        -DPLATFORM_HAS_ONLY_STM32F4 \
+        -DPLATFORM_HAS_NO_DFU_BOOTLOADER \
+        -DPLATFORM_HAS_NO_JTAG \
+        #-DPLATFORM_HAS_COMMANDS
 
 # Define ASM defines here
 UADEFS =

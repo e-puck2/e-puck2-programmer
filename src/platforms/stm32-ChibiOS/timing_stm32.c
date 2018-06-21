@@ -30,11 +30,13 @@ static THD_FUNCTION(sys_tick_thd, arg)
 {
 	(void) arg;
 
+	uint8_t state = 0;;
 	while(1){
 		chThdSleepMilliseconds(100);
+		state = !state;
 
 		if(running_status)
-			palTogglePad(LED_PORT, LED_IDLE_RUN);
+			SET_IDLE_STATE(state);
 
 		time_ms += 100;
 

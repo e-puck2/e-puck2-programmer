@@ -7,6 +7,7 @@
 #include <usbcfg.h>
 #include <shell.h>
 #include <chprintf.h>
+#include "leds.h"
 
 #define CONFIGURED		1
 #define NOT_CONFIGURED	0
@@ -18,6 +19,12 @@
 /**
  * Blackmagic wrappers
  */
+
+#include "gpio.h"
+#include "timing.h"
+#include "timing_stm32.h"
+#include "version.h"
+
 #define NOT_USED	0
 #define JTAG_PORT 	GPIOA
 #define TDI_PORT	NOT_USED
@@ -55,9 +62,11 @@
 
 #define SWDIO_MODE_DRIVE() palSetLineMode(LINE_SWD_407_DIO, PAL_MODE_OUTPUT_PUSHPULL)
 
+#define DEBUG(...)
+
 #define SET_RUN_STATE(state)	{running_status = (state);}
-#define SET_IDLE_STATE(state)	{gpio_set_val(LED_PORT, LED_IDLE_RUN, state);}
-#define SET_ERROR_STATE(state)	{gpio_set_val(LED_PORT, LED_ERROR, state);}
+#define SET_IDLE_STATE(state)	{setLed(GREEN_LED, state ? LED_MID_POWER : LED_OFF);}
+#define SET_ERROR_STATE(state)	{setLed(RED_LED, state ? LED_MID_POWER : LED_OFF);}
 
 static inline int platform_hwversion(void)
 {
