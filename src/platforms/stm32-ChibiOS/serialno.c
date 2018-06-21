@@ -18,11 +18,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "general.h"
+#include "ch.h"
+#include "hal.h"
 
 char *serialno_read(char *s)
 {
 #if defined(STM32L0) || defined(STM32F3) || defined(STM32F4)
-	volatile uint16_t *uid = (volatile uint16_t *)DESIG_UNIQUE_ID_BASE;
+	volatile uint16_t *uid = (volatile uint16_t *)UID_BASE;
 # if defined(STM32F4)
 	int offset = 3;
 # elif defined(STM32L0) || defined(STM32F4)
