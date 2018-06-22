@@ -55,6 +55,23 @@ static int stm32f4_flash_write(struct target_flash *f,
                                target_addr dest, const void *src, size_t len);
 
 /* Flash Program ad Erase Controller Register Map */
+#if !defined(EPUCK2_CHIBIOS)
+#define FLASH_CR_PG			(1 << 0)
+#define FLASH_CR_SER		(1 << 1)
+#define FLASH_CR_MER		(1 << 2)
+
+#define FLASH_CR_STRT		(1 << 16)
+#define FLASH_CR_EOPIE		(1 << 24)
+#define FLASH_CR_LOCK		(1 << 31)
+
+#define FLASH_SR_BSY		(1 << 16)
+
+#define FLASH_OPTCR_OPTLOCK	(1 << 0)
+#define FLASH_OPTCR_OPTSTRT	(1 << 1)
+
+#define SRAM_BASE 0x20000000
+#endif /* EPUCK2_CHIBIOS */
+
 #define FPEC_BASE	0x40023C00
 #define FLASH_ACR	(FPEC_BASE+0x00)
 #define FLASH_KEYR	(FPEC_BASE+0x04)
@@ -63,24 +80,14 @@ static int stm32f4_flash_write(struct target_flash *f,
 #define FLASH_CR	(FPEC_BASE+0x10)
 #define FLASH_OPTCR	(FPEC_BASE+0x14)
 
-#define FLASH_CR_PG		(1 << 0)
-#define FLASH_CR_SER		(1 << 1)
-#define FLASH_CR_MER		(1 << 2)
 #define FLASH_CR_PSIZE8		(0 << 8)
 #define FLASH_CR_PSIZE16	(1 << 8)
 #define FLASH_CR_PSIZE32	(2 << 8)
 #define FLASH_CR_PSIZE64	(3 << 8)
 #define FLASH_CR_MER1		(1 << 15)
-#define FLASH_CR_STRT		(1 << 16)
-#define FLASH_CR_EOPIE		(1 << 24)
+
 #define FLASH_CR_ERRIE		(1 << 25)
-#define FLASH_CR_STRT		(1 << 16)
-#define FLASH_CR_LOCK		(1 << 31)
 
-#define FLASH_SR_BSY		(1 << 16)
-
-#define FLASH_OPTCR_OPTLOCK	(1 << 0)
-#define FLASH_OPTCR_OPTSTRT	(1 << 1)
 #define FLASH_OPTCR_nDBANK	(1 << 29)
 #define FLASH_OPTCR_DB1M	(1 << 30)
 
@@ -118,7 +125,6 @@ static const uint16_t stm32f4_flash_write_x8_stub[] = {
 #include "flashstub/stm32f4_x8.stub"
 };
 
-#define SRAM_BASE 0x20000000
 #define STUB_BUFFER_BASE \
 	ALIGN(SRAM_BASE + MAX(sizeof(stm32f4_flash_write_x8_stub), \
 			      sizeof(stm32f4_flash_write_x32_stub)), 4)
