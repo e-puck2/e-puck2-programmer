@@ -1,6 +1,6 @@
 
-#include <platform.h>
-#include <leds.h>
+#include "main.h"
+#include "leds.h"
 
 #define PWM_CLOCK_FREQUENCY		100000		//100kHz
 #define PWM_PERIOD 				1000		//=> resolution = 1000 and 

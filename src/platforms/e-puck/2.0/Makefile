@@ -120,6 +120,7 @@ LDSCRIPT= ./STM32F413CGUx.ld
 CSRC = $(ALLCSRC) \
        $(TESTSRC) \
        usbcfg.c \
+       main.c \
        platform.c\
        panic.c \
        ../USB251XB/USB251XB.c\
@@ -127,7 +128,7 @@ CSRC = $(ALLCSRC) \
        usb_hub.c \
        power_button.c \
        leds.c \
-       gdb.c \
+       gdb.c \
        ../../../target/adiv5.c    \
        ../../../target/adiv5_swdp.c  \
        ../../../command.c \

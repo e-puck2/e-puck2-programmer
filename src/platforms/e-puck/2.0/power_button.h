@@ -1,7 +1,7 @@
 #ifndef POWER_BUTTON_H
 #define POWER_BUTTON_H
 
-#include <platform.h>
+#include "main.h"
 
 #define POWER_ON				1
 #define POWER_OFF				0

@@ -8,6 +8,7 @@
 #include "exception.h"
 #include "gdb_packet.h"
 #include "morse.h"
+#include "gdb.h"
 
 static THD_WORKING_AREA(test_thd_wa, 20480);
 static THD_FUNCTION(test_thd, arg)
@@ -15,12 +16,6 @@ static THD_FUNCTION(test_thd, arg)
 	(void) arg;
 
 	while(1){
-		// static systime_t time_before = 0;
-		// static systime_t time = 0;
-		// time_before = time;
-		// time = chVTGetSystemTime();
-		// chprintf((BaseSequentialStream *) &SDU2,"hello 2 %d\n",time-time_before);
-		/* Sleep for some time. */
 		volatile struct exception e;
 		TRY_CATCH(e, EXCEPTION_ALL) {
 			gdb_main();

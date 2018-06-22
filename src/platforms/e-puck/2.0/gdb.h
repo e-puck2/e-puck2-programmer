@@ -1,7 +1,7 @@
 #ifndef GDB_H
 #define GDB_H
 
-#include <platform.h>
+#include "main.h"
 
 /**
 * Starts the GDB module

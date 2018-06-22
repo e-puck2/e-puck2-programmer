@@ -1,7 +1,7 @@
 #ifndef USB_HUB_H
 #define USB_HUB_H
 
-#include <platform.h>
+#include "main.h"
 
 #define DEBOUNCE_TIME_VBUS_DET_MS	100
 

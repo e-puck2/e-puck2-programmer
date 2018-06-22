@@ -1,4 +1,4 @@
-#include <platform.h>
+#include "main.h"
 #include "i2c_smbus.h"
 
 static i2cflags_t errors = 0;

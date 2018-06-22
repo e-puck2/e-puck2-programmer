@@ -1,7 +1,7 @@
 #ifndef LEDS_H
 #define LEDS_H
 
-#include <platform.h>
+#include "main.h"
 
 //List of the LEDs present on the RGB LED
 typedef enum {
