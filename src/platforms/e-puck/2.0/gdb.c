@@ -15,6 +15,8 @@ static THD_FUNCTION(test_thd, arg)
 {
 	(void) arg;
 
+	chRegSetThreadName("GDB Server");
+
 	while(1){
 		volatile struct exception e;
 		TRY_CATCH(e, EXCEPTION_ALL) {

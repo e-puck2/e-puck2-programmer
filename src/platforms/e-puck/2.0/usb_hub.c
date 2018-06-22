@@ -8,6 +8,9 @@ static THD_WORKING_AREA(usb_hub_thd_wa, 128);
 static THD_FUNCTION(usb_hub_thd, arg)
 {
 	(void) arg;
+
+	chRegSetThreadName("USB Hub Management");
+
 	bool hub_state = NOT_CONFIGURED;
 
 	//Vbus detection init. Used to configure the USB Hub when we detect an USB cable

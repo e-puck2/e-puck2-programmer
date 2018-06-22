@@ -30,7 +30,7 @@ void printUcUsage(BaseSequentialStream* out) {
 	//computes the percentage of time used by eahc thread
 	do {
 		tmp1 = (uint16_t)(tp->stats.cumulative*10000/sum);
-		chprintf(out, "%12s %u.%u%%\r\n", tp->name, tmp1/100, tmp1%100);
+		chprintf(out, "%30s %u.%u%%\r\n", tp->name, tmp1/100, tmp1%100);
 		tp = chRegNextThread(tp);
 	} while (tp != NULL);
 

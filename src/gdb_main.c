@@ -95,9 +95,15 @@ int gdb_main_loop(struct target_controller *tc, bool in_syscall)
 {
 	int size;
 	bool single_step = false;
+#ifdef EPUCK2_CHIBIOS
+	systime_t time;
+#endif /* EPUCK2_CHIBIOS */
 
 	/* GDB protocol main loop */
 	while(1) {
+#ifdef EPUCK2_CHIBIOS
+		time = chVTGetSystemTime();
+#endif /* EPUCK2_CHIBIOS */
 		SET_IDLE_STATE(1);
 		size = gdb_getpacket(pbuf, BUF_SIZE);
 		SET_IDLE_STATE(0);
@@ -290,6 +296,10 @@ int gdb_main_loop(struct target_controller *tc, bool in_syscall)
 			DEBUG("*** Unsupported packet: %s\n", pbuf);
 			gdb_putpacketz("");
 		}
+
+#ifdef EPUCK2_CHIBIOS
+		chThdSleepUntilWindowed(time, time + TIME_MS2I(1));;
+#endif /* EPUCK2_CHIBIOS */
 	}
 }
 

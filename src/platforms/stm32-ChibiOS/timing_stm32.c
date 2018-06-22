@@ -30,6 +30,8 @@ static THD_FUNCTION(sys_tick_thd, arg)
 {
 	(void) arg;
 
+	chRegSetThreadName("Systick emulation GDB");
+
 	uint8_t state = 0;;
 	while(1){
 		chThdSleepMilliseconds(100);
@@ -47,7 +49,7 @@ static THD_FUNCTION(sys_tick_thd, arg)
 void platform_timing_init(void)
 {
 	/* Setup heartbeat timer */
-	chThdCreateStatic(sys_tick_thd_wa, sizeof(sys_tick_thd_wa), NORMALPRIO, sys_tick_thd, NULL);
+	chThdCreateStatic(sys_tick_thd_wa, sizeof(sys_tick_thd_wa), NORMALPRIO+10, sys_tick_thd, NULL);
 
 }
 

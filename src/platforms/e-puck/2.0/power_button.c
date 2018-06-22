@@ -27,6 +27,7 @@ static THD_FUNCTION(power_button_thd, arg)
 {
 
 	(void) arg;
+	chRegSetThreadName("Power Button management");
 
 	/* Enabling events on both edges of the button line.*/
 	palEnableLineEvent(LINE_PWR_ON_BTN, PAL_EVENT_MODE_BOTH_EDGES);
