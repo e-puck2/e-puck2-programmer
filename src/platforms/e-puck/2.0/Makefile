@@ -129,6 +129,7 @@ CSRC = $(ALLCSRC) \
        power_button.c \
        leds.c \
        gdb.c \
+       uc_usage.c \
        ../../../target/adiv5.c    \
        ../../../target/adiv5_swdp.c  \
        ../../../command.c \

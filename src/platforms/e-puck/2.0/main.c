@@ -7,6 +7,7 @@
 #include <power_button.h>
 #include <leds.h>
 #include "gdb.h"
+#include "uc_usage.h"
 
 int main(void) {
 
@@ -58,7 +59,7 @@ int main(void) {
 		// time = chVTGetSystemTime();
 
 		// chprintf((BaseSequentialStream *) &SDU1,"hello 1 %d\n",time-time_before);
-		chThdSleepMilliseconds(10);
+		chThdSleepMilliseconds(100);
 		static int16_t value = 0;
 		static int8_t coeff = 10;
 		// setLed(RED_LED, (value)/2);
@@ -68,5 +69,6 @@ int main(void) {
 			coeff *=-1;
 			value+=2*coeff;
 		}
+		printUcUsage((BaseSequentialStream *) &SDU2);
 	}
 }
