@@ -32,6 +32,13 @@ void powerButtonStart(void);
 uint8_t isPowerButtonPressed(void);
 
 /**
+ * @brief Returns the power state of the robot
+ * 
+ * @return POWER_ON or POWER_OFF
+ */
+uint8_t powerButtonGetPowerState(void);
+
+/**
  * @brief Turns ON or OFF the robot
  * @param state POWER_ON or POWER_OFF
  */

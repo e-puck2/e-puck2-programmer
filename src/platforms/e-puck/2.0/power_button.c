@@ -76,6 +76,10 @@ uint8_t isPowerButtonPressed(void){
 	return !palReadLine(LINE_PWR_ON_BTN);
 }
 
+uint8_t powerButtonGetPowerState(void){
+	return power_state;
+}
+
 void powerButtonTurnOnOff(uint8_t state){
 	osalSysLock();
 	powerButtonTurnOnOffI(state);
@@ -90,6 +94,6 @@ void powerButtonTurnOnOffI(uint8_t state){
 	}else{
 		power_state = POWER_OFF;
 		palClearLine(LINE_PWR_ON_OUT);
-		setLedI(GREEN_LED, LED_OFF);
+		setLedI(GREEN_LED, LED_NO_POWER);
 	}
 }

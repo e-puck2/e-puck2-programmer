@@ -8,6 +8,7 @@
 #include <leds.h>
 #include "gdb.h"
 #include "uc_usage.h"
+#include "leds_states.h"
 
 int main(void) {
 
@@ -32,10 +33,10 @@ int main(void) {
 	*/
 	powerButtonStart();
 
-	/*
-	*	Starts the PWM managing the leds
+	/**
+	* Starts the leds states thread
 	*/
-	ledInit();
+	ledsStatesStart();
 
 	/*
 	* Initializes two serial-over-USB CDC drivers and starts and connects the USB.
@@ -59,16 +60,6 @@ int main(void) {
 		// time = chVTGetSystemTime();
 
 		// chprintf((BaseSequentialStream *) &SDU1,"hello 1 %d\n",time-time_before);
-		chThdSleepMilliseconds(100);
-		static int16_t value = 0;
-		static int8_t coeff = 10;
-		// setLed(RED_LED, (value)/2);
-		// setLed(BLUE_LED, 1000-value);
-		value+=coeff;
-		if(value>1000 || value < 1){
-			coeff *=-1;
-			value+=2*coeff;
-		}
 		printUcUsage((BaseSequentialStream *) &SDU2);
 	}
 }

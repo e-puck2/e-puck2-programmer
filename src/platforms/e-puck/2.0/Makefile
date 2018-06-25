@@ -130,6 +130,7 @@ CSRC = $(ALLCSRC) \
        leds.c \
        gdb.c \
        uc_usage.c \
+       leds_states.c \
        ../../../target/adiv5.c    \
        ../../../target/adiv5_swdp.c  \
        ../../../command.c \

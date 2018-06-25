@@ -7,7 +7,6 @@
 #include <usbcfg.h>
 #include <shell.h>
 #include <chprintf.h>
-#include "leds.h"
 #include "platform.h"
 
 #define CONFIGURED		1

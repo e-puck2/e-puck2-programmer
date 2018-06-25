@@ -15,7 +15,7 @@ typedef enum {
 #define LED_MAX_POWER	1000
 #define LED_MID_POWER	500
 #define LED_MIN_POWER	1
-#define LED_OFF			0
+#define LED_NO_POWER	0
 
 /**
  * @brief Init the PWM to handle the three leds
