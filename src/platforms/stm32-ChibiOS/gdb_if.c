@@ -94,7 +94,7 @@ static void gdb_if_update_buf(uint32_t timeout)
 // 	}
 // 	asm volatile ("cpsie i; isb");
 // #else
-	count_out = chnReadTimeout((BaseChannel *) &GDB_COM, buffer_out, 1, timeout);
+	count_out = chnReadTimeout((BaseChannel *) &GDB_COM, buffer_out, USB_DATA_SIZE, timeout);
 	out_ptr = 0;
 //#endif
 }
