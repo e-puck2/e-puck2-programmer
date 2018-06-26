@@ -1,24 +1,13 @@
 
 #include "leds_states.h"
+#include "power_button.h"
 
-typedef enum{
-	ERROR_STATE = 0,
-	RUNNING_STATE,
-	PROGRAMMING_STATE,
-	WAITING_STATE,
-	POWER_ON_STATE,
-	POWER_OFF_STATE,
-}gdb_states_t;
+//values to control the Red and Green leds
+static uint16_t leds_values[] = {LED_NO_POWER, LED_MID_POWER};
 
-typedef enum{
-	LED_BLINKING = 0,
-	LED_FADING_UP,
-	LED_FADING_DOWN,
-	LED_ON,
-	LED_OFF,
-}led_states_t;
-
-static const uint8_t power_on_seq[] = {LED_FADING_UP, };
+#define POWER_EVENT 		EVENT_MASK(0)
+#define BATTERY_INFO_EVENT	EVENT_MASK(1)
+#define GDB_STATUS_EVENT 	EVENT_MASK(2)
 
 static THD_WORKING_AREA(leds_states_thd_wa, 256);
 static THD_FUNCTION(leds_states_thd, arg)
@@ -27,20 +16,37 @@ static THD_FUNCTION(leds_states_thd, arg)
 
 	chRegSetThreadName("Leds states");
 
-	uint8_t gdb_state = WAITING_STATE;
-	uint8_t leds_state = LED_OFF;
 
-	while(1){
-		static int16_t value = 0;
-		static int8_t coeff = 10;
-		setLed(RED_LED, (value)/2);
-		setLed(BLUE_LED, 1000-value);
-		value+=coeff;
-		if(value>1000 || value < 1){
-			coeff *=-1;
-			value+=2*coeff;
-		}
+	eventmask_t events;
+	eventflags_t flags;
+
+	event_listener_t power_event_listener;
+	//event_listener_t battery_info_event_listener;
+	//event_listener_t gdb_status_event_listener;
+
+
+	chEvtRegisterMask(&power_event, &power_event_listener, POWER_EVENT);
+	//chEvtRegisterMask(&battery_info_event, &battery_info_event_listener, BATTERY_INFO_EVENT);
+	//chEvtRegisterMask(&gdb_status_event, &gdb_status_event_listener, GDB_STATUS_EVENT);
+
+	while (true) {
 		
+		events = chEvtWaitAnyTimeout(POWER_EVENT, TIME_IMMEDIATE);
+
+		if (events & POWER_EVENT) {
+			flags = chEvtGetAndClearFlags(&power_event_listener);
+			if(flags & POWER_ON_FLAG){
+				setLed(RED_LED, leds_values[RED_LED]);
+				setLed(GREEN_LED, leds_values[GREEN_LED]);
+			}else if(flags & POWER_OFF_FLAG){
+				setLed(RED_LED,LED_NO_POWER); 
+				setLed(GREEN_LED,LED_NO_POWER);
+			}
+
+		}else if(events & BATTERY_INFO_EVENT){
+			//flags = chEvtGetAndClearFlags(&battery_info_event_listener);
+		}
+
 		chThdSleepMilliseconds(10);
 	}
 }

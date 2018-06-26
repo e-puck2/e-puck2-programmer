@@ -9,6 +9,13 @@
 #define POWER_BUTTON_DURATION_MS_TO_TURN_ON		10
 #define POWER_BUTTON_DURATION_MS_TO_TURN_OFF	500
 
+//Event source used to send events to other threads
+extern event_source_t power_event;
+
+//Possible flags of the power event
+#define POWER_ON_FLAG	(1<<0)
+#define POWER_OFF_FLAG	(1<<1)
+
 /**
  * @brief 	Function used to turn ON the robot if the button is pressed
  * 			and if the USB connexion is not plugged->when we want to turn on the robot, without the USB.

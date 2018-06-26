@@ -22,6 +22,9 @@ void powerButtonCb(void* par){
 	
 }
 
+//Event source used to send events to other threads
+event_source_t power_event;
+
 static THD_WORKING_AREA(power_button_thd_wa, 128);
 static THD_FUNCTION(power_button_thd, arg)
 {
@@ -55,6 +58,8 @@ static THD_FUNCTION(power_button_thd, arg)
 
 void powerButtonStart(void){
 	chVTObjectInit(&power_timer);
+
+	chEvtObjectInit(&power_event);
 
 	chThdCreateStatic(power_button_thd_wa, sizeof(power_button_thd_wa), NORMALPRIO, power_button_thd, NULL);
 }
@@ -90,10 +95,12 @@ void powerButtonTurnOnOffI(uint8_t state){
 	if(state == POWER_ON){
 		power_state = POWER_ON;
 		palSetLine(LINE_PWR_ON_OUT);
-		setLedI(GREEN_LED, LED_MID_POWER);
+		//setLedI(GREEN_LED, LED_MID_POWER);
+		chEvtBroadcastFlagsI(&power_event, POWER_ON_FLAG);
 	}else{
 		power_state = POWER_OFF;
 		palClearLine(LINE_PWR_ON_OUT);
-		setLedI(GREEN_LED, LED_NO_POWER);
+		//setLedI(GREEN_LED, LED_NO_POWER);
+		chEvtBroadcastFlagsI(&power_event, POWER_OFF_FLAG);
 	}
 }
