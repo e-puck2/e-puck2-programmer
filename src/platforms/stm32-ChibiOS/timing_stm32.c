@@ -22,7 +22,6 @@
 #include "ch.h"
 #include "hal.h"
 
-uint8_t running_status;
 static volatile uint32_t time_ms = 0;;
 
 static THD_WORKING_AREA(sys_tick_thd_wa, 128);
@@ -37,12 +36,9 @@ static THD_FUNCTION(sys_tick_thd, arg)
 		chThdSleepMilliseconds(100);
 		state = !state;
 
-		if(running_status)
-			SET_IDLE_STATE(state);
-
 		time_ms += 100;
 
-		SET_ERROR_STATE(morse_update());
+		//SET_ERROR_STATE(morse_update());
 	}
 }
 

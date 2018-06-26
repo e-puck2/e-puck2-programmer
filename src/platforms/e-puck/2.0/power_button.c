@@ -11,7 +11,7 @@ static uint8_t power_state = POWER_OFF;
  * @brief 	Callback called when the virtual timer finishes to count.
  * 			Used to turn ON or OFF the robot when pressing the button for
  * 			the good duration
- * @param par Tells if we need to tunr ON or OFF
+ * @param par Tells if we need to turn ON or OFF
  */
 void powerButtonCb(void* par){
 	uint8_t choice = (uint32_t)par;
@@ -25,6 +25,8 @@ void powerButtonCb(void* par){
 //Event source used to send events to other threads
 event_source_t power_event;
 
+static uint8_t power_on_reset = false;
+
 static THD_WORKING_AREA(power_button_thd_wa, 128);
 static THD_FUNCTION(power_button_thd, arg)
 {
@@ -34,6 +36,10 @@ static THD_FUNCTION(power_button_thd, arg)
 
 	/* Enabling events on both edges of the button line.*/
 	palEnableLineEvent(LINE_PWR_ON_BTN, PAL_EVENT_MODE_BOTH_EDGES);
+
+	if(power_on_reset){
+		powerButtonTurnOnOff(POWER_ON);
+	}
 
 	while(1){
 		//waiting until an event on the line is detected
@@ -59,8 +65,6 @@ static THD_FUNCTION(power_button_thd, arg)
 void powerButtonStart(void){
 	chVTObjectInit(&power_timer);
 
-	chEvtObjectInit(&power_event);
-
 	chThdCreateStatic(power_button_thd_wa, sizeof(power_button_thd_wa), NORMALPRIO, power_button_thd, NULL);
 }
 
@@ -71,9 +75,9 @@ void powerButtonStartSequence(void){
 
 	if(isPowerButtonPressed()){
 		//turn on the robot if we pressed the button and there is no USB connexion
-		//need to use the interrupt version because chibiOS isn't initialized yet so
-		//calls to chSysLock() won't work
-		powerButtonTurnOnOffI(POWER_ON);
+		//since we are before the chSysInit(), we simply store into a variable that we 
+		//need to power on the robot. It will be applied in the thread
+		power_on_reset = true;
 	}
 }
 

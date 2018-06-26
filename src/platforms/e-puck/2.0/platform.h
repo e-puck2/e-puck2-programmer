@@ -4,6 +4,8 @@
 #include <ch.h>
 #include <hal.h>
 
+#include "gdb.h"
+
 /**
  * Blackmagic wrappers
  */
@@ -52,9 +54,10 @@
 
 #define DEBUG(...)
 
-#define SET_RUN_STATE(state)	{running_status = (state);}
-#define SET_IDLE_STATE(state)	{};//setLed(GREEN_LED, state ? LED_MID_POWER : LED_OFF);}
-#define SET_ERROR_STATE(state)	{};//setLed(RED_LED, state ? LED_MID_POWER : LED_OFF);}
+#define SET_RUN_STATE(state)	{gdbSetFlag(state ? RUNNING_FLAG : IDLE_FLAG);};
+#define SET_PROGRAMMING_STATE()	{gdbSetFlag(PROGRAMMING_FLAG);};
+#define SET_IDLE_STATE(state)	{};
+#define SET_ERROR_STATE(state)	{gdbSetFlag(ERROR_FLAG);};
 
 static inline int platform_hwversion(void)
 {

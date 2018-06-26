@@ -10,6 +10,9 @@
 #include "morse.h"
 #include "gdb.h"
 
+//Event source used to send events to other threads
+event_source_t gdb_status_event;
+
 static THD_WORKING_AREA(test_thd_wa, 20480);
 static THD_FUNCTION(test_thd, arg)
 {
@@ -43,4 +46,9 @@ void gdbStart(void){
 	 * Starts the GDB thread
 	 */
 	chThdCreateStatic(test_thd_wa, sizeof(test_thd_wa), NORMALPRIO, test_thd, NULL);
+
+}
+
+void gdbSetFlag(eventflags_t flags){
+	chEvtBroadcastFlags(&gdb_status_event, flags);
 }

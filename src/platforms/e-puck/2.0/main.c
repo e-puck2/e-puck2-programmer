@@ -28,15 +28,23 @@ int main(void) {
 	halInit();
 	chSysInit();
 
+	/**
+	 * Init the events objects. Better to do it before any modules that use them since
+	 * they are global.
+	 */
+	chEvtObjectInit(&gdb_status_event);
+	chEvtObjectInit(&power_event);
+
+	/**
+	* Starts the leds states thread. Must be the first module because other modules
+	* use it.
+	*/
+	ledsStatesStart();
+
 	/*
 	* Starts the handling of the power button
 	*/
 	powerButtonStart();
-
-	/**
-	* Starts the leds states thread
-	*/
-	ledsStatesStart();
 
 	/*
 	* Initializes two serial-over-USB CDC drivers and starts and connects the USB.
@@ -60,6 +68,7 @@ int main(void) {
 		// time = chVTGetSystemTime();
 
 		// chprintf((BaseSequentialStream *) &SDU1,"hello 1 %d\n",time-time_before);
-		printUcUsage((BaseSequentialStream *) &SDU2);
+		chThdSleepMilliseconds(100);
+		//printUcUsage((BaseSequentialStream *) &SDU2);
 	}
 }

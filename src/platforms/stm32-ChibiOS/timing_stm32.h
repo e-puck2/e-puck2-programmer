@@ -19,8 +19,6 @@
 #ifndef __TIMING_STM32_H
 #define __TIMING_STM32_H
 
-extern uint8_t running_status;
-
 void platform_timing_init(void);
 
 #endif
