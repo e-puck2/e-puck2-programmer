@@ -9,6 +9,7 @@
 #include "gdb.h"
 #include "uc_usage.h"
 #include "leds_states.h"
+#include "battery_measurement.h"
 
 int main(void) {
 
@@ -45,6 +46,8 @@ int main(void) {
 	* Starts the handling of the power button
 	*/
 	powerButtonStart();
+
+	batteryMesurementStart();
 
 	/*
 	* Initializes two serial-over-USB CDC drivers and starts and connects the USB.

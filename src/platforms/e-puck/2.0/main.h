@@ -14,5 +14,6 @@
 
 #define PWM_LED			PWMD3
 #define I2C_SMBUS		I2CD1
+#define ADC_BATT		ADCD1
 
 #endif  /* MAIN_H */
