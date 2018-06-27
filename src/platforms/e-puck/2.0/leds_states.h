@@ -4,7 +4,7 @@
 #include "main.h"
 #include "leds.h"
 
-#define BLINK_TIME_RUNNING_STATE		100
+#define BLINK_TIME		100	//used when the target is running or when the robot is in low power state
 
 /**
 * Starts the leds states thread
