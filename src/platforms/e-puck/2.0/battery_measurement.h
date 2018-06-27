@@ -24,6 +24,8 @@
 #define BATTERY_LOW_TIME_MS		10000 	//time before shutting down the system when in very low voltage
 #define CHANGE_STATE_TIME_MS	3000	//time before changing the battery state 
 
+//Event source used to send events to other threads
+extern event_source_t battery_info_event;
 
 #define MAX_VOLTAGE_FLAG		(1<<0)
 #define GOOD_VOLTAGE_FLAG		(1<<1)

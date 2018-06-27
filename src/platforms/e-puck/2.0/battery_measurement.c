@@ -1,6 +1,7 @@
 
 #include "main.h"
 #include "battery_measurement.h"
+#include "power_button.h"
 
 #define ADC_NUM_CHANNELS		2	//Batt and VrefInt
 #define ADC_BATT_NUM_SAMPLES	32	//32 samples by channel
@@ -25,6 +26,9 @@ static adcsample_t batt_samples[ADC_NUM_CHANNELS * ADC_BATT_NUM_SAMPLES];
 //battery voltage variable
 static float battery_voltage = 0;
 
+//Event source used to send events to other threads
+event_source_t battery_info_event;
+
 //groupe conversion config for the ADC
 static const ADCConversionGroup adcGroupConfig =  {
 	.circular = false, 
@@ -42,11 +46,11 @@ static const ADCConversionGroup adcGroupConfig =  {
 
 void batteryStateMachine(void){
 	//actual state
-	static uint8_t actual_state = MIN_VOLTAGE;
+	static uint8_t actual_state = MAX_VOLTAGE_FLAG;
 	//state in which the battery voltage tells us to be.
 	//-> we use it in order to change the actual state only after a fixed amount
 	//of time. It prevents quick changes in the state if the measurements oscillate.
-	static uint8_t new_state = MIN_VOLTAGE;
+	static uint8_t new_state = MAX_VOLTAGE_FLAG;
 
 	static systime_t time_state = 0;
 	static systime_t time_battery_low = 0;
@@ -73,8 +77,8 @@ void batteryStateMachine(void){
 			//we change the state
 			actual_state = new_state;
 
-			//send event here
-			chprintf((BaseSequentialStream *) &SDU2,"new state = %d\n\n", actual_state);
+			chEvtBroadcastFlags(&battery_info_event, actual_state);
+
 			time_state = chVTGetSystemTime();
 		}
 	}else{
@@ -86,7 +90,7 @@ void batteryStateMachine(void){
 	if(actual_state == MIN_VOLTAGE_FLAG){
 		if((time_battery_low + BATTERY_LOW_TIME_MS) < chVTGetSystemTime()){
 			//shutdown robot
-			chprintf((BaseSequentialStream *) &SDU2,"robot shutdown !\n\n");
+			chprintf((BaseSequentialStream *) &SD2,"robot shutdown !\n\n");
 		}
 	}else{
 		time_battery_low = chVTGetSystemTime();
@@ -104,40 +108,46 @@ static THD_FUNCTION(batt_thd, arg)
 	float battery_raw = 0;
 	float vrefint_raw = 0;
 
-	float battery_value = 0;
+	float battery_value = ADC_RESOLUTION;
 	float vref_gain_correction = 0;
 
+	systime_t time = 0;
+
 	while(1){
-		//do one conversion and wait for it to finish -> no need for a callback
-		adcConvert(&ADC_BATT, &adcGroupConfig, batt_samples, ADC_BATT_NUM_SAMPLES);
-		
-		battery_raw = 0;
-		vrefint_raw = 0;
-		for(uint16_t i = 0 ; i < (ADC_NUM_CHANNELS * ADC_BATT_NUM_SAMPLES) ; i += ADC_NUM_CHANNELS){
-			battery_raw += batt_samples[i];
-			vrefint_raw += batt_samples[i+1];
+		time = chVTGetSystemTime();
+
+		if(powerButtonGetPowerState() == POWER_ON){
+			//do one conversion and wait for it to finish -> no need for a callback
+			adcConvert(&ADC_BATT, &adcGroupConfig, batt_samples, ADC_BATT_NUM_SAMPLES);
+			
+			battery_raw = 0;
+			vrefint_raw = 0;
+			for(uint16_t i = 0 ; i < (ADC_NUM_CHANNELS * ADC_BATT_NUM_SAMPLES) ; i += ADC_NUM_CHANNELS){
+				battery_raw += batt_samples[i];
+				vrefint_raw += batt_samples[i+1];
+			}
+
+			battery_raw /= ADC_BATT_NUM_SAMPLES;
+			vrefint_raw /= ADC_BATT_NUM_SAMPLES;
+
+			vref_gain_correction = ADC_VALUE_VREFINT/vrefint_raw;
+
+			//low-pass filter
+			battery_value = LOW_PASS_COEFF_A * battery_value 
+							+ LOW_PASS_COEFF_B * battery_raw * vref_gain_correction;
+
+			if(battery_value){
+				battery_voltage = battery_value / COEFF_ADC_TO_VOLT;
+			}
+
+
+			chprintf((BaseSequentialStream *) &SD2,"batt_raw =  %f , vref_raw = %f\n",battery_raw, vrefint_raw);
+			chprintf((BaseSequentialStream *) &SD2,"batt_filt =  %f , bat_volt_filt = %f\n\n",battery_value, battery_voltage);
+
+			batteryStateMachine();
 		}
 
-		battery_raw /= ADC_BATT_NUM_SAMPLES;
-		vrefint_raw /= ADC_BATT_NUM_SAMPLES;
-
-		vref_gain_correction = ADC_VALUE_VREFINT/vrefint_raw;
-
-		//low-pass filter
-		battery_value = LOW_PASS_COEFF_A * battery_value 
-						+ LOW_PASS_COEFF_B * battery_raw * vref_gain_correction;
-
-		if(battery_value){
-			battery_voltage = battery_value / COEFF_ADC_TO_VOLT;
-		}
-
-
-		chprintf((BaseSequentialStream *) &SDU2,"batt_raw =  %f , vref_raw = %f\n",battery_raw, vrefint_raw);
-		chprintf((BaseSequentialStream *) &SDU2,"batt_filt =  %f , bat_volt_filt = %f\n\n",battery_value, battery_voltage);
-
-		batteryStateMachine();
-
-		chThdSleepMilliseconds(500);
+		chThdSleepUntilWindowed(time, time + TIME_MS2I(500));
 	}
 }
 
