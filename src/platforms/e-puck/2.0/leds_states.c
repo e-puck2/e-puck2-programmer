@@ -18,12 +18,12 @@ static THD_FUNCTION(leds_states_thd, arg)
 
 	chRegSetThreadName("Leds states");
 
-	static uint8_t running_state = false;
-	static uint8_t low_power_state = false;
+	uint8_t running_state = false;
+	uint8_t low_power_state = false;
 
-	static uint8_t toggle_state = 0;
+	uint8_t toggle_state = 0;
 
-	static systime_t time = 0;
+	systime_t time = 0;
 
 	eventmask_t events;
 	eventflags_t flags;
