@@ -22,7 +22,7 @@ static THD_FUNCTION(can_rx_thread, arg)
     while (1) {
         CANRxFrame rxf;
         CanFrame aseba_can_frame;
-        msg_t m = canReceive(&CAND1, CAN_ANY_MAILBOX, &rxf, MS2ST(1000));
+        msg_t m = canReceive(&CAN_ASEBA, CAN_ANY_MAILBOX, &rxf, TIME_MS2I(1000));
         if (m != MSG_OK) {
             continue;
         }
@@ -45,19 +45,18 @@ static THD_FUNCTION(can_rx_thread, arg)
 void can_init(void)
 {
 
+    /* CAN cell init.
+     * Setting the bitrate to 1MBit. APB1 = 48MHz,
+     * prescaler = 3 -> 16MHz time quanta frequency.
+     * 1tq sync + 9tq bit segment1 (TS1) + 6tq bit segment2 (TS2) =
+     * 16time quanta per bit period, therefor 16MHz/16 = 1MHz
+     */
     static const CANConfig can1_config = {
-        .mcr = (1 << 6)  /* Automatic bus-off management enabled. */
-               | (1 << 2), /* Message are prioritized by order of arrival. */
-
-        /* APB Clock is 42 Mhz
-           42MHz / 2 / (1tq + 12tq + 8tq) = 1MHz => 1Mbit */
-        .btr = (1 << 0)  /* Baudrate prescaler (10 bits) */
-               | (11 << 16)/* Time segment 1 (3 bits) */
-               | (7 << 20) /* Time segment 2 (3 bits) */
-               | (0 << 24) /* Resync jump width (2 bits) */
+        .mcr = CAN_MCR_ABOM | CAN_MCR_TXFP,
+        .btr = CAN_BTR_SJW(1) | CAN_BTR_TS1(9) | CAN_BTR_TS2(6) | CAN_BTR_BRP(3)
     };
 
-    canStart(&CAND1, &can1_config);
+    canStart(&CAN_ASEBA, &can1_config);
 }
 
 void aseba_can_rx_dropped(void)
@@ -82,7 +81,7 @@ void aseba_can_send_frame(const CanFrame *frame)
         txf.data8[i] = frame->data[i];
     }
 
-    canTransmit(&CAND1, CAN_ANY_MAILBOX, &txf, MS2ST(100));
+    canTransmit(&CAN_ASEBA, CAN_ANY_MAILBOX, &txf, TIME_MS2I(100));
     chThdSleepMilliseconds(1);
 
     AsebaCanFrameSent();
@@ -92,7 +91,7 @@ void aseba_can_send_frame(const CanFrame *frame)
 // Returns true if there is enough space to send the frame
 int aseba_can_is_frame_room(void)
 {
-    return can_lld_is_tx_empty(&CAND1, CAN_ANY_MAILBOX);
+    return can_lld_is_tx_empty(&CAN_ASEBA, CAN_ANY_MAILBOX);
 }
 
 void aseba_can_start(uint16 id)

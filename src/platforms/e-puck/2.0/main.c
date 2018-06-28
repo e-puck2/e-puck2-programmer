@@ -10,7 +10,8 @@
 #include "uc_usage.h"
 #include "leds_states.h"
 #include "battery_measurement.h"
-
+#include "aseba_can_interface.h"
+#include "aseba_bridge.h"
 static void serial_start(void)
 {
 	static SerialConfig ser_cfg = {
@@ -79,6 +80,9 @@ int main(void) {
 	* Starts the GDB system
 	*/
 	gdbStart();
+
+	aseba_can_start(0);
+	aseba_bridge(&SDU2);
 
 	while (true) {
 		// static systime_t time_before = 0;

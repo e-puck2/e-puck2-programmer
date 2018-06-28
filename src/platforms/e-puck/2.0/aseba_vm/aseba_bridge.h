@@ -7,7 +7,7 @@ extern "C" {
 
 #include "ch.h"
 
-void aseba_bridge(BaseSequentialStream *stream);
+void aseba_bridge(void *stream);
 
 /** Returns true if the board is running in bridge mode. */
 bool aseba_is_bridge(void);

@@ -2,6 +2,7 @@
 #define ASEBA_CAN_INTERFACE_H
 
 #include "vm.h"
+#include "main.h"
 
 #ifdef __cplusplus
 extern "C" {
