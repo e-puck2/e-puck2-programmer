@@ -132,6 +132,13 @@ CSRC = $(ALLCSRC) \
        uc_usage.c \
        leds_states.c \
        battery_measurement.c \
+       aseba_vm/aseba_bridge.c \
+       aseba_vm/aseba_can_interface.c \
+       aseba_vm/can-buffer.c \
+       aseba_vm/can-net.c \
+       aseba_vm/natives.c \
+       aseba_vm/vm-buffer.c \
+       aseba_vm/vm.c \
        ../../../target/adiv5.c    \
        ../../../target/adiv5_swdp.c  \
        ../../../command.c \
@@ -184,7 +191,7 @@ ASMXSRC = $(ALLXASMSRC)
 INCDIR = $(ALLINC) $(TESTINC) ../USB251XB \
          ../../../target/ ../../../include/ \
          ../../common/ ../../../ \
-         ../../stm32-ChibiOS/
+         ../../stm32-ChibiOS/ aseba_vm/
 
 #
 # Project, sources and paths
