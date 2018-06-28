@@ -158,7 +158,7 @@ static THD_FUNCTION(batt_thd, arg)
 	float vrefint_raw = 0;
 
 	float battery_value = ADC_RESOLUTION;
-	float vref_gain_correction_value = 0;
+	float vref_gain_correction_value = 1;	//100% -> no correction at first
 
 	systime_t time = 0;
 
@@ -167,15 +167,15 @@ static THD_FUNCTION(batt_thd, arg)
 
 	while(1){
 		time = chVTGetSystemTime();
-		//starts the conversion process.
-		//the adc callback will automatically relaunch the conversions until we have ADC_BATT_NUM_SAMPLES
-		//for ADC_CHANNEL_VREFINT and ADC_CHANNEL_BATT
-		ADCdoOneConversion(&ADC_BATT);
-		//the semaphore is released when all the conversions are finished
-		chBSemWait(&measurement_ready);
-
 		//we compute the battery state only if the robot is turned on
 		if(powerButtonGetPowerState() == POWER_ON){
+
+			//starts the conversion process.
+			//the adc callback will automatically relaunch the conversions until we have ADC_BATT_NUM_SAMPLES
+			//for ADC_CHANNEL_VREFINT and ADC_CHANNEL_BATT
+			ADCdoOneConversion(&ADC_BATT);
+			//the semaphore is released when all the conversions are finished
+			chBSemWait(&measurement_ready);
 
 			//we do the computation stuff
 			battery_raw = 0;
@@ -188,18 +188,18 @@ static THD_FUNCTION(batt_thd, arg)
 			battery_raw /= ADC_BATT_NUM_SAMPLES;
 			vrefint_raw /= ADC_BATT_NUM_SAMPLES;
 
+			//low-pass filter on vref_correction_value
 			vref_gain_correction_value = LOW_PASS_COEFF_A * vref_gain_correction_value
 									+ LOW_PASS_COEFF_B * (ADC_VALUE_VREFINT/vrefint_raw);
 
-			//low-pass filter
+			//low-pass filter on battery_value
 			battery_value = LOW_PASS_COEFF_A * battery_value 
 							+ LOW_PASS_COEFF_B * battery_raw * vref_gain_correction_value;
 
 			battery_voltage = (battery_value / COEFF_ADC_TO_VOLT) + VOLTAGE_DROP;
 
-
-			chprintf((BaseSequentialStream *) &SDU2,"batt_raw =  %f , vref_raw = %f\n",battery_raw, vrefint_raw);
-			chprintf((BaseSequentialStream *) &SDU2,"batt_filt =  %f , bat_volt_filt = %f\n\n",battery_value, battery_voltage);
+			// chprintf((BaseSequentialStream *) &SDU2,"batt_raw =  %f , vref_raw = %f\n",battery_raw, vrefint_raw);
+			// chprintf((BaseSequentialStream *) &SDU2,"batt_filt =  %f , bat_volt_filt = %f\n\n",battery_value, battery_voltage);
 
 			batteryStateMachine();
 		}
