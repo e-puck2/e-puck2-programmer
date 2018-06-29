@@ -33,19 +33,26 @@ void aseba_bridge(void *stream)
 static THD_FUNCTION(aseba_bridge_uart_to_can, arg)
 {
     chRegSetThreadName("aseba uart -> can");
-    BaseSequentialStream *stream = (BaseSequentialStream *)arg;
+    BaseChannel* stream = (BaseChannel*) arg;
 
     uint16_8_t source, length;
-    uint8_t data[ASEBA_MAX_PACKET_SIZE];
+    source.u16 = length.u16 = 0;
+    uint8_t data[ASEBA_MAX_PACKET_SIZE] = {0};
+    uint16_t nb_received = 0;
 
     while (true) {
-        streamRead(stream, length.u8, sizeof(length));
-        streamRead(stream, source.u8, sizeof(source));
-        streamRead(stream, data, length.u16 + 2);
+        chnReadTimeout(stream, length.u8, sizeof(length), TIME_INFINITE);
+        chnReadTimeout(stream, source.u8, sizeof(source), TIME_MS2I(100));
+        nb_received = chnReadTimeout(stream, data, length.u16 + 2, TIME_MS2I(100));
 
-        aseba_can_lock();
-        AsebaCanSendSpecificSource(data, length.u16 + 2, source.u16);
-        aseba_can_unlock();
+        if(nb_received == (length.u16 + 2)){
+            aseba_can_lock();
+            AsebaCanSendSpecificSource(data, length.u16 + 2, source.u16);
+            aseba_can_unlock();
+        }else{
+            //flush the buffer. Probably isn't usefull but still good to have it
+            while(chnReadTimeout(stream, data, 1, TIME_IMMEDIATE) != 0);
+        }
     }
 }
 

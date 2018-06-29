@@ -53,7 +53,7 @@ void can_init(void)
      */
     static const CANConfig can1_config = {
         .mcr = CAN_MCR_ABOM | CAN_MCR_TXFP,
-        .btr = CAN_BTR_SJW(1) | CAN_BTR_TS1(9) | CAN_BTR_TS2(6) | CAN_BTR_BRP(3)
+        .btr = CAN_BTR_SJW(1-1) | CAN_BTR_TS1(9-1) | CAN_BTR_TS2(6-1) | CAN_BTR_BRP(3-1)
     };
 
     canStart(&CAN_ASEBA, &can1_config);
