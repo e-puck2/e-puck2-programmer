@@ -139,6 +139,7 @@ CSRC = $(ALLCSRC) \
        aseba_vm/natives.c \
        aseba_vm/vm-buffer.c \
        aseba_vm/vm.c \
+       communications.c \
        flash/flash_common_f24.c \
        flash/flash_common_f234.c \
        ../../../target/adiv5.c    \

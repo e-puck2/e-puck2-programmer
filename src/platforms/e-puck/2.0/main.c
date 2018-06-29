@@ -10,19 +10,7 @@
 #include "uc_usage.h"
 #include "leds_states.h"
 #include "battery_measurement.h"
-#include "aseba_can_interface.h"
-#include "aseba_bridge.h"
-static void serial_start(void)
-{
-	static SerialConfig ser_cfg = {
-	    230400,
-	    0,
-	    0,
-	    0,
-	};
-
-	sdStart(&SD2, &ser_cfg); // UART3.
-}
+#include "communications.h"
 
 int main(void) {
 
@@ -62,9 +50,10 @@ int main(void) {
 	*/
 	powerButtonStart();
 
+	/**
+	 * Starts the battery measurement thread
+	 */
 	batteryMesurementStart();
-
-	serial_start();
 
 	/*
 	* Initializes two serial-over-USB CDC drivers and starts and connects the USB.
@@ -81,8 +70,10 @@ int main(void) {
 	*/
 	gdbStart();
 
-	aseba_can_start(0);
-	aseba_bridge(&SDU2);
+	/**
+	 * Starts the communication thread
+	 */
+	communicationsStart();
 
 	while (true) {
 		// static systime_t time_before = 0;
@@ -92,6 +83,6 @@ int main(void) {
 
 		// chprintf((BaseSequentialStream *) &SDU1,"hello 1 %d\n",time-time_before);
 		chThdSleepMilliseconds(100);
-		//printUcUsage((BaseSequentialStream *) &SDU2);
+		//printUcUsage((BaseSequentialStream *) &SDU1);
 	}
 }
