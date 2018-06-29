@@ -139,6 +139,8 @@ CSRC = $(ALLCSRC) \
        aseba_vm/natives.c \
        aseba_vm/vm-buffer.c \
        aseba_vm/vm.c \
+       flash/flash_common_f24.c \
+       flash/flash_common_f234.c \
        ../../../target/adiv5.c    \
        ../../../target/adiv5_swdp.c  \
        ../../../command.c \
@@ -191,7 +193,7 @@ ASMXSRC = $(ALLXASMSRC)
 INCDIR = $(ALLINC) $(TESTINC) ../USB251XB \
          ../../../target/ ../../../include/ \
          ../../common/ ../../../ \
-         ../../stm32-ChibiOS/ aseba_vm/
+         ../../stm32-ChibiOS/ aseba_vm/ flash/
 
 #
 # Project, sources and paths
