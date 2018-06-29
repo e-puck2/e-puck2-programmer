@@ -38,9 +38,6 @@ extern const SerialUSBConfig serusbcfg2;
 extern SerialUSBDriver SDU1;
 extern SerialUSBDriver SDU2;
 
-#define GDB_COM         SDU1
-#define SERIAL_COM      SDU2
-
 /*
 * Initializes two serial-over-USB CDC drivers and starts and connects the USB.
 */

@@ -47,7 +47,7 @@ void gdb_if_putchar(unsigned char c, int flush)
 			return;
 		}
 
-		chnWrite((BaseChannel *) &GDB_COM, buffer_in, count_in);
+		chnWrite((BaseChannel *) &USB_GDB, buffer_in, count_in);
 
 
 		//if (flush && (count_in == USB_DATA_SIZE)) {
@@ -94,7 +94,7 @@ static void gdb_if_update_buf(uint32_t timeout)
 // 	}
 // 	asm volatile ("cpsie i; isb");
 // #else
-	count_out = chnReadTimeout((BaseChannel *) &GDB_COM, buffer_out, USB_DATA_SIZE, timeout);
+	count_out = chnReadTimeout((BaseChannel *) &USB_GDB, buffer_out, USB_DATA_SIZE, timeout);
 	out_ptr = 0;
 //#endif
 }
