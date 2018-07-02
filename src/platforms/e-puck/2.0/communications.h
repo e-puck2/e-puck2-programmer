@@ -9,8 +9,7 @@ typedef enum{
 	ASEBA_CAN_TRANSLATOR
 }comm_modes_t;
 
-
-#define DEFAULT_COMM_MODE	UART_ESP_PASSTHROUGH
+#define DEFAULT_COMM_MODE			UART_ESP_PASSTHROUGH
 
 
 /**
@@ -20,5 +19,18 @@ typedef enum{
  * 			and the Aseba CAN <-> USB translator
  */
 void communicationsStart(void);
+
+/**
+ * @brief Switches the communication mode to the one given in parameter
+ * @param mode 			Mode chosen
+ * @param writeToflash 	Choose to write or not the mode in the flash
+ */
+void communicationsSwitchModeTo(comm_modes_t mode, uint8_t writeToflash);
+
+/**
+ * @brief Returns the active communication mode
+ * @return The active communication mode. See comm_modes_t
+ */
+comm_modes_t communicationGetActiveMode(void);
 
 #endif  /* COMMUNICATIONS_H */

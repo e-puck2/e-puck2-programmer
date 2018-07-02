@@ -10,6 +10,10 @@
 
 static bool is_bridge = false;
 
+static uint8_t aseba_bridge_should_pause = false;
+static BSEMAPHORE_DECL(aseba_bridge_uart_to_can_pause, true);
+static BSEMAPHORE_DECL(aseba_bridge_can_to_uart_pause, true);
+
 static void aseba_bridge_uart_to_can(void *p);
 static void aseba_bridge_can_to_uart(void *p);
 
@@ -37,7 +41,7 @@ static THD_FUNCTION(aseba_bridge_uart_to_can, arg)
 
     uint16_8_t source, length;
     source.u16 = length.u16 = 0;
-    uint8_t data[ASEBA_MAX_PACKET_SIZE] = {0};
+    static uint8_t data[ASEBA_MAX_PACKET_SIZE] = {0};
     uint16_t nb_received = 0;
 
     while (true) {
@@ -45,7 +49,9 @@ static THD_FUNCTION(aseba_bridge_uart_to_can, arg)
         chnReadTimeout(stream, source.u8, sizeof(source), TIME_MS2I(100));
         nb_received = chnReadTimeout(stream, data, length.u16 + 2, TIME_MS2I(100));
 
-        if(nb_received == (length.u16 + 2)){
+        if(aseba_bridge_should_pause){
+            chBSemWait(&aseba_bridge_uart_to_can_pause);
+        }else if(nb_received == (length.u16 + 2)){
             aseba_can_lock();
             AsebaCanSendSpecificSource(data, length.u16 + 2, source.u16);
             aseba_can_unlock();
@@ -61,23 +67,28 @@ static THD_FUNCTION(aseba_bridge_can_to_uart, arg)
     chRegSetThreadName("aseba can -> uart");
     BaseSequentialStream *stream = (BaseSequentialStream *)arg;
     uint16_8_t source, length;
-    uint8_t data[ASEBA_MAX_PACKET_SIZE];
+    static uint8_t data[ASEBA_MAX_PACKET_SIZE];
 
     while (true) {
-        length.u16 = AsebaCanRecv(data,
+
+        if(aseba_bridge_should_pause){
+            chBSemWait(&aseba_bridge_can_to_uart_pause);
+        }else{
+            length.u16 = AsebaCanRecv(data,
                                   ASEBA_MAX_INNER_PACKET_SIZE,
                                   &source.u16);
 
-        if (length.u16 > 0) {
-            setLed(BLUE_LED, LED_NO_POWER);
-            /* Aseba transmits length minus the type. */
-            length.u16 -= 2;
+            if (length.u16 > 0) {
+                setLed(BLUE_LED, LED_NO_POWER);
+                /* Aseba transmits length minus the type. */
+                length.u16 -= 2;
 
-            streamWrite(stream, length.u8, sizeof(source));
-            streamWrite(stream, source.u8, sizeof(source));
-            streamWrite(stream, data, length.u16 + 2);
-        }
-        chThdSleepMilliseconds(1);
+                streamWrite(stream, length.u8, sizeof(source));
+                streamWrite(stream, source.u8, sizeof(source));
+                streamWrite(stream, data, length.u16 + 2);
+            }
+            chThdSleepMilliseconds(1);
+        }   
     }
 }
 
@@ -85,6 +96,16 @@ uint16 AsebaShouldDropPacket(uint16 source, const uint8* data) {
     (void)source;
     (void)data;
     return 0;
+}
+
+void resumeAsebaBridge(void){
+    aseba_bridge_should_pause = false;
+    chBSemSignal(&aseba_bridge_uart_to_can_pause);
+    chBSemSignal(&aseba_bridge_can_to_uart_pause);
+}
+
+void pauseAsebaBridge(void){
+    aseba_bridge_should_pause = true;
 }
 
 bool aseba_is_bridge(void)

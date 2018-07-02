@@ -5,6 +5,7 @@
 #include <hal.h>
 
 #include "gdb.h"
+#include "communications.h"
 
 /**
  * Blackmagic wrappers

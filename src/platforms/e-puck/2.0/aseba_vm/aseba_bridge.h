@@ -9,6 +9,15 @@ extern "C" {
 
 void aseba_bridge(void *stream);
 
+/**
+ * @brief Resumes the aseba bridge threads
+ */
+void resumeAsebaBridge(void);
+
+/**
+ * @brief Pauses the aseba bridge threads
+ */
+void pauseAsebaBridge(void);
 /** Returns true if the board is running in bridge mode. */
 bool aseba_is_bridge(void);
 
