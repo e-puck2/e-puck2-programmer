@@ -6,6 +6,7 @@
 
 #include "gdb.h"
 #include "communications.h"
+#include "power_button.h"
 
 /**
  * Blackmagic wrappers
@@ -65,6 +66,20 @@ static inline int platform_hwversion(void)
 	return 0;
 }
 
+void platform_set_en_esp32(bool assert);
+bool platform_get_en_esp32(void);
+
+void platform_set_gpio0_esp32(bool assert);
+bool platform_get_gpio0_esp32(void);
+
+bool platform_vbus_hub(void);
+bool platform_get_vbus(void);
+
+void platform_set_usb_charge(bool assert);
+bool platform_get_usb_charge(void);
+
+void platform_set_usb_500(bool assert);
+bool platform_get_usb_500(void);
 
 /* Use newlib provided integer only stdio functions */
 #define sscanf siscanf
