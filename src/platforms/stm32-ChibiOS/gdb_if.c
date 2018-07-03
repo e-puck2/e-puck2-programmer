@@ -42,61 +42,32 @@ void gdb_if_putchar(unsigned char c, int flush)
 	if(flush || (count_in == USB_DATA_SIZE)) {
 		/* Refuse to send if USB isn't configured, and
 		 * don't bother if nobody's listening */
-		if(!isUSBConfigured() || !getControlLineState(GDB_INTERFACE, CONTROL_LINE_DTR)) {
-			count_in = 0;
-			return;
+		if(( isUSBConfigured() && getControlLineState(GDB_INTERFACE, CONTROL_LINE_DTR)) ) {
+			chnWrite((BaseChannel *) &USB_GDB, buffer_in, count_in);
 		}
 
-		chnWrite((BaseChannel *) &USB_GDB, buffer_in, count_in);
-
-
-		//if (flush && (count_in == USB_DATA_SIZE)) {
-		//	/* We need to send an empty packet for some hosts
-		//	 * to accept this as a complete transfer. */
-		//	/* libopencm3 needs a change for us to confirm when
-		//	 * that transfer is complete, so we just send a packet
-		//	 * containing a null byte for now.
-		//	 */
-		//	while (usbd_ep_write_packet(usbdev, CDCACM_GDB_ENDPOINT,
-		//		"\0", 1) <= 0);
-		//}
+		//send to the ESP's UART if GPIO0 is low and this UART is not already in use
+		if( !platform_get_gpio0_esp32() && (communicationGetActiveMode() != UART_ESP_PASSTHROUGH) ) {
+			chnWrite((BaseChannel *) &UART_ESP, buffer_in, count_in);
+		}
 
 		count_in = 0;
+		return;
 	}
 }
 
-// #ifdef STM32F4
-// void gdb_usb_out_cb(usbd_device *dev, uint8_t ep)
-// {
-// 	(void)ep;
-// 	usbd_ep_nak_set(dev, CDCACM_GDB_ENDPOINT, 1);
-// 	count_new = usbd_ep_read_packet(dev, CDCACM_GDB_ENDPOINT,
-// 	                                double_buffer_out, USB_DATA_SIZE);
-// 	if(!count_new) {
-// 		usbd_ep_nak_set(dev, CDCACM_GDB_ENDPOINT, 0);
-// 	}
-// }
-// #endif
-
 static void gdb_if_update_buf(uint32_t timeout)
 {
-	while (!isUSBConfigured()){
+	while (!isUSBConfigured() && platform_get_gpio0_esp32()){
 		chThdSleepMilliseconds(10);
 	}
-// #ifdef STM32F4
-// 	asm volatile ("cpsid i; isb");
-// 	if (count_new) {
-// 		memcpy(buffer_out, double_buffer_out, count_new);
-// 		count_out = count_new;
-// 		count_new = 0;
-// 		out_ptr = 0;
-// 		usbd_ep_nak_set(usbdev, CDCACM_GDB_ENDPOINT, 0);
-// 	}
-// 	asm volatile ("cpsie i; isb");
-// #else
+
 	count_out = chnReadTimeout((BaseChannel *) &USB_GDB, buffer_out, USB_DATA_SIZE, timeout);
+
+	if(count_out == 0 && communicationGetActiveMode() != UART_ESP_PASSTHROUGH){
+		count_out = chnReadTimeout((BaseChannel *) &UART_ESP, buffer_out, USB_DATA_SIZE, timeout);
+	}
 	out_ptr = 0;
-//#endif
 }
 
 unsigned char gdb_if_getchar(void)
@@ -104,7 +75,7 @@ unsigned char gdb_if_getchar(void)
 
 	while (!(out_ptr < count_out)) {
 		/* Detach if port closed */
-		if (!getControlLineState(GDB_INTERFACE, CONTROL_LINE_DTR))
+		if (!getControlLineState(GDB_INTERFACE, CONTROL_LINE_DTR) && platform_get_gpio0_esp32())
 			return 0x04;
 
 		gdb_if_update_buf(TIME_MS2I(1));
@@ -120,7 +91,7 @@ unsigned char gdb_if_getchar_to(int timeout)
 
 	if (!(out_ptr < count_out)) do {
 		/* Detach if port closed */
-		if (!getControlLineState(GDB_INTERFACE, CONTROL_LINE_DTR))
+		if (!getControlLineState(GDB_INTERFACE, CONTROL_LINE_DTR) && platform_get_gpio0_esp32())
 			return 0x04;
 
 		gdb_if_update_buf(TIME_MS2I(1));

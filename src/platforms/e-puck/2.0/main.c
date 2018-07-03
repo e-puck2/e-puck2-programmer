@@ -65,15 +65,15 @@ int main(void) {
 	*/
 	usbHubStart();
 
-	/*
-	* Starts the GDB system
-	*/
-	gdbStart();
-
 	/**
 	 * Starts the communication thread
 	 */
 	communicationsStart();
+
+	/*
+	* Starts the GDB system
+	*/
+	gdbStart();
 
 	while (true) {
 		// static systime_t time_before = 0;
@@ -82,7 +82,8 @@ int main(void) {
 		// time = chVTGetSystemTime();
 
 		// chprintf((BaseSequentialStream *) &SDU1,"hello 1 %d\n",time-time_before);
-		chThdSleepMilliseconds(100);
-		//printUcUsage((BaseSequentialStream *) &SDU1);
+		chThdSleepMilliseconds(300);
+		//chprintf((BaseSequentialStream *) &UART_ESP,"USB = %d, DTR = %d\n",isUSBConfigured(), getControlLineState(GDB_INTERFACE, CONTROL_LINE_DTR));
+		//printUcUsage((BaseSequentialStream *) &UART_ESP);
 	}
 }
