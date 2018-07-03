@@ -145,13 +145,13 @@ static bool cmd_select_mode(target *t, int argc, const char **argv){
 		gdb_outf("%s",error_message);
 	else if (strcmp(argv[1], "1") == 0){
 		communicationsSwitchModeTo(UART_407_PASSTHROUGH, true);
-		gdb_outf("Switched to mode UART_407_PASSTHROUGH\n");
+		gdb_outf("Switched to mode 1 : UART_407_PASSTHROUGH\n");
 	}else if (strcmp(argv[1], "2") == 0){
  		communicationsSwitchModeTo(UART_ESP_PASSTHROUGH, true);
-		gdb_outf("Switched to mode 2\n");
+		gdb_outf("Switched to mode 2 : UART_ESP_PASSTHROUGH\n");
  	}else if (strcmp(argv[1], "3") == 0){
  		communicationsSwitchModeTo(ASEBA_CAN_TRANSLATOR, true);
-		gdb_outf("Switched to mode ASEBA_CAN_TRANSLATOR\n");
+		gdb_outf("Switched to mode 3 : ASEBA_CAN_TRANSLATOR\n");
  	}else{
  		gdb_outf("%s",error_message);
  	}
@@ -164,7 +164,14 @@ static bool cmd_get_mode(target *t, int argc, const char **argv)
 	(void)argc;
 	(void)argv;
 	uint8_t mode = communicationGetActiveMode();
-	gdb_outf("Current mode : %d\n", mode);
+	gdb_outf("Current mode : ");
+	if(mode == UART_407_PASSTHROUGH){
+		gdb_outf("mode 1 : UART_407_PASSTHROUGH\n");
+	}else if(mode == UART_ESP_PASSTHROUGH){
+		gdb_outf("mode 2 : UART_ESP_PASSTHROUGH\n");
+	}else if(mode == ASEBA_CAN_TRANSLATOR){
+		gdb_outf("mode 3 :ASEBA_CAN_TRANSLATOR\n");
+	}
 
 	return true;
 }
