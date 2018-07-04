@@ -23,14 +23,10 @@ static BSEMAPHORE_DECL(uart_to_usb_pause, true);
 static SerialDriver* uart_used = NULL;
 static comm_modes_t active_mode = DEFAULT_COMM_MODE;
 
-//used to store what is read from USB and UART in the thread
-#define BUFFER_SIZE	64
-static uint8_t rx_buffer[BUFFER_SIZE];
-
 /**
  * @brief Resumes the aseba bridge threads
  */
-void resumeUartToUSBThread(void){
+void resumeUartToUSBThreads(void){
 	uart_to_usb_should_pause = false;
 	chBSemSignal(&uart_to_usb_pause);
 }
@@ -38,7 +34,7 @@ void resumeUartToUSBThread(void){
 /**
  * @brief Pauses the aseba bridge threads
  */
-void pauseUartToUSBThread(void){
+void pauseUartToUSBThreads(void){
 	uart_to_usb_should_pause = true;
 }
 
@@ -109,22 +105,54 @@ static THD_FUNCTION(uart_to_usb_thd, arg)
 {
 	(void) arg;
 
-	chRegSetThreadName("UART <-> USB");
+	chRegSetThreadName("UART -> USB");
 
+	uint8_t c[1] = {0};
 	uint8_t nb_read = 0;
+	systime_t time = 0;
 
 	while(1){
 		if(uart_to_usb_should_pause){
 			chBSemWait(&uart_to_usb_pause);
 		}else{
-			nb_read = chnReadTimeout((BaseChannel*)uart_used, rx_buffer, BUFFER_SIZE, TIME_MS2I(1));
+			nb_read = chnReadTimeout((BaseChannel*)uart_used, c, 1, TIME_MS2I(10));
 			if(nb_read){
-				chnWriteTimeout((BaseChannel*)&USB_SERIAL, rx_buffer, nb_read, TIME_MS2I(1));
+				if(time < chVTGetSystemTime()){
+					palToggleLine(LINE_LED_BLUE);
+					time = chVTGetSystemTime() + TIME_MS2I(UART_TOGGLE_TIME);
+				}
+				chnWriteTimeout((BaseChannel*)&USB_SERIAL, c, 1, TIME_INFINITE);
+			}else{
+				palSetLine(LINE_LED_BLUE);
 			}
+		}
+	}
+}
 
-			nb_read = chnReadTimeout((BaseChannel*)&USB_SERIAL, rx_buffer, BUFFER_SIZE, TIME_MS2I(1));
+static THD_WORKING_AREA(usb_to_uart_thd_wa, 128);
+static THD_FUNCTION(usb_to_uart_thd, arg)
+{
+	(void) arg;
+
+	chRegSetThreadName("USB -> UART");
+
+	uint8_t c[1] = {0};
+	uint8_t nb_read = 0;
+	systime_t time = 0;
+
+	while(1){
+		if(uart_to_usb_should_pause){
+			chBSemWait(&uart_to_usb_pause);
+		}else{
+			nb_read = chnReadTimeout((BaseChannel*)&USB_SERIAL, c, 1, TIME_MS2I(10));
 			if(nb_read){
-				chnWriteTimeout((BaseChannel*)uart_used, rx_buffer, nb_read, TIME_MS2I(1));
+				if(time < chVTGetSystemTime()){
+					palToggleLine(LINE_LED_BLUE);
+					time = chVTGetSystemTime() + TIME_MS2I(UART_TOGGLE_TIME);
+				}
+				chnWriteTimeout((BaseChannel*)uart_used, c, 1, TIME_INFINITE);
+			}else{
+				palSetLine(LINE_LED_BLUE);
 			}
 		}
 	}
@@ -165,9 +193,10 @@ void communicationsStart(void){
 	communicationsSwitchModeTo(active_mode, false);
 
 	/**
-	 * Starts the communications thread
+	 * Starts the communications threads
 	 */
 	chThdCreateStatic(uart_to_usb_thd_wa, sizeof(uart_to_usb_thd_wa), NORMALPRIO, uart_to_usb_thd, NULL);
+	chThdCreateStatic(usb_to_uart_thd_wa, sizeof(usb_to_uart_thd_wa), NORMALPRIO, usb_to_uart_thd, NULL);
 }
 
 void communicationsSwitchModeTo(comm_modes_t mode, uint8_t writeToflash){
@@ -176,7 +205,7 @@ void communicationsSwitchModeTo(comm_modes_t mode, uint8_t writeToflash){
 		active_mode = DEFAULT_COMM_MODE;
 	}
 	if(mode == ASEBA_CAN_TRANSLATOR){
-		pauseUartToUSBThread();
+		pauseUartToUSBThreads();
 		resumeAsebaBridge();
 		active_mode = ASEBA_CAN_TRANSLATOR;
 	}
@@ -189,7 +218,7 @@ void communicationsSwitchModeTo(comm_modes_t mode, uint8_t writeToflash){
 			uart_used = &UART_ESP;
 			active_mode = UART_ESP_PASSTHROUGH;
 		}
-		resumeUartToUSBThread();
+		resumeUartToUSBThreads();
 	}
 
 	if(writeToflash){

@@ -12,6 +12,8 @@ typedef enum{
 
 #define DEFAULT_COMM_MODE			UART_ESP_PASSTHROUGH
 
+#define UART_TOGGLE_TIME			10	//time between each toggle of the blue led during an active com in ms
+
 
 /**
  * @brief Starts the communications thread
