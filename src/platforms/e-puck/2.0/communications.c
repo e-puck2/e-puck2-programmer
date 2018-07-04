@@ -3,6 +3,7 @@
 #include "aseba_can_interface.h"
 #include "aseba_bridge.h"
 #include "flash_common_f24.h"
+#include "leds.h"
 
 #define CONFIG_SECTOR	15			//corresponds to the last sector of the flash for the 413
 #define PATTERN_FLASH	0xABCDEC	//arbitrary patern to detect if the block has already been written
@@ -118,12 +119,12 @@ static THD_FUNCTION(uart_to_usb_thd, arg)
 			nb_read = chnReadTimeout((BaseChannel*)uart_used, c, 1, TIME_MS2I(10));
 			if(nb_read){
 				if(time < chVTGetSystemTime()){
-					palToggleLine(LINE_LED_BLUE);
+					toggleLed(BLUE_LED, LED_MAX_POWER);
 					time = chVTGetSystemTime() + TIME_MS2I(UART_TOGGLE_TIME);
 				}
 				chnWriteTimeout((BaseChannel*)&USB_SERIAL, c, 1, TIME_INFINITE);
 			}else{
-				palSetLine(LINE_LED_BLUE);
+				setLed(BLUE_LED, LED_NO_POWER);
 			}
 		}
 	}
@@ -147,12 +148,12 @@ static THD_FUNCTION(usb_to_uart_thd, arg)
 			nb_read = chnReadTimeout((BaseChannel*)&USB_SERIAL, c, 1, TIME_MS2I(10));
 			if(nb_read){
 				if(time < chVTGetSystemTime()){
-					palToggleLine(LINE_LED_BLUE);
+					toggleLed(BLUE_LED, LED_MAX_POWER);
 					time = chVTGetSystemTime() + TIME_MS2I(UART_TOGGLE_TIME);
 				}
 				chnWriteTimeout((BaseChannel*)uart_used, c, 1, TIME_INFINITE);
 			}else{
-				palSetLine(LINE_LED_BLUE);
+				setLed(BLUE_LED, LED_NO_POWER);
 			}
 		}
 	}

@@ -81,7 +81,7 @@ static THD_FUNCTION(aseba_bridge_can_to_uart, arg)
 
             if (length.u16 > 0) {
                 if(time < chVTGetSystemTime()){
-                    palToggleLine(LINE_LED_BLUE);
+                    toggleLed(BLUE_LED, LED_MAX_POWER);
                     time = chVTGetSystemTime() + TIME_MS2I(ASEBA_TOGGLE_TIME);
                 }
                 /* Aseba transmits length minus the type. */
@@ -92,7 +92,7 @@ static THD_FUNCTION(aseba_bridge_can_to_uart, arg)
             }
 
             if(time < chVTGetSystemTime()){
-                palSetLine(LINE_LED_BLUE);
+                setLed(BLUE_LED, LED_NO_POWER);
             }
             chThdSleepMilliseconds(1);
         }   

@@ -5,7 +5,7 @@
 #include "gdb.h"
 
 //values to control the Red and Green leds
-static uint16_t leds_values[] = {LED_NO_POWER, LED_MID_POWER};
+static uint16_t leds_values[] = {LED_NO_POWER, LED_QUARTER_POWER};
 
 #define POWER_EVENT 		EVENT_MASK(0)
 #define BATTERY_INFO_EVENT	EVENT_MASK(1)
@@ -20,8 +20,6 @@ static THD_FUNCTION(leds_states_thd, arg)
 
 	uint8_t running_state = false;
 	uint8_t low_power_state = false;
-
-	uint8_t toggle_state = 0;
 
 	systime_t time = 0;
 
@@ -58,28 +56,28 @@ static THD_FUNCTION(leds_states_thd, arg)
 			if(flags & MIN_VOLTAGE_FLAG){
 				//red blinking
 				low_power_state = true;
-				leds_values[RED_LED] = LED_MID_POWER;
+				leds_values[RED_LED] = LED_QUARTER_POWER;
 				leds_values[GREEN_LED] = LED_NO_POWER;
 			}else if(flags & VERY_LOW_VOLTAGE_FLAG){
 				//red blinking
 				low_power_state = true;
-				leds_values[RED_LED] = LED_MID_POWER;
+				leds_values[RED_LED] = LED_QUARTER_POWER;
 				leds_values[GREEN_LED] = LED_NO_POWER;
 			}else if(flags & LOW_VOLTAGE_FLAG){
 				//red
 				low_power_state = false;
-				leds_values[RED_LED] = LED_MID_POWER;
+				leds_values[RED_LED] = LED_QUARTER_POWER;
 				leds_values[GREEN_LED] = LED_NO_POWER;
 			}else if(flags & GOOD_VOLTAGE_FLAG){
 				//orange
 				low_power_state = false;
-				leds_values[RED_LED] = LED_MID_POWER;
-				leds_values[GREEN_LED] = LED_MID_POWER;
+				leds_values[RED_LED] = LED_QUARTER_POWER;
+				leds_values[GREEN_LED] = LED_QUARTER_POWER;
 			}else if(flags & MAX_VOLTAGE_FLAG){
 				//green
 				low_power_state = false;
 				leds_values[RED_LED] = LED_NO_POWER;
-				leds_values[GREEN_LED] = LED_MID_POWER;
+				leds_values[GREEN_LED] = LED_QUARTER_POWER;
 			}
 
 			//updates the leds if the robot is ON if it is not blinking
@@ -94,7 +92,6 @@ static THD_FUNCTION(leds_states_thd, arg)
 			flags = chEvtGetAndClearFlags(&gdb_status_event_listener);
 			//during IDLE, we simply have the leds on
 			if(flags & IDLE_FLAG){
-				toggle_state = false;
 				running_state = false;
 				setLed(RED_LED, leds_values[RED_LED]);
 				setLed(GREEN_LED, leds_values[GREEN_LED]);
@@ -102,15 +99,13 @@ static THD_FUNCTION(leds_states_thd, arg)
 			//during running state, we make the leds blink
 			else if(flags & RUNNING_FLAG){
 				running_state = true;
-				toggle_state = false;
 			}
 			//during the programming state, we make the leds blink at each flashwrite
 			else if(flags & PROGRAMMING_FLAG){
 				//flag set when we are programming the target.
 				//since it is called at every flash write order, we need to blink the leds here
-				setLed(RED_LED, toggle_state ? leds_values[RED_LED] : LED_NO_POWER);
-				setLed(GREEN_LED, toggle_state ? leds_values[GREEN_LED] : LED_NO_POWER);
-				toggle_state = !toggle_state;
+				toggleLed(RED_LED, leds_values[RED_LED]);
+				toggleLed(GREEN_LED, leds_values[GREEN_LED]);
 			}
 			//does nothing for now
 			if(flags & ERROR_FLAG){
@@ -122,10 +117,9 @@ static THD_FUNCTION(leds_states_thd, arg)
 		if((running_state || low_power_state) && powerButtonGetPowerState() == POWER_ON){
 			if((time + BLINK_TIME) < chVTGetSystemTime()){
 				time = chVTGetSystemTime();
-				toggle_state = !toggle_state;
+				toggleLed(RED_LED,leds_values[RED_LED]);
+				toggleLed(GREEN_LED,leds_values[GREEN_LED]);
 			}
-			setLed(RED_LED, toggle_state ? leds_values[RED_LED] : LED_NO_POWER);
-			setLed(GREEN_LED, toggle_state ? leds_values[GREEN_LED] : LED_NO_POWER);
 		}
 
 		chThdSleepMilliseconds(10);

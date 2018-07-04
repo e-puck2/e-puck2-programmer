@@ -8,7 +8,7 @@
 
 static uint8_t pwm_status = NOT_CONFIGURED;
 
-static uint16_t leds_init_values[NUM_LEDS] = {0};
+static uint16_t leds_values[NB_LEDS] = {0};
 
 ////////////////////////////////// PRIVATE FUNCTIONS ////////////////////////////////////
 
@@ -101,9 +101,21 @@ void ledInit(void){
 
 	//sets the init values. 
 	//For example if someone tried to set a led before the pwm was configured
-	setLed(RED_LED, leds_init_values[RED_LED]);
-	setLed(GREEN_LED, leds_init_values[GREEN_LED]);
-	setLed(BLUE_LED, leds_init_values[BLUE_LED]);
+	setLed(RED_LED, leds_values[RED_LED]);
+	setLed(GREEN_LED, leds_values[GREEN_LED]);
+	setLed(BLUE_LED, leds_values[BLUE_LED]);
+}
+
+void toggleLed(led_name_t led, uint16_t value){
+	if(led>=NB_LEDS){
+		return;
+	}
+
+	if(leds_values[led] != PWM_PERIOD){
+		setLed(led, LED_NO_POWER);
+	}else{
+		setLed(led, value);
+	}
 }
 
 void setLed(led_name_t led, uint16_t value){
@@ -113,7 +125,7 @@ void setLed(led_name_t led, uint16_t value){
 }
 
 void setLedI(led_name_t led, uint16_t value){
-	if(led>=NUM_LEDS){
+	if(led>=NB_LEDS){
 		return;
 	}
 	if(pwm_status == CONFIGURED){
@@ -138,8 +150,8 @@ void setLedI(led_name_t led, uint16_t value){
 
 		}
 		
-	}else{
-		//stored the value while the PWM is not running
-		leds_init_values[led] = value;
 	}
+
+	//stores the value
+	leds_values[led] = value;
 }
