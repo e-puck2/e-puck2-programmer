@@ -68,6 +68,7 @@ static THD_FUNCTION(aseba_bridge_can_to_uart, arg)
     BaseSequentialStream *stream = (BaseSequentialStream *)arg;
     uint16_8_t source, length;
     static uint8_t data[ASEBA_MAX_PACKET_SIZE];
+    systime_t time = 0;
 
     while (true) {
 
@@ -79,13 +80,19 @@ static THD_FUNCTION(aseba_bridge_can_to_uart, arg)
                                   &source.u16);
 
             if (length.u16 > 0) {
-                setLed(BLUE_LED, LED_NO_POWER);
+                if(time < chVTGetSystemTime()){
+                    palToggleLine(LINE_LED_BLUE);
+                    time = chVTGetSystemTime() + TIME_MS2I(ASEBA_TOGGLE_TIME);
+                }
                 /* Aseba transmits length minus the type. */
                 length.u16 -= 2;
-
                 streamWrite(stream, length.u8, sizeof(source));
                 streamWrite(stream, source.u8, sizeof(source));
                 streamWrite(stream, data, length.u16 + 2);
+            }
+
+            if(time < chVTGetSystemTime()){
+                palSetLine(LINE_LED_BLUE);
             }
             chThdSleepMilliseconds(1);
         }   
