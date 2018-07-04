@@ -3,7 +3,6 @@
 #include "aseba_can_interface.h"
 #include "aseba_bridge.h"
 #include "flash_common_f24.h"
-#include "leds.h"
 
 #define CONFIG_SECTOR	15			//corresponds to the last sector of the flash for the 413
 #define PATTERN_FLASH	0xABCDEC	//arbitrary patern to detect if the block has already been written
@@ -15,6 +14,9 @@ extern uint32_t _config_end;				//defined in the .ld file
 static uint32_t config_start = (uint32_t)&_config_start;
 static uint32_t config_end = (uint32_t)&_config_end;
 static uint32_t config_addr;
+
+//Event source used to send events to other threads
+event_source_t communications_event;
 
 //used to pause or not the thread
 static uint8_t uart_to_usb_should_pause	= false;
@@ -110,7 +112,6 @@ static THD_FUNCTION(uart_to_usb_thd, arg)
 
 	uint8_t c[1] = {0};
 	uint8_t nb_read = 0;
-	systime_t time = 0;
 
 	while(1){
 		if(uart_to_usb_should_pause){
@@ -118,13 +119,10 @@ static THD_FUNCTION(uart_to_usb_thd, arg)
 		}else{
 			nb_read = chnReadTimeout((BaseChannel*)uart_used, c, 1, TIME_MS2I(10));
 			if(nb_read){
-				if(time < chVTGetSystemTime()){
-					toggleLed(BLUE_LED, LED_MAX_POWER);
-					time = chVTGetSystemTime() + TIME_MS2I(UART_TOGGLE_TIME);
-				}
+				chEvtBroadcastFlags(&communications_event, ACTIVE_COMMUNICATION_FLAG);
 				chnWriteTimeout((BaseChannel*)&USB_SERIAL, c, 1, TIME_INFINITE);
 			}else{
-				setLed(BLUE_LED, LED_NO_POWER);
+				chEvtBroadcastFlags(&communications_event, NO_COMMUNICATION_FLAG);
 			}
 		}
 	}
@@ -139,7 +137,6 @@ static THD_FUNCTION(usb_to_uart_thd, arg)
 
 	uint8_t c[1] = {0};
 	uint8_t nb_read = 0;
-	systime_t time = 0;
 
 	while(1){
 		if(uart_to_usb_should_pause){
@@ -147,13 +144,10 @@ static THD_FUNCTION(usb_to_uart_thd, arg)
 		}else{
 			nb_read = chnReadTimeout((BaseChannel*)&USB_SERIAL, c, 1, TIME_MS2I(10));
 			if(nb_read){
-				if(time < chVTGetSystemTime()){
-					toggleLed(BLUE_LED, LED_MAX_POWER);
-					time = chVTGetSystemTime() + TIME_MS2I(UART_TOGGLE_TIME);
-				}
+				chEvtBroadcastFlags(&communications_event, ACTIVE_COMMUNICATION_FLAG);
 				chnWriteTimeout((BaseChannel*)uart_used, c, 1, TIME_INFINITE);
 			}else{
-				setLed(BLUE_LED, LED_NO_POWER);
+				chEvtBroadcastFlags(&communications_event, NO_COMMUNICATION_FLAG);
 			}
 		}
 	}

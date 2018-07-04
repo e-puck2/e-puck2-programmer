@@ -38,6 +38,7 @@ int main(void) {
 	chEvtObjectInit(&power_event);
 	chEvtObjectInit(&battery_info_event);
 	chEvtObjectInit(&gdb_status_event);
+	chEvtObjectInit(&communications_event);
 
 	/**
 	* Starts the leds states thread. Must be the first module because other modules
@@ -84,6 +85,6 @@ int main(void) {
 		// chprintf((BaseSequentialStream *) &SDU1,"hello 1 %d\n",time-time_before);
 		chThdSleepMilliseconds(300);
 		//chprintf((BaseSequentialStream *) &UART_ESP,"USB = %d, DTR = %d\n",isUSBConfigured(), getControlLineState(GDB_INTERFACE, CONTROL_LINE_DTR));
-		//printUcUsage((BaseSequentialStream *) &UART_ESP);
+		//printUcUsage((BaseSequentialStream *) &USB_GDB);
 	}
 }

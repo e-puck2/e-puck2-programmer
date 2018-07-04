@@ -12,8 +12,12 @@ typedef enum{
 
 #define DEFAULT_COMM_MODE			UART_ESP_PASSTHROUGH
 
-#define UART_TOGGLE_TIME			10	//time between each toggle of the blue led during an active com in ms
+//Event source used to send events to other threads
+extern event_source_t communications_event;
 
+//Possible flags of the communications event
+#define ACTIVE_COMMUNICATION_FLAG		(1<<0)	
+#define NO_COMMUNICATION_FLAG			(1<<1)
 
 /**
  * @brief Starts the communications thread

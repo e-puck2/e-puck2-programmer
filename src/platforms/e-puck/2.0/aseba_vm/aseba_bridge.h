@@ -7,8 +7,6 @@ extern "C" {
 
 #include "ch.h"
 
-#define ASEBA_TOGGLE_TIME			20	//time between each toggle of the blue led during an active com in ms
-
 void aseba_bridge(void *stream);
 
 /**
