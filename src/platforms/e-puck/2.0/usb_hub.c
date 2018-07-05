@@ -17,9 +17,11 @@ static THD_FUNCTION(usb_hub_thd, arg)
 
 	/* Enabling events on both edges of the button line.*/
 	palEnableLineEvent(LINE_VBUS_DET, PAL_EVENT_MODE_BOTH_EDGES);
-	//init the first time the hub
-	USB251XB_init(USB2512B);
-	hub_state = CONFIGURED;
+	//init the first time the hub if a usb cable is plugged
+	if(palReadLine(LINE_VBUS_DET)){
+		USB251XB_init(USB2512B);
+		hub_state = CONFIGURED;
+	}
 
 	while(1){
 		//waiting until an event on the line is detected
