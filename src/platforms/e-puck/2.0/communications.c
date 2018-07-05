@@ -112,6 +112,7 @@ static THD_FUNCTION(uart_to_usb_thd, arg)
 
 	uint8_t c[1] = {0};
 	uint8_t nb_read = 0;
+	uint32_t nb_times_read = 0;
 
 	while(1){
 		if(uart_to_usb_should_pause){
@@ -119,9 +120,12 @@ static THD_FUNCTION(uart_to_usb_thd, arg)
 		}else{
 			nb_read = chnReadTimeout((BaseChannel*)uart_used, c, 1, TIME_MS2I(10));
 			if(nb_read){
-				chEvtBroadcastFlags(&communications_event, ACTIVE_COMMUNICATION_FLAG);
+				nb_times_read++;
+				if(nb_times_read > 1)
+					chEvtBroadcastFlags(&communications_event, ACTIVE_COMMUNICATION_FLAG);
 				chnWriteTimeout((BaseChannel*)&USB_SERIAL, c, 1, TIME_INFINITE);
 			}else{
+				nb_times_read = 0;
 				chEvtBroadcastFlags(&communications_event, NO_COMMUNICATION_FLAG);
 			}
 		}
