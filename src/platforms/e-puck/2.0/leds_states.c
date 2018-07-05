@@ -41,6 +41,9 @@ static THD_FUNCTION(leds_states_thd, arg)
 
 	while (true) {
 		
+
+						//////////EVENTS/////////
+
 		events = chEvtWaitOneTimeout(ALL_EVENTS, TIME_IMMEDIATE);
 		//power events come from the power_button module
 		if (events & POWER_EVENT) {
@@ -130,6 +133,8 @@ static THD_FUNCTION(leds_states_thd, arg)
 			}
 		}
 
+							///////RED and GREEN Leds////////
+
 		//condition to blink the leds at the specified frequency when the target is in run mode
 		//or when it is in low power state
 		if((running_state || low_power_state) && (powerButtonGetPowerState() == POWER_ON)){
@@ -140,14 +145,16 @@ static THD_FUNCTION(leds_states_thd, arg)
 			}
 		}
 
-		//condition to blink the leds at the specified frequency when a communication is active
+							////////BLUE Led ///////////
+
+		//condition to blink the blue led at the specified frequency when a communication is active
 		if(communicating_state && (powerButtonGetPowerState() == POWER_ON)){
 			if(time_communication < chVTGetSystemTime()){
 				time_communication = chVTGetSystemTime() + TIME_MS2I(COMMUNICATION_BLINK_TIME);
 				toggleLed(BLUE_LED,leds_values[BLUE_LED]);
 			}
 		}
-		//we turn of the led after COMMUNICATION_BLINK_TIME if no more active communication
+		//we turn off the blue led after COMMUNICATION_BLINK_TIME if no more active communication
 		else{
 			if(time_communication < chVTGetSystemTime()){
 				setLed(BLUE_LED, LED_NO_POWER);
