@@ -202,7 +202,14 @@ static bool cmd_jtag_scan(target *t, int argc, char **argv)
 #endif
 
 bool cmd_swdp_scan(void)
-{
+{	
+#ifdef EPUCK2_CHIBIOS
+	//power on the robot if we try to program it
+	if(powerButtonGetPowerState() == POWER_OFF){
+		powerButtonTurnOnOff(POWER_ON);
+		chThdSleepMilliseconds(1000);
+	}
+#endif /* EPUCK2_CHIBIOS */
 	gdb_outf("Target voltage: %s\n", platform_target_voltage());
 
 	if(connect_assert_srst)
