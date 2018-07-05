@@ -1,4 +1,4 @@
-Specific to the e-puk2 mobile robot:
+Specific to the e-puck2 mobile robot:
 
 This platform use 2 STM32F4xx uCs
 1. An STM32F413 to implement the low-level microcontroller,
@@ -10,12 +10,12 @@ This platform use 2 STM32F4xx uCs
 System vs BMP Bootloader
 ========================
 We use the STM32F413 internal DFU bootloader and there is no code to provide and
-no control too except the Boot0 pin (see below).
+no control except the Boot0 pin (see below).
 =======
 System vs BMP Bootloader
 ========================
 For the BMP bootloader, flashing was not reliable. So we use the system
-bootloder unconditional.
+bootloader unconditional.
 
 Connections:
 ====================
@@ -26,10 +26,7 @@ be connected to a PC with DFU util tools in order to reprogram the BlackMagic
 Probe firmware.
 
 Not implemented yet but could be done later:
-1. An eventual Black Magic UART Port: That's need an UART connection (2 pins)
-between the 2 uCs and it will allow to implement a virtual UART console via USB
-between the 407 and the USB host.
-2. An eventual Black Magic Trace Capture: That's need 1 link between the 2 uCs
+1. An eventual Black Magic Trace Capture: That's need 1 link between the 2 uCs
 (SWO on the 407)
 
 > PA0: TDI - if needed but try to avoid to use it, that's the case yet
@@ -44,13 +41,6 @@ between the 407 and the USB host.
 > PA13/Red Led:  Error indicator
 > PA15/Green Led: Idle/Run indicator
 
-Power management. For the moment just force ON after a reset if the Power ON
-button is pressed. The switch OFF is implemented by GDB dedicated function.
-> PA6: PWR_ON output at "1" in order to maintain the system's power supply.
-> PA7: PWR_ON_BTN input. Can be use to be sure that the power supply ON is
-       well requested from the ON/OFF button. And by software can be used to
-       switch OFF too the system.
-
 USB connection detection.
 > PA9: VBUS (USB_PRESENT or PRT_PROG)
 
@@ -60,41 +50,29 @@ Later an autonomous state machine will do the job autonomously.
 > PB5: USB_CHARGE output
 > PB6: USB_500 output
 
-ESP32 functions.
-> PC13: EN_ESP32 active "1". Output managed from gdb "en_esp32" function
-
-USART interface with the ESP32 enabled if NO_SERIAL = 0 in Makefile.inc
-> PA2: USART-TX connected to RXD_ESP32
-> PA3: USART-RX connected to TXD_ESP32
-
 GDB dedicated functions :
 =================================
 Use "mon help" to list the dedicated function for the platform
 New and specific functions are added via platform_commands.h file.
 
-1) <pwr_on_btn SHUTDOWN> to switch off the platform
-2) <pwr_on_btn> to read the state of the Power On button (Pressed|Released)
-3) <vbus> to read the state of VBus input
-4) <en_esp32 (ON|OFF)> to (enable|disable) the ESP32
-5) <en_esp32> to read the state of the EN_ESP32 pins
-6) <usb_charge> to manage the charger
-7) <usb_500> to manage the charge current
 
-ToDo :
+ToDo : 
 ====================
 
-2) Charger management. Implement state machine doing autonomously the management.
-    PB7: USB_PRESENT input but redundant with VBUS ??
-3) Extenstion connector management. Not implemented yet.
-    PB12: Extention system enable (EXT_SYSEN) output to control the Supplies
+1) Extension connector management. Not implemented yet.
+    PB12: Extension system enable (EXT_SYSEN) output to control the supplies
           of futur extention boards.
-5) ESP32 functions. The USART interface is implemented by default (cf. NO_SERIAL
-   option in the Makefile.inc).
-    PB1:  GPIO_ESP32. Nothing for the moment
-2) CAN translator : Not implemented yet.
-    PB8: CAN_RX
-    PB9: CAN_TX
-3) DFSDM microphones : Not implemented yet.
-    PA8: TIM9_CH2 if Audio clock implemented on F407, else output DFSDM1_CKOUT
-    PA4: SPI2_MOSI or DFSDM1_DATIN1
-    PB14: SPI3_MOSI or DFSDM1_DATIN2
+
+
+New in version 2 of the code :
+====================================
+
+1) Code completely rewritten using ChibiOS
+2) Now we can control the brigthness of the three leds
+3) The status of GDB is showed using the leds (programming, running, idle)
+4) The Aseba Can translor works better now
+5) In general, everything works smoother and better, also the code has a better organization and is easier to modify
+6) No more dependencies with LibOpencm3, therefore we can compile the whole project without the need to compile first
+   libopencm3 (no more Python support needed)
+7) The robot is automatically turned on if we try to program it when it is off.
+
