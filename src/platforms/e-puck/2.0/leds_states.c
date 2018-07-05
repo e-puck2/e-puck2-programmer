@@ -1,4 +1,3 @@
-
 #include "leds_states.h"
 #include "power_button.h"
 #include "battery_measurement.h"
