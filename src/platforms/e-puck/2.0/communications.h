@@ -40,4 +40,12 @@ void communicationsSwitchModeTo(comm_modes_t mode, uint8_t writeToflash);
  */
 comm_modes_t communicationGetActiveMode(void);
 
+/**
+ * @brief 	Returns the state of the bluetooth connection (info from gpio0 of the ESP32)
+ * 			Note : We can't know which bluetooth canal is connected.
+ * @return true if connected and false otherwise
+ */
+uint8_t communicationIsBluetoothConnected(void);
+
+
 #endif  /* COMMUNICATIONS_H */

@@ -21,6 +21,7 @@ static THD_FUNCTION(leds_states_thd, arg)
 	uint8_t running_state = false;
 	uint8_t communicating_state = false;
 	uint8_t low_power_state = false;
+	uint8_t bluetooth_state = false;
 
 	systime_t time_run = 0;
 	systime_t time_communication = 0;
@@ -40,6 +41,8 @@ static THD_FUNCTION(leds_states_thd, arg)
 
 	while (true) {
 		
+		//////////TEST IF THE BLUETOOTH IS CONNECTED////////////
+		bluetooth_state = communicationIsBluetoothConnected();
 
 						//////////EVENTS/////////
 
@@ -154,9 +157,14 @@ static THD_FUNCTION(leds_states_thd, arg)
 			}
 		}
 		//we turn off the blue led after COMMUNICATION_BLINK_TIME if no more active communication
+		//or we keep it on because the bluetooth is connected
 		else{
 			if(time_communication < chVTGetSystemTime()){
-				setLed(BLUE_LED, LED_NO_POWER);
+				if(bluetooth_state && (powerButtonGetPowerState() == POWER_ON)){
+					setLed(BLUE_LED, leds_values[BLUE_LED]);
+				}else{
+					setLed(BLUE_LED, LED_NO_POWER);
+				}
 			}
 		}
 

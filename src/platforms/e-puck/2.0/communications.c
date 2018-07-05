@@ -229,3 +229,8 @@ void communicationsSwitchModeTo(comm_modes_t mode, uint8_t writeToflash){
 comm_modes_t communicationGetActiveMode(void){
 	return active_mode;
 }
+
+//we get the gpio0 pin status of the ESP32. 0 is for connected and 1 for not connected.
+uint8_t communicationIsBluetoothConnected(void){
+	return !palReadLine(LINE_ESP_GPIO0);
+}
