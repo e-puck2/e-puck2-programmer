@@ -77,14 +77,7 @@ int main(void) {
 	gdbStart();
 
 	while (true) {
-		// static systime_t time_before = 0;
-		// static systime_t time = 0;
-		// time_before = time;
-		// time = chVTGetSystemTime();
-
-		// chprintf((BaseSequentialStream *) &SDU1,"hello 1 %d\n",time-time_before);
 		chThdSleepMilliseconds(300);
-		//chprintf((BaseSequentialStream *) &UART_ESP,"USB = %d, DTR = %d\n",isUSBConfigured(), getControlLineState(GDB_INTERFACE, CONTROL_LINE_DTR));
-		//printUcUsage((BaseSequentialStream *) &USB_GDB);
+		//printUcUsage((BaseSequentialStream *) &UART_ESP);
 	}
 }
