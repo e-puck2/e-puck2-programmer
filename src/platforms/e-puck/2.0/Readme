@@ -26,7 +26,7 @@ be connected to a PC with DFU util tools in order to reprogram the BlackMagic
 Probe firmware.
 
 Not implemented yet but could be done later:
-1. An eventual Black Magic Trace Capture: That's need 1 link between the 2 uCs
+1. An eventual Black Magic Trace Capture: It needs 1 link between the 2 uCs
 (SWO on the 407)
 
 > PA0: TDI - if needed but try to avoid to use it, that's the case yet
@@ -52,7 +52,7 @@ Later an autonomous state machine will do the job autonomously.
 
 GDB dedicated functions :
 =================================
-Use "mon help" to list the dedicated function for the platform
+Use "mon help" to list the dedicated function for the platform when connected with GDB
 New and specific functions are added via platform_commands.h file.
 
 
@@ -64,15 +64,37 @@ ToDo :
           of futur extention boards.
 
 
-New in version 2 of the code :
+New in version 2 of the code (july 2018) :
 ====================================
 
 1) Code completely rewritten using ChibiOS
 2) Now we can control the brigthness of the three leds
 3) The status of GDB is showed using the leds (programming, running, idle)
-4) The Aseba Can translor works better now
-5) In general, everything works smoother and better, also the code has a better organization and is easier to modify
-6) No more dependencies with LibOpencm3, therefore we can compile the whole project without the need to compile first
+4) Now, when the bluetooth is connected, the blue led is ON
+5) The Aseba Can translor works better now
+6) In general, everything works smoother and better, also the code has a better organization and is easier to modify
+7) No more dependencies with LibOpencm3, therefore we can compile the whole project without the need to compile first
    libopencm3 (no more Python support needed)
-7) The robot is automatically turned on if we try to program it when it is off.
+8) The robot is automatically turned on if we try to program it when it is off.
 
+States of the RGB Led
+====================================
+0) The RGB led is used to indicate if the robot is ON or OFF (no matter the color)
+-> Leds ON      = Robot is ON
+-> Leds OFF     = Robot is OFF
+
+1) The Red and Green colors are used to indicate the battery level and the status of GDB
+  a) Battery Voltage
+  ->Green         = Battery between 4.2 and 3.5V
+  ->Orange        = Battery between 3.5 and 3.4V
+  ->Red           = Battery between 3.4 and 3.3V
+  ->Red blinking  = Battery below 3.3V
+  b) GDB status
+  ->Blinks        = Programming with GDB (blinks more or less fast depending on the communication speed)
+  ->Blinks        = Running the program with GDB (Blinks at regular speed)
+  ->Solid         = Program paused or disconnected from GDB
+2)The Blue color is used to indicate the status of the bluetooth and the status of the communication of the USB Serial
+-> Blinking       = A communication is active for one of the three mode of the Serial monitor
+                    (UART_407_PASSTHROUGH, UART_ESP_PASSTHROUGH or ASEBA_CAN_TRANSLATOR)
+-> ON             = The bluetooth is connected for the GDB or UART channel
+-> OFF            = The bluetooth is disconnected

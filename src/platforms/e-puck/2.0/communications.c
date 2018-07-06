@@ -19,8 +19,9 @@ static uint32_t config_addr;
 event_source_t communications_event;
 
 //used to pause or not the thread
-static uint8_t uart_to_usb_should_pause	= false;
+static uint8_t uart_usb_should_pause	= false;
 static BSEMAPHORE_DECL(uart_to_usb_pause, true);
+static BSEMAPHORE_DECL(usb_to_uart_pause, true);
 
 //used to store the active mode
 static SerialDriver* uart_used = NULL;
@@ -30,15 +31,16 @@ static comm_modes_t active_mode = DEFAULT_COMM_MODE;
  * @brief Resumes the aseba bridge threads
  */
 void resumeUartToUSBThreads(void){
-	uart_to_usb_should_pause = false;
+	uart_usb_should_pause = false;
 	chBSemSignal(&uart_to_usb_pause);
+	chBSemSignal(&usb_to_uart_pause);
 }
 
 /**
  * @brief Pauses the aseba bridge threads
  */
 void pauseUartToUSBThreads(void){
-	uart_to_usb_should_pause = true;
+	uart_usb_should_pause = true;
 }
 
 /**
@@ -115,7 +117,7 @@ static THD_FUNCTION(uart_to_usb_thd, arg)
 	uint32_t nb_times_read = 0;
 
 	while(1){
-		if(uart_to_usb_should_pause){
+		if(uart_usb_should_pause){
 			chBSemWait(&uart_to_usb_pause);
 		}else{
 			nb_read = chnReadTimeout((BaseChannel*)uart_used, c, 1, TIME_MS2I(10));
@@ -123,7 +125,11 @@ static THD_FUNCTION(uart_to_usb_thd, arg)
 				nb_times_read++;
 				if(nb_times_read > 1)
 					chEvtBroadcastFlags(&communications_event, ACTIVE_COMMUNICATION_FLAG);
-				chnWriteTimeout((BaseChannel*)&USB_SERIAL, c, 1, TIME_INFINITE);
+				
+				if((communicationGetActiveMode() == UART_407_PASSTHROUGH) && getControlLineState(SERIAL_INTERFACE, CONTROL_LINE_DTR))
+					chnWriteTimeout((BaseChannel*)&USB_SERIAL, c, 1, TIME_INFINITE);
+				else if(communicationGetActiveMode() == UART_ESP_PASSTHROUGH)
+					chnWriteTimeout((BaseChannel*)&USB_SERIAL, c, 1, TIME_INFINITE);
 			}else{
 				nb_times_read = 0;
 				chEvtBroadcastFlags(&communications_event, NO_COMMUNICATION_FLAG);
@@ -143,8 +149,8 @@ static THD_FUNCTION(usb_to_uart_thd, arg)
 	uint8_t nb_read = 0;
 
 	while(1){
-		if(uart_to_usb_should_pause){
-			chBSemWait(&uart_to_usb_pause);
+		if(uart_usb_should_pause){
+			chBSemWait(&usb_to_uart_pause);
 		}else{
 			nb_read = chnReadTimeout((BaseChannel*)&USB_SERIAL, c, 1, TIME_MS2I(10));
 			if(nb_read){
