@@ -1,3 +1,12 @@
+/**
+ * @file	i2c_smbus.c
+ * @brief  	Functions to communicate with the SMBus protocol with ChibiOS
+ * 
+ * @source			adapted from i2c_bus.c of e-puck2_main-processor project
+ * @written by  	Eliot Ferragni
+ * @creation date	18.06.2018
+ */
+
 #include "main.h"
 #include "i2c_smbus.h"
 
@@ -6,6 +15,8 @@ static systime_t timeout = TIME_MS2I(4); // 4 ms
 
 static uint8_t txbuf[I2C_MAX_SEQUENTIAL_WRITE+2];
 static uint8_t rxbuf[I2C_MAX_SEQUENTIAL_WRITE+1];
+
+//////////////////////////////////////////PUBLIC FUNCTIONS/////////////////////////////////////////
 
 void i2c_smbus_start(void) {
 

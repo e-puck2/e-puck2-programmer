@@ -1,3 +1,11 @@
+/**
+ * @file	leds.h
+ * @brief  	Functions to manage the RGB led connected to the programmer
+ * 
+ * @written by  	Eliot Ferragni
+ * @creation date	19.06.2018
+ */
+
 #ifndef LEDS_H
 #define LEDS_H
 

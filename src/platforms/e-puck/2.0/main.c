@@ -1,3 +1,12 @@
+/**
+ * @file	main.c
+ * @brief  	Main file of the e-puck2_programmer firmware used by the onboard programmer of the
+ * 			e-puck2 educational robot.
+ * 
+ * @written by  	Eliot Ferragni
+ * @creation date	18.06.2018
+ */
+
 #include <stdio.h>
 #include <string.h>
 

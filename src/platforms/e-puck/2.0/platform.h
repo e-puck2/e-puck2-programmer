@@ -1,3 +1,11 @@
+/**
+ * @file	platform.h
+ * @brief  	Used to make the link between the blackmagic files and the e-puck2_programmer files.
+ * 
+ * @written by  	Eliot Ferragni
+ * @creation date	18.06.2018
+ */
+
 #ifndef __PLATFORM_H
 #define __PLATFORM_H
 

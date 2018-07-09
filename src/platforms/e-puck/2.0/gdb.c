@@ -1,3 +1,11 @@
+/**
+ * @file	gdb.c
+ * @brief  	Functions to execute the GDB state machine
+ * 			Sends events to signal the state of GDB
+ * 
+ * @written by  	Eliot Ferragni
+ * @creation date	21.06.2018
+ */
 
 #include "platform.h"
 
@@ -12,6 +20,8 @@
 
 //Event source used to send events to other threads
 event_source_t gdb_status_event;
+
+/////////////////////////////////////////PRIVATE FUNCTIONS/////////////////////////////////////////
 
 static THD_WORKING_AREA(gdb_thd_wa, 20480);
 static THD_FUNCTION(gdb_thd, arg)
@@ -34,7 +44,7 @@ static THD_FUNCTION(gdb_thd, arg)
 	}
 }
 
-
+//////////////////////////////////////////PUBLIC FUNCTIONS/////////////////////////////////////////
 
 void gdbStart(void){
 	/**

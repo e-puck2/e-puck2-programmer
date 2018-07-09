@@ -1,3 +1,12 @@
+/**
+ * @file	i2c_smbus.h
+ * @brief  	Functions to communicate with the SMBus protocol with ChibiOS
+ * 
+ * @source			adapted from i2c_bus.c of e-puck2_main-processor project
+ * @written by  	Eliot Ferragni
+ * @creation date	18.06.2018
+ */
+
 #ifndef I2C_BUS_H
 #define I2C_BUS_H
 

@@ -1,3 +1,10 @@
+/**
+ * @file	leds.c
+ * @brief  	Functions to manage the RGB led connected to the programmer
+ * 
+ * @written by  	Eliot Ferragni
+ * @creation date	19.06.2018
+ */
 
 #include "main.h"
 #include "leds.h"
@@ -10,7 +17,7 @@ static uint8_t pwm_status = NOT_CONFIGURED;
 
 static uint16_t leds_values[NB_LEDS] = {0};
 
-////////////////////////////////// PRIVATE FUNCTIONS ////////////////////////////////////
+/////////////////////////////////////////PRIVATE FUNCTIONS/////////////////////////////////////////
 
 /**
  * @brief Turns OFF the three leds. Called each time the PWM resets its counter
@@ -76,7 +83,7 @@ static PWMConfig pwmLedCfg = {
 	0
 };
 
-////////////////////////////////// PUBLIC FUNCTIONS ////////////////////////////////////
+//////////////////////////////////////////PUBLIC FUNCTIONS/////////////////////////////////////////
 
 void ledInit(void){
 	pwmStart(&PWM_LED, &pwmLedCfg);

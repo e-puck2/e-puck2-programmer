@@ -1,3 +1,11 @@
+/**
+ * @file	battery_measurement.c
+ * @brief  	Functions to measure the battery voltage and change the battery state accordingly
+ * 			Uses the event system to signal a new state
+ * 
+ * @written by  	Eliot Ferragni
+ * @creation date	26.06.2018
+ */
 
 #include "main.h"
 #include "battery_measurement.h"
@@ -52,10 +60,24 @@ static const ADCConversionGroup adcGroupConfig =  {
 	.sqr1 = 0,
 };
 
+/////////////////////////////////////////PRIVATE FUNCTIONS/////////////////////////////////////////
+
+/**
+ * @brief 	Launches one conversion of the given ADC
+ * 			The ADC must already be configured in order to work properly
+ * @param adcp The adc to start
+ */
 void ADCdoOneConversion(ADCDriver *adcp){
 	adcp->adc->CR2 |= ADC_CR2_SWSTART;
 }
 
+/**
+ * @brief 	Sets the chanel to sample for the given ADC
+ * 			Only used to set a sequence of one conversion
+ * 
+ * @param adcp 			The adc to configure
+ * @param adc_channel 	The channel to set
+ */
 void ADCsetChannel(ADCDriver *adcp, uint8_t adc_channel){
 	adcp->adc->SQR3  = ADC_SQR3_SQ1_N(adc_channel);
 }
@@ -208,6 +230,7 @@ static THD_FUNCTION(batt_thd, arg)
 	}
 }
 
+//////////////////////////////////////////PUBLIC FUNCTIONS/////////////////////////////////////////
 
 void batteryMesurementStart(void){
 	/*

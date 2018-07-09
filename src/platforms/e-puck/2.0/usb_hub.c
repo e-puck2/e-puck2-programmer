@@ -1,8 +1,16 @@
-
+/**
+ * @file	usb_hub.c
+ * @brief  	Functions to handle the configuration of the USB Hub when needed.
+ * 
+ * @written by  	Eliot Ferragni
+ * @creation date	19.06.2018
+ */
 
 #include <usb_hub.h>
 #include <i2c_smbus.h>
 #include <USB251XB.h>
+
+/////////////////////////////////////////PRIVATE FUNCTIONS/////////////////////////////////////////
 
 static THD_WORKING_AREA(usb_hub_thd_wa, 128);
 static THD_FUNCTION(usb_hub_thd, arg)
@@ -42,6 +50,8 @@ static THD_FUNCTION(usb_hub_thd, arg)
 		}
 	}
 }
+
+//////////////////////////////////////////PUBLIC FUNCTIONS/////////////////////////////////////////
 
 void usbHubStart(void){
 	//SMBUS init

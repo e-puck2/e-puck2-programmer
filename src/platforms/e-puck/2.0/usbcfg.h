@@ -14,6 +14,11 @@
     limitations under the License.
 */
 
+/**
+ * @modified by        Eliot Ferragni
+ * @last modification  09.07.2018
+ */
+
 #ifndef USBCFG_H
 #define USBCFG_H
 

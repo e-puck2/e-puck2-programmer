@@ -1,3 +1,13 @@
+/**
+ * @file	communications.c
+ * @brief  	Functions to manage the three different communications modes
+ * 			available using the second USB virtual com port (Serial Monitor)
+ * 			Sends events to signal the state of the communications
+ * 
+ * @written by  	Eliot Ferragni
+ * @creation date	29.06.2018
+ */
+
 #include "main.h"
 #include "communications.h"
 #include "aseba_can_interface.h"
@@ -26,6 +36,8 @@ static BSEMAPHORE_DECL(usb_to_uart_pause, true);
 //used to store the active mode
 static SerialDriver* uart_used = NULL;
 static comm_modes_t active_mode = DEFAULT_COMM_MODE;
+
+/////////////////////////////////////////PRIVATE FUNCTIONS/////////////////////////////////////////
 
 /**
  * @brief Resumes the aseba bridge threads
@@ -162,6 +174,8 @@ static THD_FUNCTION(usb_to_uart_thd, arg)
 		}
 	}
 }
+
+//////////////////////////////////////////PUBLIC FUNCTIONS/////////////////////////////////////////
 
 void communicationsStart(void){
 

@@ -1,3 +1,12 @@
+/**
+ * @file	gdb.c
+ * @brief  	Functions to execute the GDB state machine
+ * 			Sends events to signal the state of GDB
+ * 
+ * @written by  	Eliot Ferragni
+ * @creation date	21.06.2018
+ */
+
 #ifndef GDB_H
 #define GDB_H
 

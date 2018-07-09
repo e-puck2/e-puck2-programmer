@@ -1,3 +1,13 @@
+/**
+ * @file	communications.c
+ * @brief  	Functions to manage the three different communications modes
+ * 			available using the second USB virtual com port (Serial Monitor)
+ * 			Sends events to signal the state of the communications
+ * 
+ * @written by  	Eliot Ferragni
+ * @creation date	29.06.2018
+ */
+
 #ifndef COMMUNICATIONS_H
 #define COMMUNICATIONS_H
 

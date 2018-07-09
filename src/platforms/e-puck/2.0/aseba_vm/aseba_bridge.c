@@ -1,3 +1,12 @@
+/**
+ * @file    aseba_bridge.c
+ * @brief   USB Serial to CAN Aseba bridge functions
+ * 
+ * @source          adapted from aseba_bridge.c of e-puck2_main-processor project
+ * @written by      Eliot Ferragni
+ * @creation date   18.06.2018
+ */
+
 #include "hal.h"
 #include "aseba_bridge.h"
 #include "aseba_can_interface.h"

@@ -1,3 +1,12 @@
+/**
+ * @file	battery_measurement.h
+ * @brief  	Functions to measure the battery voltage and change the battery state accordingly
+ * 			Uses the event system to signal a new state
+ * 
+ * @written by  	Eliot Ferragni
+ * @creation date	26.06.2018
+ */
+
 #ifndef BATTERY_MEASUREMENT_H
 #define BATTERY_MEASUREMENT_H
 

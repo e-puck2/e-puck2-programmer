@@ -8,6 +8,8 @@
  
 #include "main.h"
 
+//////////////////////////////////////////PUBLIC FUNCTIONS/////////////////////////////////////////
+
 void printUcUsage(BaseSequentialStream* out) {
 	
 	thread_t *tp;

@@ -1,8 +1,18 @@
+/**
+ * @file	platform.c
+ * @brief  	Used to make the link between the blackmagic files and the e-puck2_programmer files.
+ * 
+ * @written by  	Eliot Ferragni
+ * @creation date	18.06.2018
+ */
+
 #include <stdio.h>
 #include <string.h>
 
 #include "main.h"
 #include "gdb_packet.h"
+
+//////////////////////////////////////////PUBLIC FUNCTIONS/////////////////////////////////////////
 
 void platform_srst_set_val(bool assert)
 {

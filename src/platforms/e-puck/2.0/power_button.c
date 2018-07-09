@@ -1,3 +1,11 @@
+/**
+ * @file	power_button.c
+ * @brief  	Controls the power button. Contains the functions to trun ON and OFF
+ * 			the robot. Sends events when a power on or power off occurs.
+ * 
+ * @written by  	Eliot Ferragni
+ * @creation date	19.06.2018
+ */
 
 #include "main.h"
 #include "power_button.h"
@@ -6,6 +14,7 @@
 static virtual_timer_t power_timer;
 static uint8_t power_state = POWER_OFF;
 
+/////////////////////////////////////////PRIVATE FUNCTIONS/////////////////////////////////////////
 
 /**
  * @brief 	Callback called when the virtual timer finishes to count.
@@ -61,6 +70,8 @@ static THD_FUNCTION(power_button_thd, arg)
 		}
 	}
 }
+
+/////////////////////////////////////////PUBLIC FUNCTIONS/////////////////////////////////////////
 
 void powerButtonStart(void){
 	chVTObjectInit(&power_timer);

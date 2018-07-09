@@ -1,3 +1,13 @@
+/**
+ * @file	platform_commands.h
+ * @brief  	Custom GDB commands added to the default ones
+ * 
+ * @written by  		Daniel Burnier
+ * @creation date		11.08.2017
+ * @modified by 		Eliot ferragni
+ * last modification	03.07.2018
+ */
+
 #if defined(PLATFORM_COMMANDS_DEFINE)
 /********************************************/
 /* Begining of platform dedicated commands. */
