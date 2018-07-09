@@ -20,6 +20,12 @@
 #error "NO_JTAG option must be defined for this platform !!"
 #endif
 
+#if defined(PLATFORM_HAS_COMMANDS)
+#define COMMANDS_OPTION "C"
+#else
+#define COMMANDS_OPTION "c"
+#endif
+
 #if defined(PLATFORM_HAS_NO_SERIAL)
 #define SERIAL_OPTION "s"
 #else

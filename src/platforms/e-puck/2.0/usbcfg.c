@@ -249,14 +249,21 @@ static const uint8_t vcom_string1[] = {
 /*
  * Device Description string.
  */
-static const uint8_t vcom_string2[] = {
-  USB_DESC_BYTE(52),                    /* bLength.                         */
+#define SIZE_VCOM_STRING2   (2 * sizeof(BOARD_IDENT) + 2)
+static uint8_t vcom_string2[SIZE_VCOM_STRING2] = {
+  USB_DESC_BYTE(SIZE_VCOM_STRING2),     /* bLength.                         */
   USB_DESC_BYTE(USB_DESCRIPTOR_STRING), /* bDescriptorType.                 */
-  'B', 0, 'l', 0, 'a', 0, 'c', 0, 'k', 0, ' ', 0, 'M', 0, 'a', 0,
-  'g', 0, 'i', 0, 'c', 0, ' ', 0, 'P', 0, 'r', 0, 'o', 0, 'b', 0,
-  'e', 0, ' ', 0, 'e', 0, '-', 0, 'p', 0, 'u', 0, 'c', 0, 'k', 0,
-  '2', 0
 };
+
+static void constructVcomString2(void){
+
+  //The string is composed of each letter followed by a 0.
+  for(uint32_t i = 0 ; i < sizeof(BOARD_IDENT) ; i++){
+    //we fill the string only from the 3rd byte
+    vcom_string2[2 + 2 * i] = BOARD_IDENT[i]; 
+    vcom_string2[3 + 2 * i] = 0;
+  }
+}
 
 /*
  * Serial Number string.
@@ -570,6 +577,9 @@ const SerialUSBConfig serusbcfg2 = {
 };
 
 void usbSerialStart(void){
+
+  //creates the vcom string 2 dinnamicaly with BOARD_INDENT define in platform.h
+  constructVcomString2();
   /*
    * Initializes two serial-over-USB CDC drivers.
    */
