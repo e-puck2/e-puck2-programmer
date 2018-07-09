@@ -76,6 +76,8 @@ New in version 2 of the code (july 2018) :
 7) No more dependencies with LibOpencm3, therefore we can compile the whole project without the need to compile first
    libopencm3 (no more Python support needed)
 8) The robot is automatically turned on if we try to program it when it is off.
+9) To ensure good behavior of the blinking of the blue LED while communicating with one of the three modes
+   for the Serial monitor, we need now to be connected with DTR high when using a serial terminal on a computer most programs do it automatically)
 
 States of the RGB Led
 ====================================
