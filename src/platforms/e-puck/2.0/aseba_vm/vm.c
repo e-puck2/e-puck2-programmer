@@ -776,7 +776,7 @@ void AsebaVMDebugMessage(AsebaVMState *vm, uint16 id, uint16 *data, uint16 dataL
 				vm->bytecode[start+i] = bswap16(data[i+1]);
 		}
 		// There is no break here because we want to do a reset after a set bytecode
-		
+		// fall through
 		case ASEBA_MESSAGE_RESET:
 		vm->flags = ASEBA_VM_STEP_BY_STEP_MASK;
 		AsebaVMResetWhenFlags(vm);
