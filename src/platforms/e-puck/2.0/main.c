@@ -14,7 +14,6 @@
 
 #include <usb_hub.h>
 #include <power_button.h>
-#include <leds.h>
 #include "gdb.h"
 #include "uc_usage.h"
 #include "leds_states.h"

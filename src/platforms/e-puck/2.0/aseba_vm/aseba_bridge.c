@@ -4,7 +4,7 @@
  * 
  * @source          adapted from aseba_bridge.c of e-puck2_main-processor project
  * @written by      Eliot Ferragni
- * @creation date   18.06.2018
+ * @creation date   28.06.2018
  */
 
 #include "hal.h"

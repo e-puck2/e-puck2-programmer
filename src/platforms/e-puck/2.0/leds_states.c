@@ -12,6 +12,7 @@
 #include "leds_states.h"
 #include "power_button.h"
 #include "battery_measurement.h"
+#include "leds.h"
 #include "gdb.h"
 
 //values used to control the Red, Green and Blue leds

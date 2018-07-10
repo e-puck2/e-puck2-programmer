@@ -9,7 +9,6 @@
 
 #include "main.h"
 #include "power_button.h"
-#include "leds.h"
 
 static virtual_timer_t power_timer;
 static uint8_t power_state = POWER_OFF;
