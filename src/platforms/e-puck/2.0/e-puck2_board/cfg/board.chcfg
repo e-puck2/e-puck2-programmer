@@ -82,7 +82,7 @@
         Level="High"
         Speed="Maximum"
         Resistor="Floating"
-        Mode="Alternate"
+        Mode="Input"
         Alternate="8" />
       <pin8
         ID="SWD_407_DIO"
@@ -106,7 +106,7 @@
         Level="High"
         Speed="Maximum"
         Resistor="Floating"
-        Mode="Alternate"
+        Mode="Input"
         Alternate="8" />
       <pin11
         ID="USB_DM"
@@ -236,7 +236,7 @@
         Level="High"
         Speed="Maximum"
         Resistor="Floating"
-        Mode="Alternate"
+        Mode="Input"
         Alternate="8" />
       <pin11
         ID=""

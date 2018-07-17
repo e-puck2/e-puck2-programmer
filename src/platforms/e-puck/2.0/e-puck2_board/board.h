@@ -339,10 +339,10 @@
  * PA4  - PWR_ON_BTN                (input pullup).
  * PA5  - SWD_407_CLK               (output pushpull maximum).
  * PA6  - PWR_ON_OUT                (output pushpull minimum).
- * PA7  - DFSDM_MIC12_DATA          (alternate 8).
+ * PA7  - DFSDM_MIC12_DATA          (input floating).
  * PA8  - SWD_407_DIO               (output pushpull maximum).
  * PA9  - USB_VBUS                  (alternate 10).
- * PA10 - DFSDM_MIC34_DATA          (alternate 8).
+ * PA10 - DFSDM_MIC34_DATA          (input floating).
  * PA11 - USB_DM                    (alternate 10).
  * PA12 - USB_DP                    (alternate 10).
  * PA13 - SWDIO                     (alternate 0).
@@ -356,10 +356,10 @@
                                      PIN_MODE_INPUT(GPIOA_PWR_ON_BTN) |     \
                                      PIN_MODE_OUTPUT(GPIOA_SWD_407_CLK) |   \
                                      PIN_MODE_OUTPUT(GPIOA_PWR_ON_OUT) |    \
-                                     PIN_MODE_ALTERNATE(GPIOA_DFSDM_MIC12_DATA) |\
+                                     PIN_MODE_INPUT(GPIOA_DFSDM_MIC12_DATA) |\
                                      PIN_MODE_OUTPUT(GPIOA_SWD_407_DIO) |   \
-                                     PIN_MODE_ALTERNATE(GPIOA_USB_VBUS) |       \
-                                     PIN_MODE_ALTERNATE(GPIOA_DFSDM_MIC34_DATA) |\
+                                     PIN_MODE_ALTERNATE(GPIOA_USB_VBUS) |   \
+                                     PIN_MODE_INPUT(GPIOA_DFSDM_MIC34_DATA) |\
                                      PIN_MODE_ALTERNATE(GPIOA_USB_DM) |     \
                                      PIN_MODE_ALTERNATE(GPIOA_USB_DP) |     \
                                      PIN_MODE_ALTERNATE(GPIOA_SWDIO) |      \
@@ -438,7 +438,7 @@
                                      PIN_AFIO_AF(GPIOA_PWR_ON_OUT, 0U) |    \
                                      PIN_AFIO_AF(GPIOA_DFSDM_MIC12_DATA, 8U))
 #define VAL_GPIOA_AFRH              (PIN_AFIO_AF(GPIOA_SWD_407_DIO, 0U) |   \
-                                     PIN_AFIO_AF(GPIOA_USB_VBUS, 10U) |      \
+                                     PIN_AFIO_AF(GPIOA_USB_VBUS, 10U) |     \
                                      PIN_AFIO_AF(GPIOA_DFSDM_MIC34_DATA, 8U) |\
                                      PIN_AFIO_AF(GPIOA_USB_DM, 10U) |       \
                                      PIN_AFIO_AF(GPIOA_USB_DP, 10U) |       \
@@ -459,7 +459,7 @@
  * PB7  - I2C1_SDA                  (alternate 4).
  * PB8  - CAN1_RX                   (alternate 8).
  * PB9  - CAN1_TX                   (alternate 8).
- * PB10 - DFSDM_CLK                 (alternate 8).
+ * PB10 - DFSDM_CLK                 (input floating).
  * PB11 - PIN11                     (input pullup).
  * PB12 - GPIO_EXT_CONNECTOR        (input pullup).
  * PB13 - LED_RED                   (output pushpull maximum).
@@ -476,7 +476,7 @@
                                      PIN_MODE_ALTERNATE(GPIOB_I2C1_SDA) |   \
                                      PIN_MODE_ALTERNATE(GPIOB_CAN1_RX) |    \
                                      PIN_MODE_ALTERNATE(GPIOB_CAN1_TX) |    \
-                                     PIN_MODE_ALTERNATE(GPIOB_DFSDM_CLK) |  \
+                                     PIN_MODE_INPUT(GPIOB_DFSDM_CLK) |      \
                                      PIN_MODE_INPUT(GPIOB_PIN11) |          \
                                      PIN_MODE_INPUT(GPIOB_GPIO_EXT_CONNECTOR) |\
                                      PIN_MODE_OUTPUT(GPIOB_LED_RED) |       \
@@ -536,8 +536,8 @@
                                      PIN_ODR_HIGH(GPIOB_CHRG_USB_500) |     \
                                      PIN_ODR_HIGH(GPIOB_SWD_407_RESET) |    \
                                      PIN_ODR_HIGH(GPIOB_CHRG_USB_CHARGE) |  \
-                                     PIN_ODR_HIGH(GPIOB_I2C1_SCL) |          \
-                                     PIN_ODR_HIGH(GPIOB_I2C1_SDA) |          \
+                                     PIN_ODR_HIGH(GPIOB_I2C1_SCL) |         \
+                                     PIN_ODR_HIGH(GPIOB_I2C1_SDA) |         \
                                      PIN_ODR_HIGH(GPIOB_CAN1_RX) |          \
                                      PIN_ODR_HIGH(GPIOB_CAN1_TX) |          \
                                      PIN_ODR_HIGH(GPIOB_DFSDM_CLK) |        \
@@ -1616,9 +1616,6 @@
                                      PIN_AFIO_AF(GPIOK_PIN14, 0U) |         \
                                      PIN_AFIO_AF(GPIOK_PIN15, 0U))
 
-/*===========================================================================*/
-/* External declarations.                                                    */
-/*===========================================================================*/
 
 #if !defined(_FROM_ASM_)
 #ifdef __cplusplus
