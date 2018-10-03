@@ -274,10 +274,9 @@ static void constructVcomString2(void){
  * Serial Number string.
  */
 static const uint8_t vcom_string3[] = {
-  USB_DESC_BYTE(20),                     /* bLength.                         */
+  USB_DESC_BYTE(12),                     /* bLength.                         */
   USB_DESC_BYTE(USB_DESCRIPTOR_STRING), /* bDescriptorType.                 */
-  'B', 0, 'A', 0, 'D', 0, 'A', 0, 'C', 0, 'C', 0, 'E', 0, '5', 0,
-  '5', 0
+  'E', 0, 'P', 0, 'U', 0, 'C', 0, 'K', 0
 };
 
 /*
