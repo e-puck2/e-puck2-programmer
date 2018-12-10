@@ -1,7 +1,7 @@
 /*
  * This file is part of the Black Magic Debug project.
  *
- * Copyright (C) 2011  Black Sphere Technologies Ltd.
+ * Copyright (C) 2015  Black Sphere Technologies Ltd.
  * Written by Gareth McMullin <gareth@blacksphere.co.nz>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,19 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef __GPIO_H
+#define __GPIO_H
 
-#ifndef __GDB_IF_H
-#define __GDB_IF_H
+#include "hal.h"
 
-#if !defined(LIBFTDI) && !defined(EPUCK2_CHIBIOS)
-#include <libopencm3/usb/usbd.h>
-void gdb_usb_out_cb(usbd_device *dev, uint8_t ep);
-#endif
+#define gpio_set palSetPad
 
-int gdb_if_init(void);
-unsigned char gdb_if_getchar(void);
-unsigned char gdb_if_getchar_to(int timeout);
-void gdb_if_putchar(unsigned char c, int flush);
+#define gpio_clear palClearPad
+
+#define gpio_get palReadPad
+
+#define gpio_set_val(port, pin, val) do {	\
+	if(val)					\
+		gpio_set((port), (pin));	\
+	else					\
+		gpio_clear((port), (pin));	\
+} while(0)
 
 #endif
 

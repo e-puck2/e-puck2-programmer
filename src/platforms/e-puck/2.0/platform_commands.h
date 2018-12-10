@@ -1,3 +1,13 @@
+/**
+ * @file	platform_commands.h
+ * @brief  	Custom GDB commands added to the default ones
+ * 
+ * @written by  		Daniel Burnier
+ * @creation date		11.08.2017
+ * @modified by 		Eliot ferragni
+ * last modification	03.07.2018
+ */
+
 #if defined(PLATFORM_COMMANDS_DEFINE)
 /********************************************/
 /* Begining of platform dedicated commands. */
@@ -86,11 +96,11 @@ static bool cmd_pwr_on_btn(target *t, int argc, const char **argv)
 	(void)t;
 	if (argc == 1)
 		gdb_outf("Power On button: %s\n",
-			 platform_pwr_on_btn_pressed() ? "Pressed" : "Released");
+			 isPowerButtonPressed() ? "Pressed" : "Released");
 	else if (strcmp(argv[1], "SHUTDOWN") == 0)
-		platform_pwr_on(false);
+		powerButtonTurnOnOff(POWER_OFF);
 	else if (strcmp(argv[1], "ON") == 0)
-		platform_pwr_on(true);
+		powerButtonTurnOnOff(POWER_ON);
 	return true;
 }
 
@@ -144,14 +154,14 @@ static bool cmd_select_mode(target *t, int argc, const char **argv){
 	if (argc == 1)
 		gdb_outf("%s",error_message);
 	else if (strcmp(argv[1], "1") == 0){
-		platform_switch_monitor_to(1, true);
-		gdb_outf("Switched to mode 1\n");
+		communicationsSwitchModeTo(UART_407_PASSTHROUGH, true);
+		gdb_outf("Switched to mode 1 : UART_407_PASSTHROUGH\n");
 	}else if (strcmp(argv[1], "2") == 0){
- 		platform_switch_monitor_to(2, true);
-		gdb_outf("Switched to mode 2\n");
+ 		communicationsSwitchModeTo(UART_ESP_PASSTHROUGH, true);
+		gdb_outf("Switched to mode 2 : UART_ESP_PASSTHROUGH\n");
  	}else if (strcmp(argv[1], "3") == 0){
- 		platform_switch_monitor_to(3, true);
-		gdb_outf("Switched to mode 3\n");
+ 		communicationsSwitchModeTo(ASEBA_CAN_TRANSLATOR, true);
+		gdb_outf("Switched to mode 3 : ASEBA_CAN_TRANSLATOR\n");
  	}else{
  		gdb_outf("%s",error_message);
  	}
@@ -163,8 +173,15 @@ static bool cmd_get_mode(target *t, int argc, const char **argv)
 	(void)t;
 	(void)argc;
 	(void)argv;
-	uint8_t mode = platform_get_monitor_mode();
-	gdb_outf("Current mode : %d\n", mode);
+	uint8_t mode = communicationGetActiveMode();
+	gdb_outf("Current mode : ");
+	if(mode == UART_407_PASSTHROUGH){
+		gdb_outf("mode 1 : UART_407_PASSTHROUGH\n");
+	}else if(mode == UART_ESP_PASSTHROUGH){
+		gdb_outf("mode 2 : UART_ESP_PASSTHROUGH\n");
+	}else if(mode == ASEBA_CAN_TRANSLATOR){
+		gdb_outf("mode 3 :ASEBA_CAN_TRANSLATOR\n");
+	}
 
 	return true;
 }

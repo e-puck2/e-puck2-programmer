@@ -1,7 +1,7 @@
 /*
- * This file is part of the libopenstm32 project.
+ * This file is part of the Black Magic Debug project.
  *
- * Copyright (C) 2010 Thomas Otto <tommi@viadmin.org>
+ * Copyright (C) 2015 Gareth McMullin <gareth@blacksphere.co.nz>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,17 +16,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef __TIMING_STM32_H
+#define __TIMING_STM32_H
 
-/* Define memory regions. */
-MEMORY
-{
-	rom (rx) : ORIGIN = 0x08000000, LENGTH = 896K
-	config (rwx): ORIGIN = 0x08160000, LENGTH = 128k
-	ram (rwx) : ORIGIN = 0x20000000, LENGTH = 256K
-}
+void platform_timing_init(void);
 
-_config_start = ORIGIN(config);
-_config_end = ORIGIN(config) + LENGTH(config);
+#endif
 
-/* Include the common ld script from libopenstm32. */
-INCLUDE libopencm3_stm32f4.ld

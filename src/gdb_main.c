@@ -95,9 +95,15 @@ int gdb_main_loop(struct target_controller *tc, bool in_syscall)
 {
 	int size;
 	bool single_step = false;
+#ifdef EPUCK2_CHIBIOS
+	systime_t time;
+#endif /* EPUCK2_CHIBIOS */
 
 	/* GDB protocol main loop */
 	while(1) {
+#ifdef EPUCK2_CHIBIOS
+		time = chVTGetSystemTime();
+#endif /* EPUCK2_CHIBIOS */
 		SET_IDLE_STATE(1);
 		size = gdb_getpacket(pbuf, BUF_SIZE);
 		SET_IDLE_STATE(0);
@@ -227,8 +233,12 @@ int gdb_main_loop(struct target_controller *tc, bool in_syscall)
 
 		case 0x04:
 		case 'D':	/* GDB 'detach' command. */
-			if(cur_target)
+			if(cur_target){
 				target_detach(cur_target);
+#ifdef EPUCK2_CHIBIOS
+				SET_RUN_STATE(0);
+#endif /* EPUCK2_CHIBIOS */
+			}
 			last_target = cur_target;
 			cur_target = NULL;
 			gdb_putpacketz("OK");
@@ -290,6 +300,10 @@ int gdb_main_loop(struct target_controller *tc, bool in_syscall)
 			DEBUG("*** Unsupported packet: %s\n", pbuf);
 			gdb_putpacketz("");
 		}
+
+#ifdef EPUCK2_CHIBIOS
+		chThdSleepUntilWindowed(time, time + TIME_MS2I(1));
+#endif /* EPUCK2_CHIBIOS */
 	}
 }
 
@@ -414,6 +428,10 @@ handle_v_packet(char *packet, int plen)
 		} else	gdb_putpacketz("E01");
 
 	} else if (sscanf(packet, "vFlashErase:%08lx,%08lx", &addr, &len) == 2) {
+#ifdef EPUCK2_CHIBIOS
+		SET_PROGRAMMING_STATE();
+#endif /* EPUCK2_CHIBIOS */
+		
 		/* Erase Flash Memory */
 		DEBUG("Flash Erase %08lX %08lX\n", addr, len);
 		if(!cur_target) { gdb_putpacketz("EFF"); return; }
@@ -430,6 +448,9 @@ handle_v_packet(char *packet, int plen)
 			gdb_putpacketz("EFF");
 
 	} else if (sscanf(packet, "vFlashWrite:%08lx:%n", &addr, &bin) == 1) {
+#ifdef EPUCK2_CHIBIOS
+		SET_PROGRAMMING_STATE();
+#endif /* EPUCK2_CHIBIOS */
 		/* Write Flash Memory */
 		len = plen - bin;
 		DEBUG("Flash Write %08lX %08lX\n", addr, len);
@@ -439,6 +460,9 @@ handle_v_packet(char *packet, int plen)
 			gdb_putpacketz("EFF");
 
 	} else if (!strcmp(packet, "vFlashDone")) {
+#ifdef EPUCK2_CHIBIOS
+		SET_RUN_STATE(0);
+#endif /* EPUCK2_CHIBIOS */
 		/* Commit flash operations. */
 		gdb_putpacketz(target_flash_done(cur_target) ? "EFF" : "OK");
 		flash_mode = 0;

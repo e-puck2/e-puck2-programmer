@@ -7,7 +7,12 @@
 
 
 #include <../USB251XB/USB251XB.h>
-#include <../USB251XB/SMBus.h>
+#ifdef EPUCK2_CHIBIOS
+	#include <hal.h>
+	#include <i2c_smbus.h>
+#else
+	#include <../USB251XB/SMBus.h>
+#endif
 
 //comment to be in FS mode
 #define HS_MODE_SELECTED	1
@@ -128,29 +133,67 @@
 #define STATUS_COMMAND_USB_ATTACH_BIT		(1<<0)
 
 
+//////////////////// PRIVATE FUNCTIONS ////////////////////////
+/**
+ * @brief 		Writes a register over I2C
+ * 
+ * @param addr	8bits address of the peripherical to write to
+ * @param reg	8bits address of the register to write
+ * @param buf	Pointer to a buffer containing the values to send
+ * @param size	Length of the requested write
+ * 
+ * @return		The error code. msg_t format
+ */
+int8_t USB251XB_write(uint8_t addr, uint8_t reg, uint8_t size, uint8_t* buf){
+#ifdef EPUCK2_CHIBIOS
+	return write_reg_multi(addr, reg, buf, size);
+#else
+	SMBus_write(addr, reg, size, buf);
+	return 0;
+#endif
+}
+/**
+ * @brief 		Reads registers over I2C
+ * 
+ * @param addr	8bits address of the peripherical to read from
+ * @param reg	8bits address of the register to read
+ * @param buf	Pointer to a buffer used to store the values read
+ * @param size	Length of the requested read. The buf must be this size or greater
+ * 
+ * @return		The error code. msg_t format
+ */
+int8_t USB251XB_read(uint8_t addr, uint8_t reg, uint8_t size, uint8_t* buf){
+#ifdef EPUCK2_CHIBIOS
+	return read_reg_multi(addr, reg, buf, size);
+#else
+	SMBus_write(addr, reg, size, buf);
+	return 0;
+#endif
+}
+
 
 //////////////////// PUBLIC FUNCTIONS /////////////////////////
 
 void USB251XB_reset(void){
 
 	uint8_t temp_reg = 0;
-	SMBus_read(USB251XB_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
+	USB251XB_read(USB251XB_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
 	temp_reg |= STATUS_COMMAND_RESET_BIT;
-	SMBus_write(USB251XB_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
+	USB251XB_write(USB251XB_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
 }
 
 void USB251XB_usb_attach(void){
 	uint8_t temp_reg = 0;
-	SMBus_read(USB251XB_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
+	USB251XB_read(USB251XB_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
 	temp_reg |= STATUS_COMMAND_USB_ATTACH_BIT;
-	SMBus_write(USB251XB_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
+	USB251XB_write(USB251XB_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
 }
 
 void USB251XB_usb_detach(void){
 	uint8_t temp_reg = 0;
-	SMBus_read(USB251XB_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
+	USB251XB_read(USB251XB_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
 	temp_reg &= ~STATUS_COMMAND_USB_ATTACH_BIT;
-	SMBus_write(USB251XB_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
+	USB251XB_write(USB251XB_ADDR, STATUS_COMMAND_REG, 1, &temp_reg);
 }
 
 void USB251XB_init(t_USB251XB choice_of_USB251XB){
@@ -176,7 +219,7 @@ void USB251XB_init(t_USB251XB choice_of_USB251XB){
 								HUB_CONTROLLER_MAX_CURRENT_BUS,
 								POWER_ON_TIME};
 
-	SMBus_write(USB251XB_ADDR, VENDOR_ID_LSB_REG, 17, temp_reg);
+	USB251XB_write(USB251XB_ADDR, VENDOR_ID_LSB_REG, 17, temp_reg);
 
 	USB251XB_usb_attach();
 
