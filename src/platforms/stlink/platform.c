@@ -69,6 +69,12 @@ void platform_init(void)
 	gpio_set_mode(TDI_PORT, GPIO_MODE_OUTPUT_50_MHZ,
 	              GPIO_CNF_OUTPUT_PUSHPULL, TDI_PIN);
 
+	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_2_MHZ,
+	              GPIO_CNF_OUTPUT_PUSHPULL, GPIO15);
+
+	//enable power
+	gpio_clear(GPIOB, GPIO15);
+
 	platform_srst_set_val(false);
 
 	gpio_set_mode(LED_PORT, GPIO_MODE_OUTPUT_2_MHZ,
