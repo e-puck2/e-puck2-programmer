@@ -104,3 +104,27 @@ const char *platform_target_voltage(void)
 {
 	return "ABSENT!";
 }
+#ifdef USE_SECOND_GDB_INTERFACE
+
+bool platform_is_second_gdb_interface_active(void){
+
+	return (communicationGetActiveMode() != UART_ESP_PASSTHROUGH);
+}
+
+bool platform_is_second_gdb_interface_connected(void){
+
+	return communicationIsBluetoothConnected();
+}
+
+#endif /* USE_SECOND_GDB_INTERFACE */
+
+#ifdef POWER_ON_WHEN_SWDP_SCAN
+
+void platform_turn_on_target_on_swdp_scan(void){
+	if(powerButtonGetPowerState() == POWER_OFF){
+		powerButtonTurnOnOff(POWER_ON);
+		chThdSleepMilliseconds(1000);
+	}
+}
+
+#endif /* POWER_ON_WHEN_SWDP_SCAN */

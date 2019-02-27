@@ -112,6 +112,9 @@ include $(CHIBIOS)/test/oslib/oslib_test.mk
 include $(CHIBIOS)/os/hal/lib/streams/streams.mk
 include $(CHIBIOS)/os/various/shell/shell.mk
 
+BLACKMAGIC = ../../../../../blackmagic
+include $(BLACKMAGIC)/src/platforms/stm32-ChibiOS/Blackmagic_ChibiOS.mk
+
 # Define linker script file here
 LDSCRIPT= ./STM32F413CGUx.ld
 
@@ -128,7 +131,6 @@ CSRC = $(ALLCSRC) \
        usb_hub.c \
        power_button.c \
        leds.c \
-       gdb.c \
        uc_usage.c \
        leds_states.c \
        battery_measurement.c \
@@ -142,26 +144,6 @@ CSRC = $(ALLCSRC) \
        communications.c \
        flash/flash_common_f24.c \
        flash/flash_common_f234.c \
-       ../../../target/adiv5.c    \
-       ../../../target/adiv5_swdp.c  \
-       ../../../command.c \
-       ../../../target/cortexa.c \
-       ../../../target/cortexm.c \
-       ../../../exception.c \
-       ../../../gdb_main.c  \
-       ../../../gdb_hostio.c  \
-       ../../../gdb_packet.c  \
-       ../../../hex_utils.c \
-       ../../../morse.c   \
-       ../../../target/swdptap_generic.c \
-       ../../../target/target.c  \
-       ../../../target/stm32f4.c \
-       ../../common/timing.c  \
-       ../../common/swdptap.c \
-       ../../stm32-ChibiOS/timing_stm32.c \
-       ../../stm32-ChibiOS/gdb_if.c  \
-       ../../stm32-ChibiOS/serialno.c \
-       ../../stm32-ChibiOS/crc32_chibios.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -191,10 +173,7 @@ TCPPSRC =
 ASMSRC = $(ALLASMSRC)
 ASMXSRC = $(ALLXASMSRC)
 
-INCDIR = $(ALLINC) $(TESTINC) ../USB251XB \
-         ../../../target/ ../../../include/ \
-         ../../common/ ../../../ \
-         ../../stm32-ChibiOS/ aseba_vm/ flash/
+INCDIR = $(ALLINC) $(TESTINC) ../USB251XB aseba_vm/ flash/
 
 #
 # Project, sources and paths
@@ -244,11 +223,11 @@ CPPWARN = -Wall -Wextra -Wundef
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS = -DEPUCK2_CHIBIOS \
+UDEFS = $(ALLDEFS)\
+        -DEPUCK2_CHIBIOS \
         -DPLATFORM_HAS_ONLY_STM32F4 \
         -DPLATFORM_HAS_NO_DFU_BOOTLOADER \
         -DPLATFORM_HAS_NO_JTAG \
-        -DPLATFORM_HAS_COMMANDS
 
 # Define ASM defines here
 UADEFS =

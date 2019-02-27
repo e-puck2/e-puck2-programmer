@@ -16,7 +16,7 @@
 
 /**
  * @modified by        Eliot Ferragni
- * @last modification  09.07.2018
+ * @last modification  27.02.2019
  */
 
 #include "hal.h"
@@ -29,9 +29,6 @@
  */
 SerialUSBDriver SDU1;
 SerialUSBDriver SDU2;
-
-#define USB_DEVICE_VID                  0x1D50  /* You MUST change this.*/
-#define USB_DEVICE_PID                  0x6018  /* You MUST change this.*/
 
 /*
  * Endpoints.
@@ -230,6 +227,16 @@ static const USBDescriptor vcom_configuration_descriptor = {
   vcom_configuration_descriptor_data
 };
 
+static void fillVcomString(uint8_t* vcom_string, char* string, uint8_t length){
+
+  //The string is composed of each letter followed by a 0.
+  for(uint32_t i = 0 ; i < length ; i++){
+    //we fill the string only from the 3rd byte
+    vcom_string[2 + 2 * i] = string[i]; 
+    vcom_string[3 + 2 * i] = 0;
+  }
+}
+
 /*
  * U.S. English language identifier.
  */
@@ -242,63 +249,46 @@ static const uint8_t vcom_string0[] = {
 /*
  * Vendor string.
  */
-static const uint8_t vcom_string1[] = {
-  USB_DESC_BYTE(52),                    /* bLength.                         */
+#define SIZE_VCOM_STRING1   (2 * sizeof(USB_VENDOR_NAME) + 2)
+static uint8_t vcom_string1[SIZE_VCOM_STRING1] = {
+  USB_DESC_BYTE(SIZE_VCOM_STRING1),     /* bLength.                         */
   USB_DESC_BYTE(USB_DESCRIPTOR_STRING), /* bDescriptorType.                 */
-  'B', 0, 'l', 0, 'a', 0, 'c', 0, 'k', 0, ' ', 0, 'S', 0, 'p', 0,
-  'h', 0, 'e', 0, 'r', 0, 'e', 0, ' ', 0, 'T', 0, 'e', 0, 'c', 0,
-  'h', 0, 'n', 0, 'o', 0, 'l', 0, 'o', 0, 'g', 0, 'i', 0, 'e', 0,
-  's', 0
 };
 
 /*
  * Device Description string.
  */
-#define SIZE_VCOM_STRING2   (2 * sizeof(BOARD_IDENT) + 2)
+#define SIZE_VCOM_STRING2   (2 * sizeof(USB_DEVICE_NAME) + 2)
 static uint8_t vcom_string2[SIZE_VCOM_STRING2] = {
   USB_DESC_BYTE(SIZE_VCOM_STRING2),     /* bLength.                         */
   USB_DESC_BYTE(USB_DESCRIPTOR_STRING), /* bDescriptorType.                 */
 };
 
-static void constructVcomString2(void){
-
-  //The string is composed of each letter followed by a 0.
-  for(uint32_t i = 0 ; i < sizeof(BOARD_IDENT) ; i++){
-    //we fill the string only from the 3rd byte
-    vcom_string2[2 + 2 * i] = BOARD_IDENT[i]; 
-    vcom_string2[3 + 2 * i] = 0;
-  }
-}
-
 /*
  * Serial Number string.
  */
-static const uint8_t vcom_string3[] = {
-  USB_DESC_BYTE(12),                     /* bLength.                         */
+#define SIZE_VCOM_STRING3   (2 * sizeof(USB_SERIAL_NUMBER) + 2)
+static uint8_t vcom_string3[SIZE_VCOM_STRING3] = {
+  USB_DESC_BYTE(SIZE_VCOM_STRING3),     /* bLength.                         */
   USB_DESC_BYTE(USB_DESCRIPTOR_STRING), /* bDescriptorType.                 */
-  'E', 0, 'P', 0, 'U', 0, 'C', 0, 'K', 0
 };
 
 /*
  * Name Serial A.
  */
-static const uint8_t vcom_string4[] = {
-  USB_DESC_BYTE(38),                     /* bLength.                         */
+#define SIZE_VCOM_STRING4   (2 * sizeof(USB_SERIAL1_NAME) + 2)
+static uint8_t vcom_string4[SIZE_VCOM_STRING4] = {
+  USB_DESC_BYTE(SIZE_VCOM_STRING4),     /* bLength.                         */
   USB_DESC_BYTE(USB_DESCRIPTOR_STRING), /* bDescriptorType.                 */
-  'e', 0, '-', 0, 'p', 0, 'u', 0, 'c', 0, 'k', 0, '2', 0, ' ', 0,
-  'G', 0, 'D', 0, 'B', 0, ' ', 0, 'S', 0, 'e', 0, 'r', 0, 'v', 0,
-  'e', 0, 'r', 0
 };
 
 /*
  * Name Serial B.
  */
-static const uint8_t vcom_string5[] = {
-  USB_DESC_BYTE(46),                     /* bLength.                         */
+#define SIZE_VCOM_STRING5   (2 * sizeof(USB_SERIAL2_NAME) + 2)
+static uint8_t vcom_string5[SIZE_VCOM_STRING5] = {
+  USB_DESC_BYTE(SIZE_VCOM_STRING5),     /* bLength.                         */
   USB_DESC_BYTE(USB_DESCRIPTOR_STRING), /* bDescriptorType.                 */
-  'e', 0, '-', 0, 'p', 0, 'u', 0, 'c', 0, 'k', 0, '2', 0, ' ', 0,
-  'S', 0, 'e', 0, 'r', 0, 'i', 0, 'a', 0, 'l', 0, ' ', 0, 'M', 0,
-  'o', 0, 'n', 0, 'i', 0, 't', 0, 'o', 0, 'r', 0
 };
 
 /*
@@ -582,8 +572,12 @@ const SerialUSBConfig serusbcfg2 = {
 
 void usbSerialStart(void){
 
-  //creates the vcom string 2 dinnamicaly with BOARD_INDENT define in platform.h
-  constructVcomString2();
+  //fills the vcom strings dynamicaly with the strings in usbcfg.h
+  fillVcomString(vcom_string1, USB_VENDOR_NAME,   sizeof(USB_VENDOR_NAME));
+  fillVcomString(vcom_string2, USB_DEVICE_NAME,   sizeof(USB_DEVICE_NAME));
+  fillVcomString(vcom_string3, USB_SERIAL_NUMBER, sizeof(USB_SERIAL_NUMBER));
+  fillVcomString(vcom_string4, USB_SERIAL1_NAME,  sizeof(USB_SERIAL1_NAME));
+  fillVcomString(vcom_string5, USB_SERIAL2_NAME,  sizeof(USB_SERIAL2_NAME));
   /*
    * Initializes two serial-over-USB CDC drivers.
    */

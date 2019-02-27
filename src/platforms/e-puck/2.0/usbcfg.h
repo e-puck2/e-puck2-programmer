@@ -16,13 +16,22 @@
 
 /**
  * @modified by        Eliot Ferragni
- * @last modification  09.07.2018
+ * @last modification  27.02.2019
  */
 
 #ifndef USBCFG_H
 #define USBCFG_H
 
-#define USB_DATA_SIZE                   0x40
+#define USB_DEVICE_VID      0x1D50
+#define USB_DEVICE_PID      0x6018
+#define USB_VENDOR_NAME     "EPFL"
+#define USB_DEVICE_NAME     "e-puck 2"
+#define USB_SERIAL_NUMBER   "EPUCK"
+#define USB_SERIAL1_NAME    "e-puck2 GDB Server"
+#define USB_SERIAL2_NAME    "e-puck2 Serial Monitor"
+
+#define USB_GDB             SDU1
+#define USB_SERIAL          SDU2
 
 typedef enum{
     GDB_INTERFACE = 0,
@@ -36,6 +45,7 @@ typedef enum{
     NUM_CONTROL_LINE,
 }control_line_t;
 
+#define USB_DATA_SIZE                   0x40
 
 extern const USBConfig usbcfg;
 extern const SerialUSBConfig serusbcfg1;
