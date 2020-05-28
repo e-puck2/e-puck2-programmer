@@ -91,7 +91,7 @@ endif
 PROJECT = e-puck2_programmer
 
 # Imported source files and paths
-CHIBIOS = ../../../../ChibiOS
+CHIBIOS = ../ChibiOS
 
 # Licensing files.
 include $(CHIBIOS)/os/license/license.mk
@@ -112,7 +112,7 @@ include $(CHIBIOS)/test/oslib/oslib_test.mk
 include $(CHIBIOS)/os/hal/lib/streams/streams.mk
 include $(CHIBIOS)/os/various/shell/shell.mk
 
-BLACKMAGIC = ../../../../../blackmagic
+BLACKMAGIC = ../blackmagic
 include $(BLACKMAGIC)/src/platforms/stm32-ChibiOS/Blackmagic_ChibiOS.mk
 
 # Define linker script file here
@@ -126,7 +126,7 @@ CSRC = $(ALLCSRC) \
        main.c \
        platform.c\
        panic.c \
-       ../USB251XB/USB251XB.c\
+       USB251XB/USB251XB.c\
        i2c_smbus.c \
        usb_hub.c \
        power_button.c \

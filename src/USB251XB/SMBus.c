@@ -7,8 +7,8 @@
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/i2c.h>
-#include <../USB251XB/SMBus.h>
-#include <../2.0/platform.h>
+#include <USB251XB/SMBus.h>
+#include <platform.h>
 #include "timing.h"
 #include "morse.h"
 

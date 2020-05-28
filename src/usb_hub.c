@@ -8,7 +8,7 @@
 
 #include <usb_hub.h>
 #include <i2c_smbus.h>
-#include <USB251XB.h>
+#include <USB251XB/USB251XB.h>
 
 /////////////////////////////////////////PRIVATE FUNCTIONS/////////////////////////////////////////
 
