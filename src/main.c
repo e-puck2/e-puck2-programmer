@@ -1,59 +1,91 @@
-/*
- * This file is part of the Black Magic Debug project.
- *
- * Copyright (C) 2011  Black Sphere Technologies Ltd.
- * Written by Gareth McMullin <gareth@blacksphere.co.nz>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+/**
+ * @file	main.c
+ * @brief  	Main file of the e-puck2_programmer firmware used by the onboard programmer of the
+ * 			e-puck2 educational robot.
+ * 
+ * @written by  	Eliot Ferragni
+ * @creation date	18.06.2018
  */
 
-/* Provides main entry point.  Initialise subsystems and enter GDB
- * protocol loop.
- */
+#include <stdio.h>
+#include <string.h>
 
-#include "general.h"
-#include "gdb_if.h"
-#include "gdb_main.h"
-#include "target.h"
-#include "exception.h"
-#include "gdb_packet.h"
-#include "morse.h"
+#include "main.h"
 
-int
-main(int argc, char **argv)
-{
-#if defined(LIBFTDI)
-	platform_init(argc, argv);
-#else
-	(void) argc;
-	(void) argv;
-	platform_init();
-#endif
+#include <usb_hub.h>
+#include <power_button.h>
+#include "gdb.h"
+#include "uc_usage.h"
+#include "leds_states.h"
+#include "battery_measurement.h"
+#include "communications.h"
+
+int main(void) {
+
+	/**
+	 * Special function to handle the turn on if we pressed the button without
+	 * the usb cable plugged. Called before everything to catch the button pressed.
+	 */
+	powerButtonStartSequence();
+
+	/*
+	* System initializations.
+	* - HAL initialization, this also initializes the configured device drivers
+	*   and performs the board-specific initializations.
+	* - Kernel initialization, the main() function becomes a thread and the
+	*   RTOS is active.
+	*/
+	halInit();
+	chSysInit();
+
+	/**
+	 * Init the events objects. Better to do it before any modules that use them since
+	 * they are global.
+	 */
+
+	chEvtObjectInit(&power_event);
+	chEvtObjectInit(&battery_info_event);
+	chEvtObjectInit(&gdb_status_event);
+	chEvtObjectInit(&communications_event);
+
+	/**
+	* Starts the leds states thread. Must be the first module because other modules
+	* use it.
+	*/
+	ledsStatesStart();
+
+	/*
+	* Starts the handling of the power button
+	*/
+	powerButtonStart();
+
+	/**
+	 * Starts the battery measurement thread
+	 */
+	batteryMesurementStart();
+
+	/*
+	* Initializes two serial-over-USB CDC drivers and starts and connects the USB.
+	*/
+	usbSerialStart();
+
+	/*
+	* Starts the thread managing the USB hub
+	*/
+	usbHubStart();
+
+	/**
+	 * Starts the communication thread
+	 */
+	communicationsStart();
+
+	/*
+	* Starts the GDB system
+	*/
+	gdbStart();
 
 	while (true) {
-		volatile struct exception e;
-		TRY_CATCH(e, EXCEPTION_ALL) {
-			gdb_main();
-		}
-		if (e.type) {
-			gdb_putpacketz("EFF");
-			target_list_free();
-			morse("TARGET LOST.", 1);
-		}
+		chThdSleepMilliseconds(300);
+		//printUcUsage((BaseSequentialStream *) &UART_ESP);
 	}
-
-	/* Should never get here */
-	return 0;
 }
-
