@@ -32,8 +32,8 @@
 
 #define USB_DEVICE_VID      0x1D50
 #define USB_DEVICE_PID      0x6018
-#define USB_VENDOR_NAME     "EPFL"
-#define USB_DEVICE_NAME     "e-puck 2"
+#define USB_VENDOR_NAME     "GCtronic/EPFL"
+#define USB_DEVICE_NAME     "e-puck2"
 #define USB_SERIAL_NUMBER   "EPUCK"
 #define USB_SERIAL1_NAME    "e-puck2 GDB Server"
 #ifdef USE_TWO_USB_SERIAL
