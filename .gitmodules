@@ -1,3 +1,6 @@
 [submodule "ChibiOS"]
 	path = ChibiOS
 	url = https://github.com/e-puck2/ChibiOS.git
+[submodule "blackmagic"]
+	path = blackmagic
+	url = https://github.com/e-puck3/blackmagic.git
