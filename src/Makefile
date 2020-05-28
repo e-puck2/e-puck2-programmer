@@ -225,9 +225,6 @@ CPPWARN = -Wall -Wextra -Wundef
 # List all user C define here, like -D_DEBUG=1
 UDEFS = $(ALLDEFS)\
         -DEPUCK2_CHIBIOS \
-        -DPLATFORM_HAS_ONLY_STM32F4 \
-        -DPLATFORM_HAS_NO_DFU_BOOTLOADER \
-        -DPLATFORM_HAS_NO_JTAG \
 
 # Define ASM defines here
 UADEFS =
