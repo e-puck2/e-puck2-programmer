@@ -43,7 +43,7 @@ event_source_t battery_info_event;
 
 static BSEMAPHORE_DECL(measurement_ready, true);
 
-static void adcCb(ADCDriver *adcp, adcsample_t *buffer, size_t n);
+static void adcCb(ADCDriver *adcp);
 
 //groupe conversion config for the ADC
 static const ADCConversionGroup adcGroupConfig =  {
@@ -86,12 +86,10 @@ void ADCsetChannel(ADCDriver *adcp, uint8_t adc_channel){
 //relauches a convesion and alternates the channel to sample.
 //we emulate a continuous conversion of 2 channels of ADC_BATT_NUM_SAMPLES samples
 //becasuse the adc has a random offset at the start of the uC when the CONT bit is set in CR2
-static void adcCb(ADCDriver *adcp, adcsample_t *buffer, size_t n) {
+static void adcCb(ADCDriver *adcp) {
 
-	(void)adcp;
-	(void)n;
 	static uint8_t count = 0;
-	batt_samples[count] = buffer[0];
+	batt_samples[count] = adcp->samples[0];
 	count++;
 	if(count < (ADC_NUM_CHANNELS * ADC_BATT_NUM_SAMPLES)){
 		if(count % 2){

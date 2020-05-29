@@ -214,6 +214,14 @@
 #define STM32_PWM_TIM9_IRQ_PRIORITY         7
 
 /*
+ * RTC driver system settings.
+ */
+#define STM32_RTC_PRESA_VALUE               32
+#define STM32_RTC_PRESS_VALUE               1024
+#define STM32_RTC_CR_INIT                   0
+#define STM32_RTC_TAMPCR_INIT               0
+
+/*
  * SDC driver system settings.
  */
 #define STM32_SDC_SDIO_DMA_PRIORITY         3
@@ -332,8 +340,6 @@
 #define STM32_USB_OTG1_IRQ_PRIORITY         14
 #define STM32_USB_OTG1_RX_FIFO_SIZE         1024
 #define STM32_USB_HOST_WAKEUP_DURATION      2
-#define STM32_USB_OTG_THREAD_PRIO           LOWPRIO
-#define STM32_USB_OTG_THREAD_STACK_SIZE     128
 
 /*
  * WDG driver system settings.

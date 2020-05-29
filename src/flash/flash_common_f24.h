@@ -46,9 +46,6 @@
 #define FLASH_OPTCR				MMIO32(FLASH_R_BASE + 0x14)
 #define FLASH_OPTCR1			MMIO32(FLASH_R_BASE + 0x18)
 
-/* --- FLASH_SR values ----------------------------------------------------- */
-
-#define FLASH_SR_OPERR			(1 << 1)
 
 /* --- FLASH_CR values ----------------------------------------------------- */
 
