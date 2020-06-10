@@ -642,12 +642,15 @@
   /* Add threads initialization code here.*/                                \
 }
 
+#define TIMESTAMPS_INCLUDE
+#include "threads_utilities_chconf.h"
 /**
  * @brief   Threads descriptor structure extension.
  * @details User fields added to the end of the @p thread_t structure.
  */
 #define CH_CFG_THREAD_EXTRA_FIELDS                                          \
-  /* Add threads custom fields here.*/
+    /* Add threads custom fields here.*/                                    \
+    TIMESTAMPS_THREAD_EXTRA_FIELDS                                          \
 
 /**
  * @brief   Threads initialization hook.
@@ -657,7 +660,8 @@
  *          the threads creation APIs.
  */
 #define CH_CFG_THREAD_INIT_HOOK(tp) {                                       \
-  /* Add threads initialization code here.*/                                \
+        /* Add threads initialization code here.*/                          \
+        TIMESTAMPS_THREAD_INIT_HOOK                                         \
 }
 
 /**
@@ -665,7 +669,8 @@
  * @details User finalization code added to the @p chThdExit() API.
  */
 #define CH_CFG_THREAD_EXIT_HOOK(tp) {                                       \
-  /* Add threads finalization code here.*/                                  \
+        /* Add threads finalization code here.*/                            \
+        TIMESTAMPS_THREAD_EXIT_HOOK(tp)                                     \
 }
 
 /**
@@ -673,7 +678,8 @@
  * @details This hook is invoked just before switching between threads.
  */
 #define CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) {                              \
-  /* Context switch code here.*/                                            \
+        /* Context switch code here.*/                                      \
+        TIMESTAMPS_CONTEXT_SWITCH_HOOK(ntp, otp)                            \
 }
 
 /**
@@ -761,7 +767,12 @@ void panic_handler(const char *reason);
 /* Port-specific settings (override port settings defaulted in chcore.h).    */
 /*===========================================================================*/
 // chprintf float enable
-#define CHPRINTF_USE_FLOAT true
+#define CHPRINTF_USE_FLOAT      TRUE
+#define SHELL_USE_HISTORY       TRUE
+#define SHELL_USE_COMPLETION    TRUE
+#define SHELL_USE_ESC_SEQ       TRUE
+#define SHELL_CMD_TEST_ENABLED  FALSE
+#define SHELL_THREAD_NAME       "USB shell"
 #endif  /* CHCONF_H */
 
 /** @} */

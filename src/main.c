@@ -15,13 +15,12 @@
 #include <usb_hub.h>
 #include <power_button.h>
 #include "gdb.h"
-#include "uc_usage.h"
 #include "leds_states.h"
 #include "battery_measurement.h"
 #include "communications.h"
+#include "user_shell.h"
 
 int main(void) {
-
 	/**
 	 * Special function to handle the turn on if we pressed the button without
 	 * the usb cable plugged. Called before everything to catch the button pressed.
@@ -85,7 +84,11 @@ int main(void) {
 	gdbStart();
 
 	while (true) {
-		chThdSleepMilliseconds(300);
-		//printUcUsage((BaseSequentialStream *) &UART_ESP);
+		// if(isUSBConfigured()){
+		// 	//spawns the shell if the usb is connected
+		// 	spawn_shell();
+		// }
+		chThdSleepMilliseconds(1000);
+
 	}
 }

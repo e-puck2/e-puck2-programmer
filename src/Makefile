@@ -115,6 +115,12 @@ include $(CHIBIOS)/os/various/shell/shell.mk
 BLACKMAGIC = ../blackmagic
 include $(BLACKMAGIC)/src/platforms/stm32-ChibiOS/Blackmagic_ChibiOS.mk
 
+THDULIB = ../threads_utilities_ChibiOS
+USE_THREADS_TIMESTAMPS = false
+THREADS_TIMESTAMPS_LOG_SIZE = 5000
+THREADS_TIMESTAMPS_DEFAULT_LOG  =  true
+include $(THDULIB)/threads_utilities.mk
+
 # Define linker script file here
 LDSCRIPT= ./STM32F413CGUx.ld
 
@@ -131,7 +137,6 @@ CSRC = $(ALLCSRC) \
        usb_hub.c \
        power_button.c \
        leds.c \
-       uc_usage.c \
        leds_states.c \
        battery_measurement.c \
        aseba_vm/aseba_bridge.c \
@@ -144,6 +149,7 @@ CSRC = $(ALLCSRC) \
        communications.c \
        flash/flash_common_f24.c \
        flash/flash_common_f234.c \
+       user_shell.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.

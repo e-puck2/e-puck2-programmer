@@ -4,3 +4,6 @@
 [submodule "blackmagic"]
 	path = blackmagic
 	url = https://github.com/e-puck3/blackmagic.git
+[submodule "threads_utilities_ChibiOS"]
+	path = threads_utilities_ChibiOS
+	url = https://github.com/e-puck3/threads_utilities_ChibiOS.git
