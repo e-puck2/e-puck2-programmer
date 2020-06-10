@@ -10,7 +10,7 @@
  */
 
 #ifndef LEDS_STATES_H
-#define LEDS_TATES_H
+#define LEDS_STATES_H
 
 #include "main.h"
 
