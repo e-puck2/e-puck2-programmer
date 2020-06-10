@@ -223,7 +223,7 @@ static const uint8_t vcom_configuration_descriptor_data[] = {
     0x01,                                   /* bConfigurationValue.         */
     0,                                      /* iConfiguration.              */
     0x80,                                   /* bmAttributes. */
-    50                                      /* bMaxPower (100mA).           */
+    USB_POWER                               /* bMaxPower.                   */
   ),
 #ifdef USE_TWO_USB_SERIAL
   IAD_CDC_IF_DESC_SET(
@@ -620,7 +620,7 @@ const SerialUSBConfig serusbcfg2 = {
 
 void usbSerialStart(void){
 
-  //fills the vcom strings dynamicaly with the strings in usbcfg.h
+  //fills the vcom strings dynamically with the strings in usbcfg.h
   fillVcomString(vcom_string1, USB_VENDOR_NAME,   sizeof(USB_VENDOR_NAME));
   fillVcomString(vcom_string2, USB_DEVICE_NAME,   sizeof(USB_DEVICE_NAME));
   fillVcomString(vcom_string3, USB_SERIAL_NUMBER, sizeof(USB_SERIAL_NUMBER));

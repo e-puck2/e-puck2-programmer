@@ -28,7 +28,7 @@
 #include "debug.h"
 
 /* Uncomment to use a second interface to communicate with GDB
-the behavior is to try to read or write to the second interfsce provided if the USB
+the behavior is to try to read or write to the second interface provided if the USB
 isn't connected. It means the USB has always the priority*/
 
 #define USE_SECOND_GDB_INTERFACE
@@ -54,7 +54,7 @@ isn't connected. It means the USB has always the priority*/
  * @brief 	Tell if the second interface usable for GDB is active
  * @details In the current implementation, it is possible to have a second interface such as UART
  * 			for example to communicate with GDB when the USB isn't connected. 
- * 			This function is used to know if we want to use the second intergace or not.
+ * 			This function is used to know if we want to use the second interface or not.
  * @return true if connected, false otherwise
  */		
 bool platform_is_second_gdb_interface_active(void);
@@ -80,36 +80,14 @@ void platform_turn_on_target_on_swdp_scan(void);
 #endif /* POWER_ON_WHEN_SWDP_SCAN */
 
 
+#define SWDIO_PORT 	GPIOA
+#define SWCLK_PORT 	GPIOA
+#define SWDIO_PIN	GPIOA_SWD_407_DIO
+#define SWCLK_PIN	GPIOA_SWD_407_CLK
 
-#define JTAG_PORT 	GPIOA
-#define TDI_PORT	NOT_USED
-#define TMS_PORT	JTAG_PORT
-#define TCK_PORT	JTAG_PORT
-#define TDO_PORT	NOT_USED
-#define TDI_PIN		NOT_USED
-#define TMS_PIN		GPIOA_SWD_407_DIO
-#define TCK_PIN		GPIOA_SWD_407_CLK
-#define TDO_PIN		NOT_USED
-
-#define SWDIO_PORT 	JTAG_PORT
-#define SWCLK_PORT 	JTAG_PORT
-#define SWDIO_PIN	TMS_PIN
-#define SWCLK_PIN	TCK_PIN
-
-#define TRST_PORT	NOT_USED
-#define TRST_PIN	NOT_USED
 #define SRST_PORT	GPIOB
 #define SRST_PIN	GPIOB_SWD_407_RESET
 
-#define LED_PORT_ERROR		GPIOB //RED_LED
-#define LED_PORT_UART		GPIOB //BLUE_LED
-#define LED_PORT			GPIOA //GREEN_LED
-
-
-#define LED_ERROR		GPIOB_LED_RED	
-#define LED_UART		GPIOB_LED_BLUE	
-#define LED_IDLE_RUN	GPIOA_LED_GREEN	
-#define LED_BOOTLOADER	NOT_USED
 
 #define TMS_SET_MODE() {palSetLineMode(LINE_SWD_407_DIO, PAL_MODE_OUTPUT_PUSHPULL);}
 
