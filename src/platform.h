@@ -27,6 +27,12 @@
 #include "timing_stm32.h"
 #include "debug.h"
 
+/* Uncomment to define a custom section area in the ram to place
+   the working area of the GDB thread. For example ".ram0" 
+   replace .to_be_defined by the section you want to use */
+
+//#define BLACKMAGIC_CUSTOM_RAM_SECTION ".to_be_defined"
+
 /* Uncomment to use a second interface to communicate with GDB
 the behavior is to try to read or write to the second interface provided if the USB
 isn't connected. It means the USB has always the priority*/
@@ -43,6 +49,9 @@ isn't connected. It means the USB has always the priority*/
 
 #define PLATFORM_HAS_CUSTOM_COMMANDS
 
+/* You must specify which usb serial port to use */
+#define GDB_USB_INTERFACE_NB	GDB_INTERFACE	// USB interface number (interface_name_t)
+#define GDB_USB_INTERFACE		USB_GDB	// USB interface (SerialUSBDrivers)
 
 #ifdef USE_SECOND_GDB_INTERFACE
 //Replace with the Serial or USB Serial object you want to use (for example SD2 for UART2) 
@@ -94,8 +103,6 @@ void platform_turn_on_target_on_swdp_scan(void);
 #define SWDIO_MODE_FLOAT() {palSetLineMode(LINE_SWD_407_DIO, PAL_MODE_INPUT);}
 
 #define SWDIO_MODE_DRIVE() {palSetLineMode(LINE_SWD_407_DIO, PAL_MODE_OUTPUT_PUSHPULL);}
-
-#define DEBUG(...)
 
 #define SET_RUN_STATE(state)	{gdbSetFlag(state ? RUNNING_FLAG : IDLE_FLAG);};
 #define SET_PROGRAMMING_STATE()	{gdbSetFlag(PROGRAMMING_FLAG);};
