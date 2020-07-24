@@ -47,11 +47,16 @@ isn't connected. It means the USB has always the priority*/
 /*  Uncomment if you want to add custom commands to GDB. The commands are defined in the
 	platform_commands.h */
 
-#define PLATFORM_HAS_CUSTOM_COMMANDS
+//#define PLATFORM_HAS_CUSTOM_COMMANDS
 
-/* You must specify which usb serial port to use */
-#define GDB_USB_INTERFACE_NB	GDB_INTERFACE	// USB interface number (interface_name_t)
-#define GDB_USB_INTERFACE		USB_GDB	// USB interface (SerialUSBDrivers)
+/* USB related settings. Go in pair with usbcfg.c/.h */
+#define GDB_USB_INTERFACE_NB	GDB_INTERFACE				// USB interface number (interface_name_t)
+#define GDB_USB_INTERFACE		USB_GDB						// USB interface (SerialUSBDrivers)
+#define GDB_DEVICE_NAME			USB_DEVICE_NAME				// Name of GDB device
+#define GDB_VENDOR_NAME			USB_VENDOR_NAME				// Name of vendor 
+#define GDB_USB_DATA_SIZE		USB_DATA_SIZE				// USB packet size
+#define gdbIsUSBConfigured		isUSBConfigured				// Wrapper to the function to tell if usb is configured
+#define gdbGetControlLineState	getControlLineState			// Wrapper to the functions to get control line state
 
 #ifdef USE_SECOND_GDB_INTERFACE
 //Replace with the Serial or USB Serial object you want to use (for example SD2 for UART2) 

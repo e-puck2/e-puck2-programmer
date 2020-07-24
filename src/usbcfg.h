@@ -61,12 +61,8 @@ typedef enum{
 
 #define USB_DATA_SIZE                   0x40
 
-extern const USBConfig usbcfg;
 extern SerialUSBDriver SDU1;
-extern const SerialUSBConfig serusbcfg1;
-
 #ifdef USE_TWO_USB_SERIAL
-extern const SerialUSBConfig serusbcfg2;
 extern SerialUSBDriver SDU2;
 #endif /* USE_TWO_USB_SERIAL */
 

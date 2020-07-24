@@ -48,7 +48,7 @@ SerialUSBDriver SDU2;
 /*
  * Interfaces
  */
-enum{
+typedef enum{
   USB_CDC_CIF_NUM0 = 0,  
   USB_CDC_DIF_NUM0,
 #ifdef USE_TWO_USB_SERIAL
@@ -58,7 +58,7 @@ enum{
   USB_NUM_INTERFACES
 } t_numInterface;
 
-enum{
+typedef enum{
   USB_INDEX_STRING_SERIAL_A = 4,
   USB_INDEX_STRING_SERIAL_B,
   USB_NUM_STRINGS
@@ -589,7 +589,7 @@ static void sof_handler(USBDriver *usbp) {
 /*
  * USB driver configuration.
  */
-const USBConfig usbcfg = {
+static const USBConfig usbcfg = {
   usb_event,
   get_descriptor,
   requests_hook,
@@ -599,7 +599,7 @@ const USBConfig usbcfg = {
 /*
  * Serial over USB driver configuration 1.
  */
-const SerialUSBConfig serusbcfg1 = {
+static const SerialUSBConfig serusbcfg1 = {
   &USBD1,
   USB_DATA_REQUEST_EP_A,
   USB_DATA_AVAILABLE_EP_A,
@@ -610,7 +610,7 @@ const SerialUSBConfig serusbcfg1 = {
 /*
  * Serial over USB driver configuration 2.
  */
-const SerialUSBConfig serusbcfg2 = {
+static const SerialUSBConfig serusbcfg2 = {
   &USBD1,
   USB_DATA_REQUEST_EP_B,
   USB_DATA_AVAILABLE_EP_B,
