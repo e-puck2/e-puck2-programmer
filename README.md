@@ -6,8 +6,7 @@ More details on the wiki of the robot :
 
 ## Major revisions
 
-### New in version 2.2 of the code (e-puck-2.0_E_V2.2_beta) :
-**!! Still in beta !!**
+### New in version 2.2 of the code (e-puck-2.0_E_V2.2) :
 1. Blackmagic has been updated from version **v1.6.1-249** to version **1.6.2-rc0** (1 year of commits)
 2. ChibiOS has been updated from version **18.2 trunk** to version **20.3.x stable** (nearly 2 years of commits)
 
