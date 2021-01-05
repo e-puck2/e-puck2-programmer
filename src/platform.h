@@ -47,7 +47,7 @@ isn't connected. It means the USB has always the priority*/
 /*  Uncomment if you want to add custom commands to GDB. The commands are defined in the
 	platform_commands.h */
 
-//#define PLATFORM_HAS_CUSTOM_COMMANDS
+#define PLATFORM_HAS_CUSTOM_COMMANDS
 
 /* USB related settings. Go in pair with usbcfg.c/.h */
 #define GDB_USB_INTERFACE_NB	GDB_INTERFACE				// USB interface number (interface_name_t)
