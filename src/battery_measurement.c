@@ -3,7 +3,7 @@
  * @brief  	Functions to measure the battery voltage and change the battery state accordingly
  * 			Uses the event system to signal a new state
  * 
- * @written by  	Eliot Ferragni
+ * @written by  	Eliot Ferragni, Stefano Morgani
  * @creation date	26.06.2018
  */
 
@@ -12,12 +12,13 @@
 #include "power_button.h"
 
 #define ADC_NUM_CHANNELS		2	//Batt and VrefInt
-#define ADC_BATT_NUM_SAMPLES	64	//32 samples by channel
+#define ADC_BATT_NUM_SAMPLES	64	//64 samples per channel
 
 #define ADC_ONE_CHANNEL			1
 #define ADC_ONE_SAMPLE			1
 
-#define ADC_CHANNEL_BATT		8
+#define ADC_CHANNEL_BATT		ADC_CHANNEL_IN15
+#define ADC_CHANNEL_VREFINT     ADC_CHANNEL_IN0 // The internal reference voltage (VREFINT) is connected to ADC1_INP0/INN0.
 
 #define VOLTAGE_DROP			0.11f	//because of the diodes
 #define VOLTAGE_DIVIDER         (1.0f * RESISTOR_R2 / (RESISTOR_R1 + RESISTOR_R2))
@@ -37,6 +38,8 @@ static adcsample_t batt_samples[ADC_NUM_CHANNELS * ADC_BATT_NUM_SAMPLES];
 
 //battery voltage variable
 static float battery_voltage = 0;
+float battery_raw = 0;
+float vrefint_raw = 0;
 
 //Event source used to send events to other threads
 event_source_t battery_info_event;
@@ -47,68 +50,44 @@ static void adcCb(ADCDriver *adcp);
 
 //groupe conversion config for the ADC
 static const ADCConversionGroup adcGroupConfig =  {
-	.circular = true, 	//we need it to be circular to be able to relauche it simply by setting the SWSTART bit in CR2
- 	.num_channels = ADC_ONE_CHANNEL,	//we need to do one conversion at a time -> num_channels need to be one
+	.circular = false, 	// linear mode
+ 	.num_channels = 2,	// reference and battery channels
  	.end_cb = adcCb,
 	.error_cb = NULL,
-	.cr1 = 0,
-	.cr2 = 0,
-	.smpr2 = ADC_SMPR2_SMP_AN8(ADC_SAMPLE_480),
-	.smpr1 = ADC_SMPR1_SMP_VREF(ADC_SAMPLE_480),
-	.sqr3 = ADC_SQR3_SQ1_N(ADC_CHANNEL_BATT),// The first channel to be sampled is the battery
-	.sqr2 = 0,
-	.sqr1 = 0,
+	.cfgr = ADC_CFGR_CONT, // Continuous because we want to convert ADC_BATT_NUM_SAMPLES sequences at once
+	// Each sampling total time takes about 26 us:
+	// - ADC clock div = 8 (see mcuconf.h) => sysclock/8 = 80/8 = 10 MHz
+	// - [sampling (260 cycles)] x 1'000'000/10'000'000 + conversion (slow channel) = 26 + 0.238 = 26.238 us
+	.smpr =	{
+				ADC_SMPR1_SMP_AN0(ADC_SMPR_SMP_247P5), //0,
+				ADC_SMPR2_SMP_AN15(ADC_SMPR_SMP_247P5)
+			},
+	.sqr = {
+				ADC_SQR1_NUM_CH(2) | ADC_SQR1_SQ1_N(ADC_CHANNEL_BATT) | ADC_SQR1_SQ2_N(ADC_CHANNEL_VREFINT),
+				0,
+				0,
+				0
+			}
 };
 
 /////////////////////////////////////////PRIVATE FUNCTIONS/////////////////////////////////////////
 
-/**
- * @brief 	Launches one conversion of the given ADC
- * 			The ADC must already be configured in order to work properly
- * @param adcp The adc to start
- */
-void ADCdoOneConversion(ADCDriver *adcp){
-	adcp->adc->CR2 |= ADC_CR2_SWSTART;
-}
-
-/**
- * @brief 	Sets the chanel to sample for the given ADC
- * 			Only used to set a sequence of one conversion
- * 
- * @param adcp 			The adc to configure
- * @param adc_channel 	The channel to set
- */
-void ADCsetChannel(ADCDriver *adcp, uint8_t adc_channel){
-	adcp->adc->SQR3  = ADC_SQR3_SQ1_N(adc_channel);
-}
-
-//called after each single conversion
-//relauches a convesion and alternates the channel to sample.
-//we emulate a continuous conversion of 2 channels of ADC_BATT_NUM_SAMPLES samples
-//becasuse the adc has a random offset at the start of the uC when the CONT bit is set in CR2
+//The callback will be called when ADC_BATT_NUM_SAMPLES sequences are converted
 static void adcCb(ADCDriver *adcp) {
 
-	static uint8_t count = 0;
-	batt_samples[count] = adcp->samples[0];
-	count++;
-	if(count < (ADC_NUM_CHANNELS * ADC_BATT_NUM_SAMPLES)){
-		if(count % 2){
-			//odd numbers => next sampling is for ADC_CHANNEL_VREFINT
-			ADCsetChannel(adcp, ADC_CHANNEL_VREFINT);
-		}else{
-			//even numbers => next sampling is for ADC_CHANNEL_BATT
-			ADCsetChannel(adcp, ADC_CHANNEL_BATT);
-		}
-		ADCdoOneConversion(adcp);
-	}else{
-		//we have finished. Reset the adc and counter for the first sample => ADC_CHANNEL_BATT
-		//and signal the end of conversion to the thread
-		count = 0;
-		ADCsetChannel(adcp, ADC_CHANNEL_BATT);
-		chSysLockFromISR();
-		chBSemSignalI(&measurement_ready);
-		chSysUnlockFromISR();
+	battery_raw = 0;
+	vrefint_raw = 0;
+	for(uint16_t i = 0 ; i < (ADC_NUM_CHANNELS * ADC_BATT_NUM_SAMPLES) ; i += ADC_NUM_CHANNELS){
+		battery_raw += batt_samples[i];
+		vrefint_raw += batt_samples[i+1];
 	}
+
+	battery_raw /= ADC_BATT_NUM_SAMPLES;
+	vrefint_raw /= ADC_BATT_NUM_SAMPLES;
+
+	chSysLockFromISR();
+	chBSemSignalI(&measurement_ready);
+	chSysUnlockFromISR();
 }
 
 void batteryStateMachine(void){
@@ -172,41 +151,20 @@ static THD_FUNCTION(batt_thd, arg)
 
 	chRegSetThreadName("Battery measurement");
 
-	adcsample_t adc_measure[ADC_ONE_SAMPLE];	//we do one sample at a time
-
-	float battery_raw = 0;
-	float vrefint_raw = 0;
-
 	float battery_value = ADC_RESOLUTION;
 	float vref_gain_correction_value = 1;	//100% -> no correction at first
 
 	systime_t time = 0;
 
-	//configures the ADC for the conversion but doesn't start it because the SWSTART is not set
-	adcStartConversion(&ADC_BATT, &adcGroupConfig, adc_measure, ADC_ONE_SAMPLE);
+	adcStartConversion(&ADC_BATT, &adcGroupConfig, batt_samples, ADC_BATT_NUM_SAMPLES);
 
 	while(1){
 		time = chVTGetSystemTime();
 		//we compute the battery state only if the robot is turned on
 		if(powerButtonGetPowerState() == POWER_ON){
 
-			//starts the conversion process.
-			//the adc callback will automatically relaunch the conversions until we have ADC_BATT_NUM_SAMPLES
-			//for ADC_CHANNEL_VREFINT and ADC_CHANNEL_BATT
-			ADCdoOneConversion(&ADC_BATT);
 			//the semaphore is released when all the conversions are finished
 			chBSemWait(&measurement_ready);
-
-			//we do the computation stuff
-			battery_raw = 0;
-			vrefint_raw = 0;
-			for(uint16_t i = 0 ; i < (ADC_NUM_CHANNELS * ADC_BATT_NUM_SAMPLES) ; i += ADC_NUM_CHANNELS){
-				battery_raw += batt_samples[i];
-				vrefint_raw += batt_samples[i+1];
-			}
-
-			battery_raw /= ADC_BATT_NUM_SAMPLES;
-			vrefint_raw /= ADC_BATT_NUM_SAMPLES;
 
 			//low-pass filter on vref_correction_value
 			vref_gain_correction_value = LOW_PASS_COEFF_A * vref_gain_correction_value
@@ -218,10 +176,13 @@ static THD_FUNCTION(batt_thd, arg)
 
 			battery_voltage = (battery_value / COEFF_ADC_TO_VOLT) + VOLTAGE_DROP;
 
-			// chprintf((BaseSequentialStream *) &SDU2,"batt_raw =  %f , vref_raw = %f\n",battery_raw, vrefint_raw);
-			// chprintf((BaseSequentialStream *) &SDU2,"batt_filt =  %f , bat_volt_filt = %f\n\n",battery_value, battery_voltage);
+			//chprintf((BaseSequentialStream *) &SDU2,"batt_raw =  %f , vref_raw = %f\r\n",battery_raw, vrefint_raw);
+			//chprintf((BaseSequentialStream *) &SDU2,"batt_filt =  %f , bat_volt_filt = %f\r\n\n",battery_value, battery_voltage);
 
 			batteryStateMachine();
+
+			// Restart sampling, callback will be called after ADC_BATT_NUM_SAMPLES sequences are converted
+			adcStartConversion(&ADC_BATT, &adcGroupConfig, batt_samples, ADC_BATT_NUM_SAMPLES);
 		}
 
 		chThdSleepUntilWindowed(time, time + TIME_MS2I(500));
@@ -234,9 +195,11 @@ void batteryMesurementStart(void){
 	/*
 	* Activates the ADC driver and the Vref sensor.
 	*/
+
+	//palSetGroupMode(GPIOB, PAL_PORT_BIT(0), 0, PAL_MODE_INPUT_ANALOG);
 	adcStart(&ADC_BATT, NULL);
-	adcSTM32DisableVBATE();
-	adcSTM32EnableTSVREFE();
+	adcSTM32EnableVREF(&ADC_BATT); // Internal reference voltage (about 1.2 V) is used to adjust the value of the sampled battery value.
+	adcSTM32DisableVBAT(&ADC_BATT);
 
 	/**
 	 * Starts the battery measurement thread

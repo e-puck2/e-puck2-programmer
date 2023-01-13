@@ -12,14 +12,15 @@
 #include "communications.h"
 #include "aseba_can_interface.h"
 #include "aseba_bridge.h"
-#include "flash_common_f24.h"
+#include "flash.h"
+#include "flash_common_all.h"
 
-#define CONFIG_SECTOR	15			//corresponds to the last sector of the flash for the 413
-#define PATTERN_FLASH	0xABCDEC	//arbitrary patern to detect if the block has already been written
+#define CONFIG_PAGE	255 // Corresponds to the last page of the flash for the L452
+#define PATTERN_FLASH	0xABCDEC	//arbitrary pattern to detect if the block has already been written
 
 //flash variables. used in writeModeToFlash() and findLastModeWrittenToFlash()
-extern uint32_t _config_start; //sector 15	//defined in the .ld file
-extern uint32_t _config_end;				//defined in the .ld file
+extern uint32_t _config_start; 	// Page 255 => defined in the .ld file
+extern uint32_t _config_end;	// defined in the .ld file
 
 static uint32_t config_start = (uint32_t)&_config_start;
 static uint32_t config_end = (uint32_t)&_config_end;
@@ -65,18 +66,21 @@ void writeModeToFlash(comm_modes_t choice){
 	flash_unlock();
 
 	//erases the flash if we are at the end or if we found nothing on it
-	if( (config_addr == 0) || (config_addr >= (config_end - sizeof(uint32_t)) ) ){
-		flash_erase_sector(CONFIG_SECTOR, FLASH_CR_PROGRAM_X32);
+	if( (config_addr == 0) || (config_addr >= (config_end - sizeof(uint64_t)) ) ) {
+		flash_erase_page(CONFIG_PAGE);
 		config_addr = config_start;
+		//chprintf((BaseSequentialStream *) &SDU2,"page erased\n");
 	}
 
 	//writes the choice and the pattern on the flash 
-	flash_program_word(config_addr, PATTERN_FLASH | (uint32_t)choice);
+	flash_program_double_word(config_addr, PATTERN_FLASH | (uint64_t)choice);
 
 	//increment for the next write
-	config_addr += sizeof(uint32_t);
+	config_addr += sizeof(uint64_t);
 
 	flash_lock();
+
+	//chprintf((BaseSequentialStream *) &SDU2,"new mode= %d, next addr=%lu\n", choice, config_addr);
 }
 
 /**
@@ -85,19 +89,19 @@ void writeModeToFlash(comm_modes_t choice){
  * 			full, config_addr is set to 0.
  */
 comm_modes_t findLastModeWrittenToFlash(void){
-	uint32_t* block = (uint32_t*)config_start;
+	uint64_t* block = (uint64_t*)config_start;
 	uint32_t* last = NULL;
-	uint32_t last_value = 0;
+	uint64_t last_value = 0;
 	comm_modes_t choice = DEFAULT_COMM_MODE; //if nothing found on the flash, then the default choice is used
 
-	//the pointer will be inceremented by sizeof(uint32_t) so we need to divide the length by the same value
-	uint32_t length = (config_end - config_start)/sizeof(uint32_t);
+	//the pointer will be inceremented by sizeof(uint64_t) so we need to divide the length by the same value
+	uint32_t length = (config_end - config_start)/sizeof(uint64_t);
 	
 	//checks the flash to find variables with the pattern.
 	//continues until it founds the last pattern written or if at the end of the flash sector.
 	for(uint32_t i = 0 ; i < length ; i++){
 		if((block[i] & 0xFFFFFFFC) == PATTERN_FLASH){
-			last = &block[i];
+			last = (uint32_t*)&block[i];
 			last_value = block[i];	
 		}else{
 			break;
@@ -111,7 +115,7 @@ comm_modes_t findLastModeWrittenToFlash(void){
 		choice = last_value & 0x03; //if we do this in the loop, it goes into an unhandled exception...
 		//chprintf((BaseSequentialStream *) &SDU2,"choice = %d\n", choice);
 		//sets the config_addr to the next writtable address
-		config_addr = (uint32_t)last + sizeof(uint32_t);
+		config_addr = (uint32_t)last + sizeof(uint64_t);
 	}
 
 	return choice;

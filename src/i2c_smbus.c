@@ -28,10 +28,19 @@ void i2c_smbus_start(void) {
 	 * I2C configuration structure for camera, IMU and distance sensor.
 	 * Set it to 400kHz fast mode
 	 */
+	/*
 	static const I2CConfig i2c_cfg1 = {
 		.op_mode = OPMODE_SMBUS_HOST,
 		.clock_speed = 100000,
 		.duty_cycle = STD_DUTY_CYCLE
+	};
+	*/
+	static const I2CConfig i2c_cfg1 = {
+	  STM32_TIMINGR_PRESC(0U) |
+	  STM32_TIMINGR_SCLDEL(7U) | STM32_TIMINGR_SDADEL(0U) |
+	  STM32_TIMINGR_SCLH(41U)  | STM32_TIMINGR_SCLL(145U),
+	  0,
+	  0
 	};
 
 	//simulate 16 clock pulses to unblock potential I2C periph blocked

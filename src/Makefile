@@ -96,15 +96,16 @@ CHIBIOS = ../ChibiOS
 # Licensing files.
 include $(CHIBIOS)/os/license/license.mk
 # Startup files.
-include $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f4xx.mk
+include $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32l4xx.mk
 # HAL-OSAL files (optional).
 include $(CHIBIOS)/os/hal/hal.mk
-include $(CHIBIOS)/os/hal/ports/STM32/STM32F4xx/platform.mk
+include $(CHIBIOS)/os/hal/ports/STM32/STM32L4xx/platform_l432.mk
 include ./e-puck2_board/board.mk
 include $(CHIBIOS)/os/hal/osal/rt-nil/osal.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
 include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
+#include $(CHIBIOS)/os/common/ports/ARMv7-M/compilers/GCC/mk/port.mk
 # Other files (optional).
 include $(CHIBIOS)/test/lib/test.mk
 include $(CHIBIOS)/test/rt/rt_test.mk
@@ -122,7 +123,7 @@ THREADS_TIMESTAMPS_DEFAULT_LOG  =  true
 include $(THDULIB)/threads_utilities.mk
 
 # Define linker script file here
-LDSCRIPT= ./STM32F413CGUx.ld
+LDSCRIPT= ./STM32L452xE.ld
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -147,9 +148,12 @@ CSRC = $(ALLCSRC) \
        aseba_vm/vm-buffer.c \
        aseba_vm/vm.c \
        communications.c \
-       flash/flash_common_f24.c \
-       flash/flash_common_f234.c \
-       user_shell.c
+       user_shell.c \
+       flash/flash_common_all.c \
+       flash/flash_common_f.c \
+       flash/flash_common_idcache.c \
+       flash/flash.c
+       
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
