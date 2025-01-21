@@ -1,0 +1,56 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Project e-puck2_programmer: 1. Clean",
+            "type": "shell",
+            "command": "${config:make_path} clean",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/src/",
+                "windows": {
+                    "shell": {
+                        "executable": "cmd.exe",
+                        "args": ["/d", "/C"]
+                    }
+                }
+            },
+        },
+        {
+            "label": "Project e-puck2_programmer: 2. Make",
+            "type": "shell",
+            "command": "${config:make_path} -j",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": "$gcc",
+            "options": {
+                "cwd": "${workspaceFolder}/src",
+                "windows": {
+                    "shell": {
+                        "executable": "cmd.exe",
+                        "args": ["/d", "/C"]
+                    }
+                }
+            },
+        },
+        {
+            "label": "Project e-puck2_programmer: 3. DFU e-puck2_programmer",
+            "type": "shell",
+            "command": "dfu-util -R -d 0483:df11 -a 0 -s 0x08000000 -D src/build/e-puck2_programmer.bin",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": false,
+            }
+        },
+    ]
+}
