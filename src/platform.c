@@ -31,13 +31,14 @@ bool platform_srst_get_val(void)
 
 void platform_set_en_esp32(bool assert)
 {
-	if(communicationGetActiveMode() == UART_ESP_PASSTHROUGH){
+	if( (communicationGetActiveMode() == UART_ESP_PASSTHROUGH_115200) ||
+        (communicationGetActiveMode() == UART_ESP_PASSTHROUGH_230400) ) {
 		if (assert)
 			gpio_set(GPIOC, GPIOC_ESP32_EN);
 		else
 			gpio_clear(GPIOC, GPIOC_ESP32_EN);
 	}else{
-		gdb_out("Must be in mode 2 to perform this action\n");
+		gdb_out("Must be in mode 0, 2, 4 or 6 to perform this action\n");
 	}
 }
 
@@ -48,13 +49,14 @@ bool platform_get_en_esp32(void)
 
 void platform_set_gpio0_esp32(bool assert)
 {
-	if(communicationGetActiveMode() == UART_ESP_PASSTHROUGH){
+	if( (communicationGetActiveMode() == UART_ESP_PASSTHROUGH_115200) ||
+        (communicationGetActiveMode() == UART_ESP_PASSTHROUGH_230400) ) {
 		if (assert)
 			gpio_set(GPIOB, GPIOB_ESP_GPIO0);
 		else
 			gpio_clear(GPIOB, GPIOB_ESP_GPIO0);
 	}else{
-		gdb_out("Must be in mode 2 to perform this action\n");
+		gdb_out("Must be in mode 0, 2, 4 or 6 to perform this action\n");
 	}
 	
 }
@@ -108,7 +110,8 @@ const char *platform_target_voltage(void)
 
 bool platform_is_second_gdb_interface_active(void){
 
-	return (communicationGetActiveMode() != UART_ESP_PASSTHROUGH);
+	return ( (communicationGetActiveMode() != UART_ESP_PASSTHROUGH_115200) &&
+             (communicationGetActiveMode() != UART_ESP_PASSTHROUGH_230400) );
 }
 
 bool platform_is_second_gdb_interface_connected(void){

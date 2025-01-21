@@ -14,13 +14,14 @@
 //functionning modes of the communications thread
 //the USB side is always the USB_SERIAL comm port
 typedef enum{
-	UART_407_PASSTHROUGH = 0,
-	UART_ESP_PASSTHROUGH,
+	UART_ESP_PASSTHROUGH_115200 = 0,
+	UART_407_PASSTHROUGH,
+	UART_ESP_PASSTHROUGH_230400,
 	ASEBA_CAN_TRANSLATOR,
 	NB_COMM_MODES,
 }comm_modes_t;
 
-#define DEFAULT_COMM_MODE			UART_ESP_PASSTHROUGH
+#define DEFAULT_COMM_MODE			UART_ESP_PASSTHROUGH_230400
 
 //Event source used to send events to other threads
 extern event_source_t communications_event;
@@ -49,6 +50,12 @@ void communicationsSwitchModeTo(comm_modes_t mode, uint8_t writeToflash);
  * @return The active communication mode. See comm_modes_t
  */
 comm_modes_t communicationGetActiveMode(void);
+
+/**
+ * @brief Returns the saved communication mode in the flash
+ * @return The saved communication mode. See comm_modes_t
+ */
+comm_modes_t communicationGetSavedMode(void);
 
 /**
  * @brief 	Returns the state of the bluetooth connection (info from gpio0 of the ESP32)

@@ -35,7 +35,22 @@ static BSEMAPHORE_DECL(usb_to_uart_pause, true);
 
 //used to store the active mode
 static SerialDriver* uart_used = NULL;
+static comm_modes_t saved_mode = DEFAULT_COMM_MODE;
 static comm_modes_t active_mode = DEFAULT_COMM_MODE;
+
+static const SerialConfig ser_cfg_esp_115200 = {
+	.speed = 115200,
+	.cr1 = 0,
+	.cr2 = 0,
+	.cr3 = 0,
+};
+
+static const SerialConfig ser_cfg_esp_230400 = {
+	.speed = 230400,
+	.cr1 = 0,
+	.cr2 = 0,
+	.cr3 = 0,
+};
 
 /////////////////////////////////////////PRIVATE FUNCTIONS/////////////////////////////////////////
 
@@ -140,7 +155,8 @@ static THD_FUNCTION(uart_to_usb_thd, arg)
 				
 				if((communicationGetActiveMode() == UART_407_PASSTHROUGH) && getControlLineState(SERIAL_INTERFACE, CONTROL_LINE_DTR))
 					chnWriteTimeout((BaseChannel*)&USB_SERIAL, c, 1, TIME_INFINITE);
-				else if(communicationGetActiveMode() == UART_ESP_PASSTHROUGH)
+				else if( (communicationGetActiveMode() == UART_ESP_PASSTHROUGH_115200) ||
+                		 (communicationGetActiveMode() == UART_ESP_PASSTHROUGH_230400) )
 					chnWriteTimeout((BaseChannel*)&USB_SERIAL, c, 1, TIME_INFINITE);
 			}else{
 				nb_times_read = 0;
@@ -179,13 +195,6 @@ static THD_FUNCTION(usb_to_uart_thd, arg)
 
 void communicationsStart(void){
 
-	static const SerialConfig ser_cfg_esp = {
-	    .speed = 230400,
-	    .cr1 = 0,
-	    .cr2 = 0,
-	    .cr3 = 0,
-	};
-
 	static const SerialConfig ser_cfg_407 = {
 	    .speed = 115200,
 	    .cr1 = 0,
@@ -194,9 +203,19 @@ void communicationsStart(void){
 	};
 
 	/**
+	 * Get the communication mode saved in the flash
+	 */
+	saved_mode = findLastModeWrittenToFlash();
+	active_mode = saved_mode;
+
+	/**
 	 * Configures the two serial over uart drivers
 	 */
-	sdStart(&UART_ESP, &ser_cfg_esp);
+	if(active_mode == UART_ESP_PASSTHROUGH_115200)
+		sdStart(&UART_ESP, &ser_cfg_esp_115200);
+	else 
+		sdStart(&UART_ESP, &ser_cfg_esp_230400);
+
 	sdStart(&UART_407, &ser_cfg_407);
 
 	/**
@@ -208,7 +227,6 @@ void communicationsStart(void){
 	/**
 	 * Sets the communication mode to the default one
 	 */
-	active_mode = findLastModeWrittenToFlash();
 	communicationsSwitchModeTo(active_mode, false);
 
 	/**
@@ -233,21 +251,31 @@ void communicationsSwitchModeTo(comm_modes_t mode, uint8_t writeToflash){
 		if(mode == UART_407_PASSTHROUGH){
 			uart_used = &UART_407;
 			active_mode = UART_407_PASSTHROUGH;
-		}else if(mode == UART_ESP_PASSTHROUGH){
+		}else if(mode == UART_ESP_PASSTHROUGH_115200){
+			sdStart(&UART_ESP, &ser_cfg_esp_115200);
 			uart_used = &UART_ESP;
-			active_mode = UART_ESP_PASSTHROUGH;
+			active_mode = UART_ESP_PASSTHROUGH_115200;
+		}else if(mode == UART_ESP_PASSTHROUGH_230400){
+			sdStart(&UART_ESP, &ser_cfg_esp_230400);
+			uart_used = &UART_ESP;
+			active_mode = UART_ESP_PASSTHROUGH_230400;
 		}
 		resumeUartToUSBThreads();
 	}
 
 	if(writeToflash){
 		writeModeToFlash(mode);
+		saved_mode = mode;
 	}
 
 }
 
 comm_modes_t communicationGetActiveMode(void){
 	return active_mode;
+}
+
+comm_modes_t communicationGetSavedMode(void){
+	return saved_mode;
 }
 
 //we get the gpio0 pin status of the ESP32. 0 is for connected and 1 for not connected.

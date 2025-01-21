@@ -48,7 +48,7 @@ The **Red** and **Green** colors are used to indicate the **battery level** and 
 ### Blue led
 The Blue color is used to indicate the status of the bluetooth and the status of the communication of the USB Serial
 
-- **Blinking**				-> A communication is active for one of the three modes of the Serial (UART_407_PASSTHROUGH, UART_ESP_PASSTHROUGH or ASEBA_CAN_TRANSLATOR)
+- **Blinking**				-> A communication is active for one of the four modes of the Serial (UART_ESP_PASSTHROUGH_115200, UART_407_PASSTHROUGH, UART_ESP_PASSTHROUGH_230400, ASEBA_CAN_TRANSLATOR)
 - **ON**					-> The bluetooth is connected for the GDB or UART channel
 - **OFF**					-> The bluetooth is disconnected
 

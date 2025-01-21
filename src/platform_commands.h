@@ -44,8 +44,8 @@ static bool cmd_get_mode(target *t, int argc, const char **argv);
 	{"usb_charge", (cmd_handler)cmd_usb_charge, "(ON|OFF|) Set the USB_CHARGE pin or return the state of this one" }, \
 	{"usb_500", (cmd_handler)cmd_usb_500, "(ON|OFF|) Set the USB_500 pin or return the state of this one" }, \
 	{"reset_F407", (cmd_handler)cmd_reset_F407, "(ON|OFF|) Force the reset of F407" }, \
-	{"select_mode", (cmd_handler)cmd_select_mode, "(1|2|3) Select the use of the second virtual com port over USB :\n\t\t1 = Serial monitor of the main processor and GDB over USB and Bluetooth,\n\t\t2 = Programming/serial monitor of the ESP and GDB over USB,\n\t\t3 = ASEBA CAN-USB translator and GDB over USB and Bluetooth"}, \
-	{"get_mode", (cmd_handler)cmd_get_mode, "Return the selected mode for the second virtual com port over USB"},\
+	{"select_mode", (cmd_handler)cmd_select_mode, "(0|1|2|3) Select the use of the second virtual com port over USB :\n\t\t0 = Programming/serial monitor of the ESP at 115200 bauds and GDB over USB,\n\t\t1 = Serial monitor of the main processor at 115200 bauds and GDB over USB and Bluetooth,\n\t\t2 = Programming/serial monitor of the ESP at 230400 baud and GDB over USB,\n\t\t3 = ASEBA CAN-USB translator and GDB over USB and Bluetooth\n\t    Add 4 then (4|5|6|7) to select temporary mode (0|1|2|3)\n\t    Will be lost when robot is power off and avoid to unnecessarily modify flash ."}, \
+	{"get_mode", (cmd_handler)cmd_get_mode, "Return actual and saved mode in flash for the second virtual com port over USB"},\
 
 /***********************************************/
 /* End of List of platform dedicated commands. */
@@ -148,23 +148,65 @@ static bool cmd_reset_F407(target *t, int argc, const char **argv)
 	return true;
 }
 
+const char error_message[] = "You must choose between mode 0, 1, 2 or 3 for saving it\n             or between mode 4, 5, 6 or 7 for temporary change\n             until next power cycle\n";
+const char* mode_message[] = {"0 -> UART_ESP_PASSTHROUGH_115200",
+							  "1 -> UART_407_PASSTHROUGH",
+							  "2 -> UART_ESP_PASSTHROUGH_230400",
+							  "3 -> ASEBA_CAN_TRANSLATOR"};
+
 static bool cmd_select_mode(target *t, int argc, const char **argv){
 	(void)t;
-	char error_message[] = "You must choose between mode 1, 2 or 3\n";
-	if (argc == 1)
+	bool continue_check = (argc > 1);
+	if (continue_check) {
+		comm_modes_t saved_mode = communicationGetSavedMode();
+		comm_modes_t new_mode;
+		continue_check = (strlen(argv[1])==1);
+		if (continue_check) {
+			bool is_temporary_mode = false;
+			char mode_cmd = (argv[1])[0];
+			switch (mode_cmd) {
+				case '4':
+					is_temporary_mode = true;
+				case '0':
+					new_mode = UART_ESP_PASSTHROUGH_115200;
+					break;
+				case '5':
+					is_temporary_mode = true;
+				case '1':
+					new_mode = UART_407_PASSTHROUGH;
+					break;
+				case '6':
+					is_temporary_mode = true;
+				case '2':
+					new_mode = UART_ESP_PASSTHROUGH_230400;
+					break;
+				case '7':
+					is_temporary_mode = true;
+				case '3':
+					new_mode = ASEBA_CAN_TRANSLATOR;
+					break;
+				default:
+					continue_check = false;
+					break;
+			}
+			if (continue_check) {
+				if (is_temporary_mode) {
+					communicationsSwitchModeTo(new_mode, false);
+					if (new_mode == saved_mode) {
+						gdb_outf("Switched to mode %s, the same as saved one\n", mode_message[new_mode]);
+					} else {
+						gdb_outf("Switched temporarily to mode %s, the saved one being %s\n", mode_message[new_mode], mode_message[saved_mode]);
+					}
+				} else {
+					communicationsSwitchModeTo(new_mode, true);
+					gdb_outf("Switched to mode %s\n", mode_message[new_mode]);
+				}
+			}
+		}
+	}
+	if (! continue_check) {
 		gdb_outf("%s",error_message);
-	else if (strcmp(argv[1], "1") == 0){
-		communicationsSwitchModeTo(UART_407_PASSTHROUGH, true);
-		gdb_outf("Switched to mode 1 : UART_407_PASSTHROUGH\n");
-	}else if (strcmp(argv[1], "2") == 0){
- 		communicationsSwitchModeTo(UART_ESP_PASSTHROUGH, true);
-		gdb_outf("Switched to mode 2 : UART_ESP_PASSTHROUGH\n");
- 	}else if (strcmp(argv[1], "3") == 0){
- 		communicationsSwitchModeTo(ASEBA_CAN_TRANSLATOR, true);
-		gdb_outf("Switched to mode 3 : ASEBA_CAN_TRANSLATOR\n");
- 	}else{
- 		gdb_outf("%s",error_message);
- 	}
+	}
  	return true;
 }
 
@@ -173,16 +215,14 @@ static bool cmd_get_mode(target *t, int argc, const char **argv)
 	(void)t;
 	(void)argc;
 	(void)argv;
-	uint8_t mode = communicationGetActiveMode();
-	gdb_outf("Current mode : ");
-	if(mode == UART_407_PASSTHROUGH){
-		gdb_outf("mode 1 : UART_407_PASSTHROUGH\n");
-	}else if(mode == UART_ESP_PASSTHROUGH){
-		gdb_outf("mode 2 : UART_ESP_PASSTHROUGH\n");
-	}else if(mode == ASEBA_CAN_TRANSLATOR){
-		gdb_outf("mode 3 :ASEBA_CAN_TRANSLATOR\n");
-	}
+	comm_modes_t saved_mode = communicationGetSavedMode();
+	comm_modes_t actual_mode = communicationGetActiveMode();
 
+	if (actual_mode == saved_mode) {
+		gdb_outf("Active mode %s, the same as saved one\n", mode_message[actual_mode]);
+	} else {
+		gdb_outf("Temporary mode %s, the saved one being %s\n", mode_message[actual_mode], mode_message[saved_mode]);
+	}
 	return true;
 }
 
