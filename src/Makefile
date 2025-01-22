@@ -5,53 +5,53 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16
+	USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16
 
-  USE_OPT += -fno-strict-aliasing -lc -lnosys
+	USE_OPT += -fno-strict-aliasing -lc -lnosys
 
-  # Protection against stack overflows
-  # USE_OPT += -fstack-protector-all -L .
+	# Protection against stack overflows
+	# USE_OPT += -fstack-protector-all -L .
 endif
 
 # C specific options here (added to USE_OPT).
 ifeq ($(USE_COPT),)
-  USE_COPT = 
+	USE_COPT = 
 endif
 
 # C++ specific options here (added to USE_OPT).
 ifeq ($(USE_CPPOPT),)
-  USE_CPPOPT = -fno-rtti
+	USE_CPPOPT = -fno-rtti
 endif
 
 # Enable this if you want the linker to remove unused code and data
 ifeq ($(USE_LINK_GC),)
-  USE_LINK_GC = yes
+	USE_LINK_GC = yes
 endif
 
 # Linker extra options here.
 ifeq ($(USE_LDOPT),)
-  USE_LDOPT = -lm
+	USE_LDOPT = -lm
 endif
 
 # Enable this if you want link time optimizations (LTO)
 ifeq ($(USE_LTO),)
-  USE_LTO = yes
+	USE_LTO = yes
 endif
 
 # If enabled, this option allows to compile the application in THUMB mode.
 ifeq ($(USE_THUMB),)
-  USE_THUMB = yes
+	USE_THUMB = yes
 endif
 
 # Enable this if you want to see the full log while compiling.
 ifeq ($(USE_VERBOSE_COMPILE),)
-  USE_VERBOSE_COMPILE = no
+	USE_VERBOSE_COMPILE = no
 endif
 
 # If enabled, this option makes the build process faster by not compiling
 # modules not used in the current configuration.
 ifeq ($(USE_SMART_BUILD),)
-  USE_SMART_BUILD = yes
+	USE_SMART_BUILD = yes
 endif
 
 #
@@ -65,18 +65,18 @@ endif
 # Stack size to be allocated to the Cortex-M process stack. This stack is
 # the stack used by the main() thread.
 ifeq ($(USE_PROCESS_STACKSIZE),)
-  USE_PROCESS_STACKSIZE = 0x400
+	USE_PROCESS_STACKSIZE = 0x400
 endif
 
 # Stack size to the allocated to the Cortex-M main/exceptions stack. This
 # stack is used for processing interrupts and exceptions.
 ifeq ($(USE_EXCEPTIONS_STACKSIZE),)
-  USE_EXCEPTIONS_STACKSIZE = 0x400
+	USE_EXCEPTIONS_STACKSIZE = 0x400
 endif
 
 # Enables the use of FPU (no, softfp, hard).
 ifeq ($(USE_FPU),)
-  USE_FPU = hard
+	USE_FPU = hard
 endif
 
 #
@@ -126,30 +126,30 @@ LDSCRIPT= ./STM32F413CGUx.ld
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CSRC = $(ALLCSRC) \
-       $(TESTSRC) \
-       usbcfg.c \
-       main.c \
-       platform.c\
-       panic.c \
-       USB251XB/USB251XB.c\
-       i2c_smbus.c \
-       usb_hub.c \
-       power_button.c \
-       leds.c \
-       leds_states.c \
-       battery_measurement.c \
-       aseba_vm/aseba_bridge.c \
-       aseba_vm/aseba_can_interface.c \
-       aseba_vm/can-buffer.c \
-       aseba_vm/can-net.c \
-       aseba_vm/natives.c \
-       aseba_vm/vm-buffer.c \
-       aseba_vm/vm.c \
-       communications.c \
-       flash/flash_common_f24.c \
-       flash/flash_common_f234.c \
-       user_shell.c
+CSRC =	$(ALLCSRC) \
+		$(TESTSRC) \
+		usbcfg.c \
+		main.c \
+		platform.c\
+		panic.c \
+		USB251XB/USB251XB.c\
+		i2c_smbus.c \
+		usb_hub.c \
+		power_button.c \
+		leds.c \
+		leds_states.c \
+		battery_measurement.c \
+		aseba_vm/aseba_bridge.c \
+		aseba_vm/aseba_can_interface.c \
+		aseba_vm/can-buffer.c \
+		aseba_vm/can-net.c \
+		aseba_vm/natives.c \
+		aseba_vm/vm-buffer.c \
+		aseba_vm/vm.c \
+		communications.c \
+		flash/flash_common_f24.c \
+		flash/flash_common_f234.c \
+		user_shell.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -230,7 +230,9 @@ CPPWARN = -Wall -Wextra -Wundef
 
 # List all user C define here, like -D_DEBUG=1
 UDEFS = $(ALLDEFS)\
-        -DEPUCK2_CHIBIOS \
+		-DEPUCK2_CHIBIOS \
+		-DUSE_EXTERNAL_VERSION_CMD
+
 
 # Define ASM defines here
 UADEFS =
@@ -249,4 +251,52 @@ ULIBS =
 ##############################################################################
 
 RULESPATH = $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk
-include $(RULESPATH)/rules.mk
+# Secondary Makefile
+SECONDARY_MAKEFILE = $(RULESPATH)/rules.mk
+
+# File containing the firmware version of e-puck2_programmer
+VERSION_FILE = external_version.h
+
+# Command to get firmware version
+GIT_VERSION_CMD = git describe --all --dirty --long
+
+# PHONY to force certain targets
+.PHONY:  update_version all
+
+all: update_version
+
+# Rules used in the SECONDARY_MAKEFILE, to really compile the project :
+#
+# all: PRE_MAKE_ALL_RULE_HOOK $(OBJS) $(OUTFILES) POST_MAKE_ALL_RULE_HOOK
+# clean: CLEAN_RULE_HOOK
+#
+# Opportunity to manage the management of the firmware version of the e-puck2 programmer
+PRE_MAKE_ALL_RULE_HOOK: update_version
+#	@echo "********** End of rule PRE_MAKE_ALL_RULE_HOOK"
+
+# Rule to check or update content of external_version.h file
+update_version:
+	@echo "********** Verification or creation of $(VERSION_FILE)..."
+	@new_version=$$($(GIT_VERSION_CMD) | sed 's|heads/||'); \
+	echo "**********   New version determined : $$new_version"; \
+	if [ ! -f $(VERSION_FILE) ]; then \
+		echo "#define FIRMWARE_VERSION \"$$new_version\"" > $(VERSION_FILE); \
+		echo "********** File $(VERSION_FILE) created with the version $$new_version"; \
+	else \
+		current_version=$$(sed -n 's/#define FIRMWARE_VERSION "\(.*\)"/\1/p' $(VERSION_FILE)); \
+		echo "**********   Current version        : $$current_version"; \
+		if [ "$$current_version" != "$$new_version" ]; then \
+			echo "#define FIRMWARE_VERSION \"$$new_version\"" > $(VERSION_FILE); \
+			echo "********** Content of $(VERSION_FILE) updated with version $$new_version"; \
+		else \
+			echo "********** Content of $(VERSION_FILE) allready updated"; \
+		fi \
+	fi
+#	@echo "********** End of rule update_version"
+
+include $(SECONDARY_MAKEFILE)
+
+CLEAN_RULE_HOOK:
+	@echo "********** Cleaning: Remove $(VERSION_FILE) and $(INCLUDE_DONE_FILE)"
+	@rm -f $(VERSION_FILE) $(INCLUDE_DONE_FILE)
+#	@echo "********** End of CLEAN_RULE_HOOK rule"

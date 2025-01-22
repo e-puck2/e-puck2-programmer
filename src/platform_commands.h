@@ -58,6 +58,22 @@ static bool cmd_get_mode(target *t, int argc, const char **argv);
 /* Beginning of Code of platform dedicated commands. */
 /****************************************************/
 
+static bool cmd_version(target *t, int argc, char **argv)
+{
+	(void)t;
+	(void)argc;
+	(void)argv;
+#if PC_HOSTED == 1
+	gdb_outf("e-puck2 programmer, PC-Hosted for " PLATFORM_IDENT()
+			 ", Version " FIRMWARE_VERSION "\n");
+#else
+	gdb_outf("e-puck2 programmer (Firmware " FIRMWARE_VERSION ") (Hardware Version %d)\n", platform_hwversion());
+#endif
+	gdb_out("<https://github.com/e-puck2/e-puck2-programmer>\n\n");
+
+	return true;
+}
+
 static bool cmd_en_esp32(target *t, int argc, const char **argv)
 {
 	(void)t;
