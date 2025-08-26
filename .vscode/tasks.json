@@ -43,7 +43,7 @@
         {
             "label": "Project e-puck2_programmer: 3. DFU e-puck2_programmer",
             "type": "shell",
-            "command": "dfu-util -R -d 0483:df11 -a 0 -s 0x08000000 -D src/build/e-puck2_programmer.bin",
+            "command": "dfu-util -R -d 0483:df11 -a 0 -s 0x08000000:leave -D src/build/e-puck2_programmer.bin",
             "group": {
                 "kind": "build",
                 "isDefault": true
