@@ -532,6 +532,10 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
  */
 static bool requests_hook(USBDriver *usbp) {
 
+  // GPIO0 is pulled high by default to be in normal mode, then not in Boot Mode
+  // Inverted state is used for facility of understanding and controling the Boot Mode
+  static bool Inverted_GPIO0_State = false;  
+
   if (((usbp->setup[0] & USB_RTYPE_RECIPIENT_MASK) == USB_RTYPE_RECIPIENT_INTERFACE) &&
       (usbp->setup[1] == USB_REQ_SET_INTERFACE)) {
     usbSetupTransfer(usbp, NULL, 0, NULL);
@@ -558,8 +562,12 @@ static bool requests_hook(USBDriver *usbp) {
             control_line_states.cdc_cif_num1_rts = (usbp->setup[2] & 2) ? TRUE : FALSE;
             if( (communicationGetActiveMode() == UART_ESP_PASSTHROUGH_115200) ||
                 (communicationGetActiveMode() == UART_ESP_PASSTHROUGH_230400) ) {
-              gpio_set_val(GPIOC, GPIOC_ESP32_EN, !control_line_states.cdc_cif_num1_rts || control_line_states.cdc_cif_num1_dtr);
-              gpio_set_val(GPIOB, GPIOB_ESP_GPIO0, control_line_states.cdc_cif_num1_rts || !control_line_states.cdc_cif_num1_dtr);
+              gpio_set_val(GPIOC, GPIOC_ESP32_EN, !control_line_states.cdc_cif_num1_rts);
+              // Iverted_GPIO_State = Enable Boot Mode
+              Inverted_GPIO0_State = !Inverted_GPIO0_State && control_line_states.cdc_cif_num1_rts && control_line_states.cdc_cif_num1_dtr \
+                                  || Inverted_GPIO0_State && control_line_states.cdc_cif_num1_dtr;
+
+              gpio_set_val(GPIOB, GPIOB_ESP_GPIO0, !Inverted_GPIO0_State);
             }
             return TRUE;
 #endif /* USE_TWO_USB_SERIAL */
