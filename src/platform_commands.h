@@ -183,24 +183,26 @@ static bool cmd_select_mode(target *t, int argc, const char **argv){
 			switch (mode_cmd) {
 				case TEMP_UART_ESP_PASSTHROUGH_115200:
 					is_temporary_mode = true;
+					__attribute__((fallthrough));
 				case UART_ESP_PASSTHROUGH_115200:
 					new_mode = UART_ESP_PASSTHROUGH_115200;
 					break;
 
 				case TEMP_UART_407_PASSTHROUGH:
 					is_temporary_mode = true;
+					__attribute__((fallthrough));
 				case UART_407_PASSTHROUGH:
 					new_mode = UART_407_PASSTHROUGH;
 					break;
-
 				case TEMP_UART_ESP_PASSTHROUGH_230400:
 					is_temporary_mode = true;
+					__attribute__((fallthrough));
 				case UART_ESP_PASSTHROUGH_230400:
 					new_mode = UART_ESP_PASSTHROUGH_230400;
 					break;
-
 				case TEMP_ASEBA_CAN_TRANSLATOR:
 					is_temporary_mode = true;
+					__attribute__((fallthrough));
 				case ASEBA_CAN_TRANSLATOR:
 					new_mode = ASEBA_CAN_TRANSLATOR;
 					break;

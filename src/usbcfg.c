@@ -564,8 +564,8 @@ static bool requests_hook(USBDriver *usbp) {
                 (communicationGetActiveMode() == UART_ESP_PASSTHROUGH_230400) ) {
               gpio_set_val(GPIOC, GPIOC_ESP32_EN, !control_line_states.cdc_cif_num1_rts);
               // Iverted_GPIO_State = Enable Boot Mode
-              Inverted_GPIO0_State = !Inverted_GPIO0_State && control_line_states.cdc_cif_num1_rts && control_line_states.cdc_cif_num1_dtr \
-                                  || Inverted_GPIO0_State && control_line_states.cdc_cif_num1_dtr;
+              Inverted_GPIO0_State = (!Inverted_GPIO0_State && control_line_states.cdc_cif_num1_rts && control_line_states.cdc_cif_num1_dtr) \
+                                  || (Inverted_GPIO0_State && control_line_states.cdc_cif_num1_dtr);
 
               gpio_set_val(GPIOB, GPIOB_ESP_GPIO0, !Inverted_GPIO0_State);
             }
